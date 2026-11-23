@@ -1,0 +1,391 @@
+<title>Ateliê da Masmorra</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@500;700;800&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<style>
+/* Layout: folha de papel quadriculado do mestre — lista do elenco à esquerda, bancada do asset à direita. */
+:root {
+  --paper: #eef3f6;
+  --grid: #d3e0e8;
+  --sheet: #fbfdfe;
+  --ink: #18273a;
+  --ink-soft: #52637a;
+  --rule: #b9c9d6;
+  --accent: #b3392b;
+  --done: #2f6b4f;
+  --warn: #b7791f;
+  --todo: #9aa9b8;
+  --stage-bg: #dfe8ee;
+  --font-display: "Alegreya Sans SC", "Alegreya Sans", system-ui, sans-serif;
+  --font-body: "Alegreya Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #0f1824; --grid: #1a2838; --sheet: #142131; --ink: #e3ebf2; --ink-soft: #9fb0c2;
+  --rule: #2a3d52; --accent: #e06a58; --done: #5fb38a; --warn: #e0a64a; --todo: #5d6f83; --stage-bg: #1b2a3b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #0f1824; --grid: #1a2838; --sheet: #142131; --ink: #e3ebf2; --ink-soft: #9fb0c2;
+  --rule: #2a3d52; --accent: #e06a58; --done: #5fb38a; --warn: #e0a64a; --todo: #5d6f83; --stage-bg: #1b2a3b; color-scheme: dark }
+
+* { box-sizing: border-box; }
+html { background: var(--paper); }
+body {
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 20px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 800; letter-spacing: .01em; }
+h2 { font-size: 1.25rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+.eyebrow { font-family: var(--font-display); font-size: .8rem; letter-spacing: .12em; color: var(--accent); font-weight: 700; }
+.muted { color: var(--ink-soft); }
+.data { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: .85rem; }
+
+header.top { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; }
+header.top p { margin: 6px 0 0; max-width: 60ch; }
+.credits { display: flex; flex-wrap: wrap; gap: 10px; }
+.credit { background: var(--sheet); border: 1px solid var(--rule); padding: 8px 12px; min-width: 170px; }
+.credit b { display: block; font-family: var(--font-display); font-size: .85rem; letter-spacing: .06em; }
+.credit .data { color: var(--ink-soft); }
+.credit .big { font-family: var(--font-data); font-size: 1.25rem; font-weight: 600; color: var(--ink); }
+
+.board { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .board { grid-template-columns: minmax(0, 1fr); } }
+
+.sheet { background: var(--sheet); border: 1px solid var(--rule); }
+.list { display: grid; gap: 0; }
+.list section { padding: 14px 16px; border-bottom: 1px solid var(--rule); display: grid; gap: 8px; }
+.list section:last-child { border-bottom: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .82rem; color: var(--ink-soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.row { all: unset; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center;
+  padding: 8px 10px; margin: 0 -10px; cursor: pointer; border-left: 3px solid transparent; }
+.row:hover { background: var(--stage-bg); }
+.row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.row[aria-current="true"] { border-left-color: var(--accent); background: var(--stage-bg); }
+.row .nm { font-weight: 700; min-width: 0; }
+.row .pp { grid-column: 1; font-size: .85rem; color: var(--ink-soft); }
+.row .pips { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 3px; }
+.pip { width: 12px; height: 12px; border: 1.5px solid var(--todo); background: transparent; }
+.pip.feito { background: var(--done); border-color: var(--done); }
+.pip.teste, .pip.ajuste { background: var(--warn); border-color: var(--warn); }
+.pip.na { border-style: dotted; opacity: .45; }
+.badge { display: inline-block; font-family: var(--font-display); font-size: .72rem; letter-spacing: .08em; font-weight: 700; padding: 1px 7px; border: 1.5px solid currentColor; }
+.badge.aprovado { color: var(--done); } .badge.ajuste { color: var(--warn); } .badge.pendente { color: var(--todo); }
+
+.bench { display: grid; gap: 0; min-width: 0; }
+.bench > * { padding: 16px; border-bottom: 1px solid var(--rule); min-width: 0; }
+.bench > *:last-child { border-bottom: 0; }
+.bench-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: baseline; }
+.stages { display: flex; flex-wrap: wrap; gap: 6px; }
+.stage { font-size: .8rem; padding: 3px 9px; background: var(--stage-bg); color: var(--ink-soft); display: inline-flex; gap: 6px; align-items: center; }
+.stage .pip { width: 9px; height: 9px; }
+.stage.on { color: var(--ink); }
+
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px); gap: 16px; align-items: start; }
+@media (max-width: 1040px) { .viewer { grid-template-columns: minmax(0, 1fr); } }
+model-viewer { width: 100%; height: 440px; max-width: 100%; background: radial-gradient(circle at 50% 40%, var(--sheet), var(--stage-bg)); --poster-color: transparent; }
+@media (max-width: 600px) { model-viewer { height: 340px; } }
+.empty-model { height: 220px; display: grid; place-items: center; text-align: center; background: var(--stage-bg); color: var(--ink-soft); padding: 16px; }
+.ficha { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: .92rem; }
+.ficha dt { color: var(--ink-soft); } .ficha dd { margin: 0; font-family: var(--font-data); font-size: .84rem; }
+.note { font-size: .92rem; border-left: 3px solid var(--warn); padding: 4px 10px; background: var(--stage-bg); margin: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .85rem; color: var(--ink-soft); }
+
+.gallery { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.gallery figure { margin: 0; flex: 0 0 auto; width: 132px; }
+.gallery button { all: unset; cursor: zoom-in; display: block; }
+.gallery button:focus-visible { outline: 2px solid var(--accent); }
+.gallery img { width: 132px; height: 176px; object-fit: contain; background: var(--stage-bg); display: block; }
+.gallery figcaption { font-size: .76rem; color: var(--ink-soft); margin-top: 4px; line-height: 1.3; }
+.strip { display: grid; gap: 12px; }
+.strip figure { margin: 0; }
+.strip .scroll { overflow-x: auto; background: var(--stage-bg); }
+.strip img { display: block; max-width: none; height: 190px; }
+.strip figcaption { font-size: .82rem; color: var(--ink-soft); margin-top: 4px; }
+
+.review { display: grid; gap: 10px; }
+.review textarea { width: 100%; min-height: 64px; resize: vertical; font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); padding: 8px; }
+.review textarea:focus-visible { outline: 2px solid var(--accent); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { font-family: var(--font-display); font-weight: 700; letter-spacing: .05em; font-size: .9rem; padding: 7px 14px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer; }
+.btn:hover { background: var(--stage-bg); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.ok { border-color: var(--done); color: var(--done); }
+.btn.fix { border-color: var(--warn); color: var(--warn); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.saved { font-size: .85rem; color: var(--ink-soft); }
+
+.anims { padding: 16px; display: grid; gap: 14px; }
+.sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.set { border: 1px solid var(--rule); padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
+.set ul { margin: 0; padding-left: 18px; font-size: .9rem; }
+.set .head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+
+dialog { border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); padding: 12px; max-width: min(92vw, 1100px); }
+dialog::backdrop { background: rgb(10 18 28 / .6); }
+dialog img { max-height: 78vh; width: auto; display: block; margin: 0 auto; }
+dialog .close { margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Masmorra Clássica · bancada de arte</div>
+      <h1>Ateliê da Masmorra</h1>
+      <p class="muted">Cada personagem, item e animação do jogo, da primeira imagem ao modelo animado. Gire os modelos com o mouse ou o dedo, aprove ou peça ajuste: eu leio as avaliações daqui.</p>
+    </div>
+    <div class="credits" id="credits"></div>
+  </header>
+
+  <div class="board">
+    <nav class="sheet list" id="list" aria-label="Elenco e equipamento">
+      <section><span class="muted">Carregando o catálogo…</span></section>
+    </nav>
+    <main class="sheet bench" id="bench" aria-live="polite">
+      <div><span class="muted">Escolha um personagem ou item na lista.</span></div>
+    </main>
+  </div>
+
+  <section class="sheet anims" id="anims" aria-labelledby="anims-h">
+    <h2 id="anims-h">Biblioteca de animações</h2>
+  </section>
+</div>
+
+<dialog id="zoom"><img id="zoom-img" alt=""><div class="btns close"><button class="btn" id="zoom-close" type="button">Fechar</button></div></dialog>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const el = (tag, attrs = {}, kids = []) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "text") n.textContent = v; else if (k === "class") n.className = v; else n.setAttribute(k, v);
+  }
+  for (const k of [].concat(kids)) if (k) n.append(k);
+  return n;
+};
+const ESTADOS = { feito: "feito", teste: "em teste", ajuste: "precisa de ajuste", "a fazer": "a fazer" };
+let CAT = null, ATUAL = null, AVAL = {}, db = null, dbStatus = "carregando";
+
+function etapaClasse(item, etapa) {
+  const v = (item.etapas || {})[etapa];
+  if (!v) return "pip";
+  return "pip " + (v === "a fazer" ? "" : v);
+}
+function todosItens() {
+  const out = [];
+  for (const g of CAT.grupos) for (const i of g.itens) out.push(i);
+  for (const t of CAT.animacoes.testes) out.push({ ...t, papel: "Teste de animação", etapas: {}, teste: true });
+  return out;
+}
+
+function renderCredits() {
+  const box = $("#credits"); box.replaceChildren();
+  for (const c of CAT.creditos) {
+    box.append(el("div", { class: "credit" }, [
+      el("b", { text: c.servico }),
+      el("span", { class: "big", text: c.saldo.toLocaleString("pt-BR") }),
+      el("span", { class: "data", text: ` saldo · ${c.gasto} gastos · ${c.plano}` })
+    ]));
+  }
+}
+
+function renderList() {
+  const nav = $("#list"); nav.replaceChildren();
+  const leg = el("section", {}, [
+    el("div", { class: "eyebrow", text: "Etapas: " + CAT.etapas.join(" → ") }),
+    el("div", { class: "legend" }, [
+      el("span", {}, [el("i", { class: "pip feito" }), "feito"]),
+      el("span", {}, [el("i", { class: "pip teste" }), "em teste ou ajuste"]),
+      el("span", {}, [el("i", { class: "pip" }), "a fazer"])
+    ])
+  ]);
+  nav.append(leg);
+  for (const g of CAT.grupos) {
+    const sec = el("section", {}, [el("h2", { text: g.titulo })]);
+    for (const it of g.itens) {
+      const pips = el("span", { class: "pips", "aria-hidden": "true" });
+      const etapas = g.id === "itens" ? ["Imagem final", "Modelo 3D"] : CAT.etapas;
+      for (const e of etapas) pips.append(el("i", { class: etapaClasse(it, e), title: e }));
+      const av = AVAL[it.id];
+      const pp = el("span", { class: "pp" }, [it.papel]);
+      if (av && av.status) pp.append(" · ", el("span", { class: "badge " + av.status, text: av.status === "ajuste" ? "ajuste" : av.status }));
+      const b = el("button", { class: "row", type: "button", "data-id": it.id, "aria-current": String(ATUAL === it.id) }, [
+        el("span", { class: "nm", text: it.nome }), pp, pips
+      ]);
+      b.addEventListener("click", () => abrir(it.id));
+      sec.append(b);
+    }
+    nav.append(sec);
+  }
+}
+
+function galeria(lista) {
+  const g = el("div", { class: "gallery" });
+  for (const im of lista) {
+    const btn = el("button", { type: "button", "aria-label": "Ampliar: " + im.legenda }, [el("img", { src: im.src, alt: im.legenda, loading: "lazy" })]);
+    btn.addEventListener("click", () => ampliar(im.src, im.legenda));
+    g.append(el("figure", {}, [btn, el("figcaption", { text: im.legenda })]));
+  }
+  return g;
+}
+function tiras(lista) {
+  const s = el("div", { class: "strip" });
+  for (const r of lista) {
+    const img = el("img", { src: r.src, alt: r.legenda, loading: "lazy" });
+    const sc = el("div", { class: "scroll" }, [img]);
+    img.style.cursor = "zoom-in"; img.addEventListener("click", () => ampliar(r.src, r.legenda));
+    s.append(el("figure", {}, [sc, el("figcaption", { text: r.legenda })]));
+  }
+  return s;
+}
+function ampliar(src, alt) { const d = $("#zoom"); $("#zoom-img").src = src; $("#zoom-img").alt = alt; d.showModal(); }
+$("#zoom-close").addEventListener("click", () => $("#zoom").close());
+$("#zoom").addEventListener("click", e => { if (e.target.id === "zoom") $("#zoom").close(); });
+
+function abrir(id, semHash) {
+  const it = todosItens().find(i => i.id === id);
+  if (!it) return;
+  ATUAL = id;
+  if (!semHash) try { history.replaceState(null, "", "#" + id); } catch (e) { location.hash = id; }
+  for (const r of document.querySelectorAll(".row")) r.setAttribute("aria-current", String(r.dataset.id === id));
+  const bench = $("#bench"); bench.replaceChildren();
+
+  const stages = el("div", { class: "stages" });
+  if (!it.teste) for (const e of (it.id === "espada-longa" || it.id === "escudo-redondo") ? ["Imagem final", "Modelo 3D"] : CAT.etapas) {
+    const v = (it.etapas || {})[e];
+    stages.append(el("span", { class: "stage" + (v ? " on" : "") }, [el("i", { class: etapaClasse(it, e) }), `${e}: ${v ? ESTADOS[v] || v : "a fazer"}`]));
+  }
+  bench.append(el("div", { class: "bench-head" }, [
+    el("div", {}, [el("div", { class: "eyebrow", text: it.papel }), el("h2", { text: it.nome })]), stages
+  ]));
+
+  if (it.modelo) {
+    const mv = el("model-viewer", {
+      src: it.modelo, alt: "Modelo 3D de " + it.nome, "camera-controls": "", "touch-action": "pan-y",
+      "auto-rotate": "", "auto-rotate-delay": "1500", "rotation-per-second": "20deg",
+      "shadow-intensity": "0.8", exposure: "1.05", "interaction-prompt": "none"
+    });
+    if (it.animacao) { mv.setAttribute("autoplay", ""); mv.setAttribute("animation-name", it.animacao); mv.removeAttribute("auto-rotate"); }
+    const side = el("div", { style: "display:grid;gap:12px;min-width:0" });
+    if (it.ficha) {
+      const dl = el("dl", { class: "ficha" });
+      for (const [k, v] of it.ficha) dl.append(el("dt", { text: k }), el("dd", { text: v }));
+      side.append(dl);
+    }
+    if (it.nota || it.notas) side.append(el("p", { class: "note", text: it.nota || it.notas }));
+    const ctl = el("div", { class: "controls" }, ["Arraste para girar · role para aproximar"]);
+    if (it.animacao) {
+      const b = el("button", { class: "btn", type: "button", text: "Pausar" });
+      b.addEventListener("click", () => { if (mv.paused) { mv.play(); b.textContent = "Pausar"; } else { mv.pause(); b.textContent = "Tocar"; } });
+      ctl.append(b);
+    }
+    side.append(ctl);
+    bench.append(el("div", { class: "viewer" }, [mv, side]));
+  } else {
+    bench.append(el("div", {}, [el("div", { class: "empty-model" }, [
+      el("div", {}, [el("h3", { text: "Ainda sem modelo" }),
+        el("p", { class: "muted", text: "Próximo passo: rascunhos de imagem no estilo da Tessa, usando a imagem final dela como referência." })])
+    ])]));
+  }
+
+  if (it.imagens && it.imagens.length) bench.append(el("div", {}, [el("h3", { text: "Imagens" }), galeria(it.imagens)]));
+  if (it.renders && it.renders.length) bench.append(el("div", {}, [el("h3", { text: "Renders no Godot" }), tiras(it.renders)]));
+  if (it.quadros) bench.append(el("div", {}, [el("h3", { text: "Quadros da animação" }), tiras([{ src: it.quadros, legenda: "6 quadros ao longo da animação, ângulo de 3/4" }])]));
+  bench.append(revisao(it));
+}
+
+function revisao(it) {
+  const box = el("div", { class: "review" }, [el("h3", { text: "Sua avaliação" })]);
+  const av = AVAL[it.id] || {};
+  const ta = el("textarea", { id: "nota-" + it.id, placeholder: "O que aprovar ou ajustar? Ex.: escudo mais fino, cabelo mais curto…" });
+  ta.value = av.nota || "";
+  const saved = el("span", { class: "saved" });
+  const atual = () => {
+    const a = AVAL[it.id];
+    saved.replaceChildren();
+    if (a && a.status) saved.append("Registrado: ", el("span", { class: "badge " + a.status, text: a.status }), a.em ? ` em ${new Date(a.em).toLocaleString("pt-BR")}` : "");
+    else saved.append(dbStatus === "ok" ? "Sem avaliação ainda." : dbStatus === "off" ? "Avaliações disponíveis só ao abrir no claude.ai, com login." : "Conectando…");
+  };
+  const salvar = async (status) => {
+    if (!db) return;
+    for (const b of box.querySelectorAll("button")) b.disabled = true;
+    try {
+      await db.collection("avaliacoes").doc(it.id).set({ status, nota: ta.value.trim().slice(0, 2000), em: new Date().toISOString(), item: it.nome });
+      saved.textContent = "Salvo.";
+    } catch (e) {
+      saved.textContent = "Não salvou: " + (e && e.code === "permission_denied" ? "sem permissão para escrever aqui." : "tente de novo em instantes.");
+    } finally { for (const b of box.querySelectorAll("button")) b.disabled = !db; }
+  };
+  const ok = el("button", { class: "btn ok", type: "button", text: "Aprovar" });
+  const fix = el("button", { class: "btn fix", type: "button", text: "Pedir ajuste" });
+  const pend = el("button", { class: "btn", type: "button", text: "Voltar a pendente" });
+  ok.addEventListener("click", () => salvar("aprovado"));
+  fix.addEventListener("click", () => salvar("ajuste"));
+  pend.addEventListener("click", () => salvar("pendente"));
+  for (const b of [ok, fix, pend]) b.disabled = !db;
+  box.append(ta, el("div", { class: "btns" }, [ok, fix, pend, saved]));
+  atual();
+  box._atual = atual;
+  return box;
+}
+
+function renderAnims() {
+  const s = $("#anims"); const A = CAT.animacoes;
+  s.replaceChildren(el("div", { class: "bench-head" }, [
+    el("h2", { id: "anims-h", text: "Biblioteca de animações" }),
+    el("span", { class: "muted", text: "Esqueleto: " + A.esqueleto })
+  ]));
+  const sets = el("div", { class: "sets" });
+  for (const c of A.conjuntos) {
+    const ul = el("ul"); for (const n of c.lista) ul.append(el("li", { text: n }));
+    const cls = c.estado === "teste" ? "ajuste" : c.estado === "feito" ? "aprovado" : "pendente";
+    sets.append(el("div", { class: "set" }, [el("div", { class: "head" }, [el("h3", { text: c.nome }), el("span", { class: "badge " + cls, text: ESTADOS[c.estado] || c.estado })]), ul]));
+  }
+  s.append(sets);
+  for (const t of A.testes) {
+    const b = el("button", { class: "row", type: "button", "data-id": t.id }, [el("span", { class: "nm", text: "▶ " + t.nome }), el("span", { class: "pp", text: "Abrir o teste na bancada" })]);
+    b.addEventListener("click", () => { abrir(t.id); $("#bench").scrollIntoView({ behavior: "smooth", block: "start" }); });
+    s.append(b);
+  }
+}
+
+async function iniciar() {
+  try {
+    const r = await fetch("catalogo.json", { cache: "no-store" });
+    CAT = await r.json();
+  } catch (e) {
+    $("#list").replaceChildren(el("section", {}, [el("span", { text: "Não consegui carregar o catálogo. Recarregue a página." })]));
+    return;
+  }
+  renderCredits(); renderList(); renderAnims();
+  const alvo = (location.hash || "").slice(1);
+  abrir(todosItens().some(i => i.id === alvo) ? alvo : "tessa", true);
+
+  const timer = setTimeout(() => { if (dbStatus === "carregando") { dbStatus = "off"; refreshReview(); } }, 10000);
+  try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) { clearTimeout(timer); dbStatus = "off"; refreshReview(); return; }
+  db.collection("avaliacoes").onSnapshot(snap => {
+    clearTimeout(timer); dbStatus = "ok";
+    AVAL = {}; for (const d of snap.docs) AVAL[d.id] = d.data() || {};
+    renderList(); refreshReview(true);
+  }, () => { clearTimeout(timer); dbStatus = "off"; refreshReview(); });
+}
+function refreshReview(soEstado) {
+  const box = document.querySelector(".review");
+  if (!box) return;
+  for (const b of box.querySelectorAll("button")) b.disabled = !db || dbStatus !== "ok";
+  if (box._atual) box._atual();
+}
+window.addEventListener("hashchange", () => { const id = location.hash.slice(1); if (id && id !== ATUAL) abrir(id, true); });
+iniciar();
+</script>
