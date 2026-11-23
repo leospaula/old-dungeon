@@ -7,7 +7,7 @@ config_version=5
 
 config/name="Masmorra Clássica"
 config/description="Dungeon crawler por turnos, em grupo, com as regras do D&D Básico (B/X) via retroclones abertos."
-config/features=PackedStringArray("4.5", "GL Compatibility")
+config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [display]
 
