@@ -6,6 +6,7 @@ Uso:
     python3 tools/tripo.py gerar  "goblin voxel com lança"   assets/voxel/kobold.glb
     python3 tools/tripo.py imagem arte/final/personagens/tessa-recorte.png assets/voxel/tessa.glb [--final]
     python3 tools/tripo.py baixar <task_id> destino.glb   # baixa de novo uma tarefa já feita
+    python3 tools/tripo.py v3 animations/rig '{"input": "<task_id>"}' [destino]   # qualquer endpoint v3
 
 Sem --final, gera um rascunho (textura padrão). Com --final, gera textura
 detalhada e PBR.
@@ -131,12 +132,47 @@ def imagem(caminho, destino, final=False):
     baixar_resultado(esperar(task["task_id"]), destino)
 
 
+API3 = "https://openapi.tripo3d.ai/v3"
+
+
+def v3(endpoint, corpo, destino=None):
+    """Chama um endpoint da API v3, espera a tarefa e baixa o resultado (opcional)."""
+    req = urllib.request.Request(
+        f"{API3}/{endpoint.lstrip('/')}",
+        method="POST",
+        data=json.dumps(corpo).encode(),
+        headers={"Authorization": f"Bearer {chave()}", "Content-Type": "application/json", "User-Agent": UA},
+    )
+    task_id = _abrir(req)["task_id"]
+    print(f"task_id={task_id}", flush=True)
+    while True:
+        req = urllib.request.Request(f"{API3}/tasks/{task_id}", headers={"Authorization": f"Bearer {chave()}", "User-Agent": UA})
+        d = _abrir(req)
+        if d.get("status") in ("success", "failed", "cancelled", "banned", "expired", "unknown"):
+            break
+        time.sleep(4)
+    out = d.get("output", {})
+    print(json.dumps({k: (v if not str(v).startswith("http") else "<url>") for k, v in out.items()}, ensure_ascii=False))
+    print(f"status={d.get('status')} créditos={d.get('credits_consumed', d.get('consumed_credit'))}")
+    if destino and d.get("status") == "success":
+        url = next((v for v in out.values() if isinstance(v, str) and v.startswith("http")), None)
+        if url:
+            os.makedirs(os.path.dirname(destino) or ".", exist_ok=True)
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=300) as r, open(destino, "wb") as f:
+                f.write(r.read())
+            print(f"Salvo em {destino}")
+    return d
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a[:1] == ["saldo"]:
         print(chamar("GET", "/user/balance"))
     elif len(a) == 3 and a[0] == "gerar":
         gerar(a[1], a[2])
+    elif len(a) in (3, 4) and a[0] == "v3":
+        v3(a[1], json.loads(a[2]), a[3] if len(a) == 4 else None)
     elif len(a) == 3 and a[0] == "baixar":
         baixar_resultado(esperar(a[1]), a[2])
     elif len(a) in (3, 4) and a[0] == "imagem":

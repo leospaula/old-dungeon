@@ -1,7 +1,8 @@
 extends SceneTree
 ## Renderiza um .glb em 4 ângulos (0°, 90°, 180°, 270°) numa tira PNG.
 ## Uso:
-##   godot --path . --script tools/render_glb.gd -- <entrada.glb> <saida.png>
+##   godot --path . --script tools/render_glb.gd -- <entrada.glb> <saida.png> [animacao]
+## Com [animacao], toca a animação e captura 6 quadros num ângulo de 3/4.
 ## Precisa de janela (não funciona com --headless, que não renderiza).
 
 const TAM := Vector2i(400, 560)
@@ -55,9 +56,23 @@ func _run() -> void:
 	vp.add_child(cam)
 	cam.current = true
 
-	var tira := Image.create(TAM.x * ANGULOS.size(), TAM.y, false, Image.FORMAT_RGBA8)
-	for i in ANGULOS.size():
-		var a := deg_to_rad(ANGULOS[i])
+	var anim := args[2] if args.size() > 2 else ""
+	var player: AnimationPlayer = _player(modelo)
+	var quadros := 6 if anim != "" else ANGULOS.size()
+	var duracao := 0.0
+	if anim != "":
+		if player == null or not player.has_animation(anim):
+			push_error("animação '%s' não encontrada; há: %s" % [anim, player.get_animation_list() if player else []])
+			quit(1)
+			return
+		player.play(anim)
+		player.pause()
+		duracao = player.get_animation(anim).length
+	var tira := Image.create(TAM.x * quadros, TAM.y, false, Image.FORMAT_RGBA8)
+	for i in quadros:
+		var a := deg_to_rad(ANGULOS[i] if anim == "" else 30.0)
+		if anim != "":
+			player.seek(duracao * i / (quadros - 1), true)
 		cam.position = centro + Vector3(sin(a), 0.15, cos(a)) * dist
 		cam.look_at(centro)
 		for _f in 3:
@@ -116,3 +131,13 @@ func _esqueletos(n: Node) -> Array:
 	for c in n.get_children():
 		out.append_array(_esqueletos(c))
 	return out
+
+
+func _player(n: Node) -> AnimationPlayer:
+	if n is AnimationPlayer:
+		return n
+	for c in n.get_children():
+		var p := _player(c)
+		if p:
+			return p
+	return null
