@@ -1,0 +1,122 @@
+{
+  "id": "monte-corvo-01",
+  "titulo": "A Masmorra do Monte Corvo",
+  "masmorra": "monte-corvo",
+  "nivel_recomendado": [1, 2],
+  "grupo_sugerido": "grupo-inicial",
+  "gancho": "Uma tribo de kobolds saqueia as carroças da estrada do vale. O mercador de Vau-Raso paga 300 po a quem acabar com os ataques. Na taverna, dizem que um chefe hobgoblin tomou o salão do antigo senhor anão, Thorgrim Barba-de-Cinza.",
+
+  "salas": {
+    "1": {
+      "leitura": "Uma fenda larga na encosta, meio escondida por galhos amarrados com cipó. O chão de terra está marcado por pegadas pequenas e garras. Lá de dentro vem um cheiro de fumaça e couro mal curtido.",
+      "monstros": [{ "tipo": "kobold", "qtd": 3, "comportamento": "sentinela", "se_fugir": "alerta_sala_3" }],
+      "tesouro": { "pp": 12 }
+    },
+    "2": {
+      "leitura": "Um corredor largo, de pedra lavrada. As paredes são cobertas de entalhes anões: mineiros, forjas, um rei com um elmo alado. Num dos painéis, um anão encosta o ouvido numa parede e outro aponta para ela.",
+      "pistas": ["porta escondida onde o eco responde (sala 8)"],
+      "armadilhas": [{ "tipo": "fosso", "chance": "2-em-6", "dano": "1d6", "profundidade_m": 3, "procurar": true }]
+    },
+    "3": {
+      "leitura": "Uma caverna enfumaçada, cheia de peles, ossos roídos e cestos de saque. Kobolds de todos os tamanhos se viram ao mesmo tempo. Um deles, maior e com um capacete de panela, bate a lança no chão.",
+      "monstros": [
+        { "tipo": "chefe_kobold", "qtd": 1 },
+        { "tipo": "kobold", "qtd": 6 },
+        { "tipo": "nao_combatente", "qtd": 8, "descricao": "fêmeas e filhotes" }
+      ],
+      "reacao": { "negociar_em": 9, "pedido": "matar a aranha da sala 12", "se_aceito": "aliados_contra_hobgoblins" },
+      "tesouro": { "po": 140, "pp": 300, "itens": [{ "nome": "poção de cura", "efeito": "cura 1d6+1" }], "local": "baú sob as peles" }
+    },
+    "4": {
+      "leitura": "Uma sala redonda com um poço de pedra no centro, sem balde e sem corda. Lá do fundo, uns 9 metros abaixo, vem um chiado e um arranhar de unhas.",
+      "monstros": [{ "tipo": "rato_gigante", "qtd": 5, "local": "fundo do poço" }],
+      "tesouro": { "po": 25, "itens": [{ "nome": "adaga de prata" }], "local": "esqueleto de aventureiro no fundo" }
+    },
+    "5": {
+      "leitura": "Uma capela anã com bancos de pedra virados. O altar está rachado ao meio, e alguém pintou símbolos grosseiros sobre as runas. Quatro esqueletos de anões estão sentados nos bancos, como se esperassem a missa.",
+      "monstros": [{ "tipo": "esqueleto", "qtd": 4, "gatilho": "tocar_altar" }],
+      "tesouro": { "itens": [{ "nome": "água benta", "qtd": 2 }], "local": "nicho no altar", "procurar": true }
+    },
+    "6": {
+      "leitura": "Prateleiras de pedra e barris podres. O cheiro de cerveja azeda de séculos é quase sólido.",
+      "tesouro": {
+        "po": 80, "local": "fundo falso de um barril", "procurar": true,
+        "itens": [{ "nome": "aguardente anã", "efeito": "+1 na moral de PdM ao oferecer" }]
+      }
+    },
+    "7": {
+      "leitura": "Um corredor longo, reto, e estranhamente limpo: não há pó, ossos nem teias. O chão brilha um pouco à luz da tocha.",
+      "monstros": [{ "tipo": "cubo_gelatinoso", "qtd": 1, "comportamento": "patrulha" }],
+      "tesouro": {
+        "po": 60, "local": "dentro do cubo",
+        "itens": [{ "nome": "espada curta" }, { "nome": "anel de proteção +1", "efeito": "CA −1 e +1 em todas as jogadas de proteção" }]
+      }
+    },
+    "8": {
+      "leitura": "Uma câmara alta e vazia. Seus passos voltam dobrados, triplicados, e uma palavra dita em voz normal ecoa por vários segundos.",
+      "efeitos": [{ "tipo": "barulho", "efeito": "rolagem_extra_errante" }],
+      "segredos": ["porta secreta para a sala 9 na parede leste"]
+    },
+    "9": {
+      "leitura": "Uma porta de pedra lisa com uma fechadura anã em forma de rosto barbudo. Atrás dela há uma sala pequena, com nichos nas paredes.",
+      "tesouro": {
+        "po": 400, "gemas": [{ "valor_po": 50 }, { "valor_po": 50 }],
+        "itens": [{ "nome": "pergaminho de Sono" }, { "nome": "página arrancada de grimório", "gancho": "mirela" }]
+      }
+    },
+    "10": {
+      "leitura": "Uma fogueira baixa, sacos de dormir e o cheiro de carne assada. Quatro figuras humanas se levantam com as mãos nas armas. Uma mulher de capuz sorri: 'Chegaram tarde, mas ainda dá pra conversar.'",
+      "monstros": [
+        { "tipo": "bandido", "qtd": 3 },
+        { "tipo": "pdm", "id": "vessa", "nome": "Vessa", "classe": "ladrao", "nivel": 2, "pv": 7, "ca": 6 }
+      ],
+      "reacao": { "padrao": "incerto", "proposta": "dividir o saque", "trai_se": "grupo enfraquecido", "gancho": "caco" },
+      "tesouro": { "po": 90, "itens": [{ "nome": "corda 15 m" }, { "nome": "tocha", "qtd": 6 }, { "nome": "mapa rabiscado do nível 2" }] }
+    },
+    "11": {
+      "leitura": "O corredor termina numa fenda de uns 6 metros. Uma ponte de cordas e tábuas balança sobre a escuridão, e metade das tábuas sumiu. Do fundo vem um brilho avermelhado e um zumbido.",
+      "teste": { "atributo": "des", "falha": "queda 2d6", "evita_com": "corda" },
+      "monstros": [{ "tipo": "besouro_de_fogo", "qtd": 3 }],
+      "notas": "As glândulas dos besouros brilham por 1d6 dias e servem como luz."
+    },
+    "12": {
+      "leitura": "Uma gruta úmida, cheia de casulos pendurados no teto. Num deles dá para ver a bota de um homem e a ponta de uma bolsa de couro.",
+      "monstros": [{ "tipo": "aranha_caranguejo", "qtd": 1, "surpresa": "1-4" }],
+      "tesouro": { "po": 120, "joias": [{ "nome": "broche", "valor_po": 100 }], "local": "bolsa do mercador no casulo" }
+    },
+    "13": {
+      "leitura": "Um salão de colunas com um trono de pedra no fundo. Bandeiras de pele de lobo cobrem os escudos anões. No trono, um hobgoblin enorme com um elmo alado, pequeno demais para ele, rói um osso e aponta para vocês.",
+      "monstros": [
+        { "tipo": "chefe_hobgoblin", "qtd": 1, "id": "gruk", "nome": "Gruk" },
+        { "tipo": "hobgoblin", "qtd": 4 }
+      ],
+      "tesouro": { "po": 350, "pp": 500, "itens": [{ "nome": "elmo de Thorgrim", "valor_po": 150, "gancho": "durgo" }] }
+    },
+    "14": {
+      "leitura": "Uma tumba fria. No centro há um sarcófago lacrado com o nome de Thorgrim Barba-de-Cinza, e dois guardiões de pé, um de cada lado, com a pele seca e cinzenta.",
+      "monstros": [{ "tipo": "zumbi", "qtd": 2 }],
+      "maldicao": { "gatilho": "profanar_corpo", "efeito": "−1 em jogadas de proteção até devolver o item" },
+      "tesouro": { "itens": [{ "nome": "martelo de guerra +1" }, { "nome": "ponta de mapa: as Profundezas", "gancho": "aventura_2" }] }
+    }
+  },
+
+  "portas": {
+    "8-9": { "trancada": true, "secreta": true, "armadilha": { "tipo": "agulha_veneno", "protecao": "morte", "efeito": "1d4 de dano + fraqueza (−2 em acerto) por 1 dia" } }
+  },
+
+  "errantes": {
+    "frequencia_turnos": 2,
+    "chance": "1-em-6",
+    "tabela": ["1d4 kobold", "1d6 rato_gigante", "1d3 besouro_de_fogo", "1d4 estirge", "1d3 bandido", "1d2 esqueleto"]
+  },
+
+  "eventos": [
+    { "quando": "monstro_morto:gruk", "efeito": "moral:hobgoblin=6" },
+    { "quando": "alerta_sala_3", "efeito": "sala_3:emboscada" }
+  ],
+
+  "vitoria": {
+    "condicoes": ["monstro_morto:gruk", "fuga:hobgoblins", "acordo:kobolds+gruk_derrotado"],
+    "recompensa_po": 300
+  }
+}

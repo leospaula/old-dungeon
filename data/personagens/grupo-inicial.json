@@ -1,0 +1,75 @@
+{
+  "_doc": "Grupo pronto original, nível 1 (B/X). Descrição completa no Personal Brain: RPG/Masmorra Clássica/Personagens prontos.",
+  "ordem_de_marcha": [["tessa", "durgo"], ["caco", "lianne"], ["mirela", "anselmo"], ["bento"]],
+  "portador_da_luz": "bento",
+  "personagens": [
+    {
+      "id": "tessa", "nome": "Tessa Mão-de-Ferro", "classe": "guerreiro", "nivel": 1, "alinhamento": "ordeiro",
+      "atributos": { "for": 16, "int": 9, "sab": 10, "des": 13, "con": 14, "car": 8 },
+      "pv": 9, "ca": 3, "thac0": 19,
+      "protecao": { "morte": 12, "varinhas": 13, "paralisia": 14, "sopro": 15, "magias": 16 },
+      "armas": [{ "nome": "espada", "dano": "1d8" }, { "nome": "lança", "dano": "1d6", "arremesso": true }],
+      "equipamento": ["cota de malha", "escudo", "mochila", "tocha x6", "rações x7", "odre", "corda 15 m"],
+      "po": 8
+    },
+    {
+      "id": "durgo", "nome": "Durgo Pedra-Funda", "classe": "anao", "nivel": 1, "alinhamento": "ordeiro",
+      "atributos": { "for": 15, "int": 10, "sab": 11, "des": 8, "con": 16, "car": 9 },
+      "pv": 10, "ca": 3, "thac0": 19,
+      "protecao": { "morte": 8, "varinhas": 9, "paralisia": 10, "sopro": 13, "magias": 12 },
+      "armas": [{ "nome": "machado de mão", "dano": "1d6", "arremesso": true }],
+      "equipamento": ["armadura de placas", "escudo", "machado de mão x2", "mochila", "pé de cabra", "tocha x4", "rações x7"],
+      "po": 5
+    },
+    {
+      "id": "caco", "nome": "Caco Sete-Dedos", "classe": "ladrao", "nivel": 1, "alinhamento": "neutro",
+      "atributos": { "for": 10, "int": 13, "sab": 8, "des": 17, "con": 11, "car": 13 },
+      "pv": 4, "ca": 5, "thac0": 19,
+      "protecao": { "morte": 13, "varinhas": 14, "paralisia": 13, "sopro": 16, "magias": 15 },
+      "armas": [{ "nome": "espada curta", "dano": "1d6" }, { "nome": "funda", "dano": "1d4", "distancia": true }],
+      "habilidades_ladrao": { "abrir_fechaduras": 15, "armadilhas": 10, "bater_carteira": 20, "escalar": 87, "silencio": 20, "esconder": 10, "ouvir": "1-2" },
+      "equipamento": ["armadura de couro", "pedras de funda x20", "ferramentas de ladrão", "mochila", "corda 10 m", "tocha x3", "rações x7"],
+      "po": 22
+    },
+    {
+      "id": "lianne", "nome": "Lianne do Bosque Alto", "classe": "elfo", "nivel": 1, "alinhamento": "neutro",
+      "atributos": { "for": 13, "int": 14, "sab": 10, "des": 15, "con": 9, "car": 12 },
+      "pv": 6, "ca": 4, "thac0": 19,
+      "protecao": { "morte": 12, "varinhas": 13, "paralisia": 13, "sopro": 15, "magias": 15 },
+      "armas": [{ "nome": "espada", "dano": "1d8" }, { "nome": "arco curto", "dano": "1d6", "distancia": true }],
+      "grimorio": ["missil_magico"], "magias_por_dia": { "1": 1 },
+      "equipamento": ["cota de malha", "flechas x20", "grimório", "mochila", "tocha x4", "rações x7"],
+      "po": 6
+    },
+    {
+      "id": "mirela", "nome": "Mirela Vaz", "classe": "mago", "nivel": 1, "alinhamento": "neutro",
+      "atributos": { "for": 7, "int": 17, "sab": 12, "des": 14, "con": 10, "car": 12 },
+      "pv": 4, "ca": 8, "thac0": 19,
+      "protecao": { "morte": 13, "varinhas": 14, "paralisia": 13, "sopro": 16, "magias": 15 },
+      "armas": [{ "nome": "adaga", "dano": "1d4", "arremesso": true }],
+      "grimorio": ["sono"], "magias_por_dia": { "1": 1 },
+      "equipamento": ["adaga x2", "grimório", "tinta e pena", "mochila", "lanterna", "óleo x2", "rações x7"],
+      "po": 14
+    },
+    {
+      "id": "anselmo", "nome": "Irmão Anselmo", "classe": "clerigo", "nivel": 1, "alinhamento": "ordeiro",
+      "atributos": { "for": 12, "int": 10, "sab": 16, "des": 9, "con": 13, "car": 11 },
+      "pv": 7, "ca": 4, "thac0": 19,
+      "protecao": { "morte": 11, "varinhas": 12, "paralisia": 14, "sopro": 16, "magias": 15 },
+      "armas": [{ "nome": "maça", "dano": "1d6" }],
+      "afastar_mortos_vivos": { "esqueleto": 7, "zumbi": 9, "carnical": 11 },
+      "magias_por_dia": {},
+      "equipamento": ["cota de malha", "escudo", "símbolo sagrado", "água benta x1", "mochila", "tocha x4", "rações x7"],
+      "po": 3
+    },
+    {
+      "id": "bento", "nome": "Bento Pé-de-Musgo", "classe": "halfling", "nivel": 1, "alinhamento": "ordeiro",
+      "atributos": { "for": 9, "int": 11, "sab": 12, "des": 14, "con": 13, "car": 15 },
+      "pv": 7, "ca": 5, "thac0": 19,
+      "protecao": { "morte": 8, "varinhas": 9, "paralisia": 10, "sopro": 13, "magias": 12 },
+      "armas": [{ "nome": "espada curta", "dano": "1d6" }, { "nome": "funda", "dano": "1d4", "distancia": true }],
+      "equipamento": ["armadura de couro", "escudo pequeno", "pedras de funda x30", "mochila", "tocha x8", "panela", "rações x10"],
+      "po": 11
+    }
+  ]
+}
