@@ -459,7 +459,9 @@ function montarVisor(box, url, animNome) {
       const tam = caixa.getSize(new THREE.Vector3()), centro = caixa.getCenter(new THREE.Vector3());
       const maior = Math.max(tam.x, tam.y, tam.z) || 1;
       const dist = maior / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * 1.25;
-      camera.position.set(centro.x + dist * 0.35, centro.y + tam.y * 0.1, centro.z + dist);
+      const plano = tam.y < maior * 0.3;
+      if (plano) camera.position.set(centro.x + dist * 0.1, centro.y + dist * 0.75, centro.z + dist * 0.6);
+      else camera.position.set(centro.x + dist * 0.35, centro.y + tam.y * 0.1, centro.z + dist);
       camera.near = dist / 100; camera.far = dist * 100; camera.updateProjectionMatrix();
       controls.target.copy(centro); controls.update();
       if (g.animations && g.animations.length) {

@@ -232,6 +232,68 @@
           "notas": "Candidato a conserto no Tripo Studio (AI 3D Lab) ou a nova geração com vista frontal e traseira."
         }
       ]
+    },
+    {
+      "id": "cenario",
+      "titulo": "Cenário",
+      "itens": [
+        {
+          "id": "masmorra-3d",
+          "nome": "Masmorra base em 3D",
+          "papel": "Gerada a partir da planta aprovada",
+          "etapas": {
+            "Modelo 3D": "feito"
+          },
+          "modelo": "modelos/masmorra-base.gltf.json",
+          "ficha": [
+            [
+              "Grade",
+              "62 × 38 células de 1,5 m"
+            ],
+            [
+              "Paredes",
+              "3 m de altura"
+            ],
+            [
+              "Áreas",
+              "34 + celas A–H"
+            ],
+            [
+              "Arquivo",
+              "6,3 MB"
+            ],
+            [
+              "Gerador",
+              "tools/gerar_masmorra.gd"
+            ]
+          ],
+          "imagens": [
+            {
+              "src": "img/masmorra-3d-explorar.jpg",
+              "legenda": "Cena do jogo: Tessa na sala 24"
+            }
+          ],
+          "renders": [
+            {
+              "src": "img/masmorra-3d-perspectiva.jpg",
+              "legenda": "Visão geral"
+            },
+            {
+              "src": "img/masmorra-3d-centro-e-prisao.jpg",
+              "legenda": "Prisão 19, passagens 19a/19b e bloco central"
+            },
+            {
+              "src": "img/masmorra-3d-salao-esteiras.jpg",
+              "legenda": "Salão 28/29 com as esteiras"
+            },
+            {
+              "src": "img/masmorra-3d-topo.jpg",
+              "legenda": "Vista de cima"
+            }
+          ],
+          "notas": "Blocos de pedra (voxel) gerados por script a partir de data/masmorra/layout.json. Ainda sem texturas: cores por tipo de área. Portas fechadas, grades nas celas, esteiras e cristais."
+        }
+      ]
     }
   ],
   "animacoes": {
