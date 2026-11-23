@@ -2,7 +2,9 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@500;700;800&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
-<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <style>
 /* Layout: folha de papel quadriculado do mestre — lista do elenco à esquerda, bancada do asset à direita. */
 :root {
@@ -92,8 +94,10 @@ header.top p { margin: 6px 0 0; max-width: 60ch; }
 
 .viewer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px); gap: 16px; align-items: start; }
 @media (max-width: 1040px) { .viewer { grid-template-columns: minmax(0, 1fr); } }
-model-viewer { width: 100%; height: 440px; max-width: 100%; background: radial-gradient(circle at 50% 40%, var(--sheet), var(--stage-bg)); --poster-color: transparent; }
-@media (max-width: 600px) { model-viewer { height: 340px; } }
+.visor { position: relative; width: 100%; height: 440px; max-width: 100%; background: radial-gradient(circle at 50% 40%, var(--sheet), var(--stage-bg)); touch-action: pan-y; }
+.visor canvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; }
+.visor .msg { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-soft); font-size: .9rem; text-align: center; padding: 16px; }
+@media (max-width: 600px) { .visor { height: 340px; } }
 .empty-model { height: 220px; display: grid; place-items: center; text-align: center; background: var(--stage-bg); color: var(--ink-soft); padding: 16px; }
 .ficha { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: .92rem; }
 .ficha dt { color: var(--ink-soft); } .ficha dd { margin: 0; font-family: var(--font-data); font-size: .84rem; }
@@ -258,6 +262,7 @@ function abrir(id, semHash) {
   ATUAL = id;
   if (!semHash) try { history.replaceState(null, "", "#" + id); } catch (e) { location.hash = id; }
   for (const r of document.querySelectorAll(".row")) r.setAttribute("aria-current", String(r.dataset.id === id));
+  if (VISOR_ATUAL) { VISOR_ATUAL.destruir(); VISOR_ATUAL = null; }
   const bench = $("#bench"); bench.replaceChildren();
 
   const stages = el("div", { class: "stages" });
@@ -270,12 +275,8 @@ function abrir(id, semHash) {
   ]));
 
   if (it.modelo) {
-    const mv = el("model-viewer", {
-      src: it.modelo, alt: "Modelo 3D de " + it.nome, "camera-controls": "", "touch-action": "pan-y",
-      "auto-rotate": "", "auto-rotate-delay": "1500", "rotation-per-second": "20deg",
-      "shadow-intensity": "0.8", exposure: "1.05", "interaction-prompt": "none"
-    });
-    if (it.animacao) { mv.setAttribute("autoplay", ""); mv.setAttribute("animation-name", it.animacao); mv.removeAttribute("auto-rotate"); }
+    const mv = el("div", { class: "visor", role: "img", "aria-label": "Modelo 3D de " + it.nome }, [el("div", { class: "msg", text: "Carregando o modelo…" })]);
+    const visor = montarVisor(mv, it.modelo, it.animacao);
     const side = el("div", { style: "display:grid;gap:12px;min-width:0" });
     if (it.ficha) {
       const dl = el("dl", { class: "ficha" });
@@ -286,7 +287,7 @@ function abrir(id, semHash) {
     const ctl = el("div", { class: "controls" }, ["Arraste para girar · role para aproximar"]);
     if (it.animacao) {
       const b = el("button", { class: "btn", type: "button", text: "Pausar" });
-      b.addEventListener("click", () => { if (mv.paused) { mv.play(); b.textContent = "Pausar"; } else { mv.pause(); b.textContent = "Tocar"; } });
+      b.addEventListener("click", () => { const p = visor.alternar(); b.textContent = p ? "Tocar" : "Pausar"; });
       ctl.append(b);
     }
     side.append(ctl);
@@ -357,6 +358,84 @@ function renderAnims() {
     b.addEventListener("click", () => { abrir(t.id); $("#bench").scrollIntoView({ behavior: "smooth", block: "start" }); });
     s.append(b);
   }
+}
+
+
+// ---- Visor 3D (three.js r128). O glTF vem como JSON com o buffer embutido;
+// remontamos um GLB na memória e usamos parse(), sem nenhuma busca de rede extra.
+let VISOR_ATUAL = null;
+function jsonParaGlb(gltf) {
+  const uri = gltf.buffers[0].uri || "";
+  const b64 = uri.slice(uri.indexOf(",") + 1);
+  const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  delete gltf.buffers[0].uri;
+  const enc = new TextEncoder();
+  let js = enc.encode(JSON.stringify(gltf));
+  const jsPad = (4 - (js.length % 4)) % 4, binPad = (4 - (bin.length % 4)) % 4;
+  const total = 12 + 8 + js.length + jsPad + 8 + bin.length + binPad;
+  const out = new ArrayBuffer(total), dv = new DataView(out), u8 = new Uint8Array(out);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, total, true);
+  dv.setUint32(12, js.length + jsPad, true); dv.setUint32(16, 0x4E4F534A, true);
+  u8.set(js, 20); u8.fill(0x20, 20 + js.length, 20 + js.length + jsPad);
+  let o = 20 + js.length + jsPad;
+  dv.setUint32(o, bin.length + binPad, true); dv.setUint32(o + 4, 0x004E4942, true);
+  u8.set(bin, o + 8);
+  return out;
+}
+function corToken(nome) { return getComputedStyle(document.documentElement).getPropertyValue(nome).trim() || "#dfe8ee"; }
+function montarVisor(box, url, animNome) {
+  if (VISOR_ATUAL) VISOR_ATUAL.destruir();
+  const estado = { pausado: false, vivo: true, mixer: null, raf: 0 };
+  const api = { alternar() { estado.pausado = !estado.pausado; return estado.pausado; }, destruir() {} };
+  VISOR_ATUAL = api;
+  const msg = box.querySelector(".msg");
+  if (!window.THREE || !THREE.GLTFLoader || !THREE.OrbitControls) { msg.textContent = "Não consegui carregar o visualizador 3D."; return api; }
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  box.append(renderer.domElement);
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.1));
+  const sol = new THREE.DirectionalLight(0xffffff, 0.9); sol.position.set(2, 4, 3); scene.add(sol);
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.autoRotate = !animNome; controls.autoRotateSpeed = 1.2;
+  controls.addEventListener("start", () => { controls.autoRotate = false; });
+  const relogio = new THREE.Clock();
+  const tamanho = () => { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+  const ro = new ResizeObserver(tamanho); ro.observe(box); tamanho();
+  const loop = () => {
+    if (!estado.vivo) return;
+    estado.raf = requestAnimationFrame(loop);
+    const dt = relogio.getDelta();
+    if (estado.mixer && !estado.pausado) estado.mixer.update(dt);
+    controls.update(); renderer.render(scene, camera);
+  };
+  api.destruir = () => { estado.vivo = false; cancelAnimationFrame(estado.raf); ro.disconnect(); controls.dispose(); renderer.dispose(); };
+  fetch(url).then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then(gltf => {
+    new THREE.GLTFLoader().parse(jsonParaGlb(gltf), "", g => {
+      if (!estado.vivo) return;
+      const obj = g.scene; scene.add(obj);
+      obj.updateMatrixWorld(true);
+      let caixa = new THREE.Box3(), temOsso = false; const p = new THREE.Vector3();
+      obj.traverse(n => { if (n.isBone) { caixa.expandByPoint(n.getWorldPosition(p)); temOsso = true; } });
+      if (temOsso) { const t = caixa.getSize(new THREE.Vector3()); caixa.expandByScalar(Math.max(t.x, t.y, t.z) * 0.12); }
+      else caixa = new THREE.Box3().setFromObject(obj);
+      const tam = caixa.getSize(new THREE.Vector3()), centro = caixa.getCenter(new THREE.Vector3());
+      const maior = Math.max(tam.x, tam.y, tam.z) || 1;
+      const dist = maior / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * 1.25;
+      camera.position.set(centro.x + dist * 0.35, centro.y + tam.y * 0.1, centro.z + dist);
+      camera.near = dist / 100; camera.far = dist * 100; camera.updateProjectionMatrix();
+      controls.target.copy(centro); controls.update();
+      if (g.animations && g.animations.length) {
+        estado.mixer = new THREE.AnimationMixer(obj);
+        const clip = (animNome && g.animations.find(a => a.name === animNome)) || (animNome ? g.animations[0] : null);
+        if (clip) estado.mixer.clipAction(clip).play();
+      }
+      msg.remove(); loop();
+    }, e => { msg.textContent = "Não consegui abrir o modelo."; console.error(e); });
+  }).catch(e => { msg.textContent = "Não consegui baixar o modelo (" + e.message + ")."; });
+  return api;
 }
 
 async function iniciar() {

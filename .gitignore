@@ -10,3 +10,6 @@ __pycache__/
 # Ateliê: cópias de imagens e modelos (o HTML e o catálogo ficam versionados)
 atelie/img/
 atelie/modelos/
+
+# Animações baixadas do Mixamo: uso livre em jogos, mas sem redistribuir os arquivos soltos
+arte/animacoes/mixamo/
