@@ -281,7 +281,7 @@
         "modelo": "modelos/tessa-golpe-mixamo.gltf.json",
         "animacao": "golpe",
         "quadros": "img/tessa-golpe-mixamo-quadros.jpg",
-        "nota": "Tessa final (v3.1) com a espada presa à mão direita e o escudo ao antebraço esquerdo, tocando 'Standing Melee Attack Downward' do Mixamo. O quadril foi ajustado para a altura dela (×0,806). Grátis."
+        "nota": "Tessa final (v3.1) com a espada presa à mão direita e o escudo ao antebraço esquerdo, tocando 'Standing Melee Attack Downward' do Mixamo. Retarget pela direção dos ossos (corrige o giro de 90°, a pose A × T e os eixos dos ossos); encaixe dos itens calculado pela anatomia. Grátis."
       },
       {
         "id": "teste-slash",

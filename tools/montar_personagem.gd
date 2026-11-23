@@ -5,6 +5,7 @@ extends SceneTree
 ## O JSON define o modelo e os itens: osso, comprimento (m), pega (ponto 0–1 da caixa do item que vai no osso),
 ## posicao (m, no espaço do osso) e rotacao (graus XYZ).
 
+const Retarget = preload("res://tools/retarget.gd")
 const TAM := Vector2i(360, 480)
 const QUADROS := 6
 
@@ -20,32 +21,45 @@ func _run() -> void:
 
 	var pers := _carregar(cfg.modelo); vp.add_child(pers)
 	var sk := _achar(pers, "Skeleton3D") as Skeleton3D
+	var base := Retarget.base_personagem(sk)   # X = esquerda, Y = cima, Z = frente
 	for it in cfg.itens:
+		var i_osso := sk.find_bone(it.osso)
+		var g_osso := sk.get_bone_global_rest(i_osso)
+		var f := Retarget.filho_preferido(sk, i_osso)
+		var dir := (sk.get_bone_global_rest(f).origin - g_osso.origin)
 		var ba := BoneAttachment3D.new(); ba.bone_name = it.osso; sk.add_child(ba)
 		var item := _carregar(it.arquivo)
 		var caixa := _aabb(item)
 		var esc: float = it.comprimento / maxf(caixa.size.y, maxf(caixa.size.x, caixa.size.z))
 		var pega: Vector3 = caixa.position + caixa.size * Vector3(it.pega[0], it.pega[1], it.pega[2])
+		# Orientação desejada no repouso (espaço do esqueleto): eixo Y do item e eixo X (frente do item).
+		var y_alvo: Vector3; var x_alvo: Vector3; var ponto: Vector3
+		var lado: float = 1.0 if it.osso.contains("Left") else -1.0
+		if it.modo == "escudo":
+			# Plano do escudo paralelo ao antebraço, face para fora do corpo.
+			y_alvo = dir.normalized()
+			x_alvo = (base.x * lado - y_alvo * y_alvo.dot(base.x * lado)).normalized()
+			ponto = g_osso.origin + dir * it.ao_longo + x_alvo * it.afastar
+		else:
+			# Arma na mão: lâmina para a frente da personagem, pega no meio da mão.
+			y_alvo = base.z
+			x_alvo = base.x * lado
+			ponto = g_osso.origin + dir * it.ao_longo + x_alvo * it.afastar
+		var z_alvo := x_alvo.cross(y_alvo).normalized(); x_alvo = y_alvo.cross(z_alvo).normalized()
+		var desejado := Transform3D(Basis(x_alvo, y_alvo, z_alvo), ponto)
 		var piv := Node3D.new(); ba.add_child(piv)
-		piv.position = Vector3(it.posicao[0], it.posicao[1], it.posicao[2])
-		piv.rotation_degrees = Vector3(it.rotacao[0], it.rotacao[1], it.rotacao[2])
-		piv.add_child(item); item.scale = Vector3.ONE * esc; item.position = -pega * esc
+		piv.transform = g_osso.affine_inverse() * desejado
+		var giro := Node3D.new(); piv.add_child(giro)
+		giro.rotation_degrees = Vector3(it.rotacao[0], it.rotacao[1], it.rotacao[2])
+		giro.add_child(item); item.scale = Vector3.ONE * esc; item.position = -pega * esc
 
-	# Animação externa: copia as trilhas para o AnimationPlayer do personagem, ajustando o caminho
-	# do esqueleto e a altura do quadril.
+	# Animação externa: retarget pela direção dos ossos (tools/retarget.gd).
 	var fonte := _carregar(a[1])
 	var ap_f := _achar(fonte, "AnimationPlayer") as AnimationPlayer
-	var anim: Animation = ap_f.get_animation(ap_f.get_animation_list()[0]).duplicate()
+	var anim_f: Animation = ap_f.get_animation(ap_f.get_animation_list()[0])
 	var sk_f := _achar(fonte, "Skeleton3D") as Skeleton3D
-	var h := "mixamorig_Hips"
-	var razao := sk.get_bone_rest(sk.find_bone(h)).origin.y / sk_f.get_bone_rest(sk_f.find_bone(h)).origin.y
-	var caminho := str(pers.get_path_to(sk))
-	for i in anim.get_track_count():
-		var osso := anim.track_get_path(i).get_concatenated_subnames()
-		anim.track_set_path(i, NodePath(caminho + ":" + osso))
-		if anim.track_get_type(i) == Animation.TYPE_POSITION_3D:
-			for k in anim.track_get_key_count(i):
-				anim.track_set_key_value(i, k, anim.track_get_key_value(i, k) * razao)
+	var anim: Animation = Retarget.converter(anim_f, sk_f, sk, str(pers.get_path_to(sk)))
+	var razao := 0.0
 	var ap := AnimationPlayer.new(); pers.add_child(ap); ap.root_node = ap.get_path_to(pers)
 	var lib := AnimationLibrary.new(); lib.add_animation("golpe", anim); ap.add_animation_library("", lib)
 	ap.play("golpe"); ap.pause()
@@ -74,7 +88,7 @@ func _run() -> void:
 		var img := vp.get_texture().get_image(); img.convert(Image.FORMAT_RGBA8)
 		tira.blit_rect(img, Rect2i(Vector2i.ZERO, TAM), Vector2i(TAM.x * i, 0))
 	tira.save_png(a[2])
-	print("ok duração=%.2f razão_quadril=%.3f salvo=%s" % [anim.length, razao, a[2]])
+	print("ok duração=%.2f salvo=%s" % [anim.length, a[2]])
 	quit()
 
 func _carregar(c: String) -> Node3D:
