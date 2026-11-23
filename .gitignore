@@ -5,3 +5,4 @@ export/
 
 # Rascunhos de arte (vão para o backup do Drive, não para o GitHub)
 arte/rascunhos/
+__pycache__/

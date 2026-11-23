@@ -19,10 +19,12 @@ import mimetypes
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 import uuid
 
 API = "https://api.tripo3d.ai/v2/openapi"
+API3 = "https://openapi.tripo3d.ai/v3"
 SECRETS = os.path.expanduser("~/.config/secrets/tripo.env")
 UA = "masmorra-classica-tools/0.1"
 
@@ -41,8 +43,11 @@ def chave():
 
 
 def _abrir(req):
-    with urllib.request.urlopen(req, timeout=120) as r:
-        resp = json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            resp = json.load(r)
+    except urllib.error.HTTPError as e:
+        sys.exit(f"HTTP {e.code} em {req.full_url}: {e.read().decode(errors='replace')[:800]}")
     if resp.get("code") != 0:
         sys.exit(f"Erro da API do Tripo: {resp}")
     return resp["data"]
@@ -62,8 +67,8 @@ def chamar(metodo, caminho, corpo=None):
     return _abrir(req)
 
 
-def enviar_imagem(caminho):
-    """Faz upload de uma imagem e devolve o file_token."""
+def enviar_imagem(caminho, versao=2):
+    """Faz upload de uma imagem e devolve o token (v2: image_token; v3: file_token)."""
     limite = uuid.uuid4().hex
     tipo = mimetypes.guess_type(caminho)[0] or "image/png"
     with open(caminho, "rb") as f:
@@ -74,7 +79,7 @@ def enviar_imagem(caminho):
         f"Content-Type: {tipo}\r\n\r\n"
     ).encode() + conteudo + f"\r\n--{limite}--\r\n".encode()
     req = urllib.request.Request(
-        API + "/upload",
+        (API + "/upload") if versao == 2 else (API3 + "/files"),
         method="POST",
         data=corpo,
         headers={
@@ -83,7 +88,8 @@ def enviar_imagem(caminho):
             "User-Agent": UA,
         },
     )
-    return _abrir(req)["image_token"]
+    d = _abrir(req)
+    return d["image_token"] if versao == 2 else d["file_token"]
 
 
 def esperar(task_id):
@@ -131,8 +137,6 @@ def imagem(caminho, destino, final=False):
     print(f"task_id={task['task_id']}", flush=True)
     baixar_resultado(esperar(task["task_id"]), destino)
 
-
-API3 = "https://openapi.tripo3d.ai/v3"
 
 
 def v3(endpoint, corpo, destino=None):
