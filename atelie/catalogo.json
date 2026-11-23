@@ -348,14 +348,14 @@
   },
   "mapas": [
     {
-      "src": "img/planta-padrao.png",
-      "titulo": "Planta padrão",
-      "legenda": "Estrutura fixa da Fortaleza do Monte Corvo: 14 salas, corredores e tipos de porta. Vale para todas as aventuras."
+      "src": "img/planta-base-v2.png",
+      "titulo": "Planta base (v2)",
+      "legenda": "Seu desenho passado para a grade: 34 áreas, células de 1,5 m (1 personagem por célula), portas, celas A–H, esteiras do 28/29, gruta de cristal e os 6 lugares possíveis para a escada de entrada."
     },
     {
-      "src": "img/aventura-01.png",
-      "titulo": "Aventura 1 — A Masmorra do Monte Corvo",
-      "legenda": "A mesma planta com o conteúdo da aventura 1: monstros, armadilhas, tesouros, segredos e onde dá para negociar."
+      "src": "img/masmorra-base-desenho.jpg",
+      "titulo": "Desenho original (papel)",
+      "legenda": "O desenho a lápis que serviu de base, para comparar."
     }
   ]
 }

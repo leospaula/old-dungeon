@@ -1,216 +1,1102 @@
 {
-  "_doc": "Planta fixa da masmorra. Cada aventura só preenche o conteúdo das salas por id. 'grade' = x, y, largura, altura em quadrados de 3 m (10 pés), y para baixo; 'forma' orienta o desenho.",
-  "id": "monte-corvo",
-  "nome": "Fortaleza do Monte Corvo",
-  "entrada": 1,
-  "salas": [
-    {
-      "id": 1,
-      "nome": "Boca da Caverna",
-      "x": 18,
-      "y": 38,
-      "w": 4,
-      "h": 3,
-      "forma": "caverna"
-    },
-    {
-      "id": 2,
-      "nome": "Corredor dos Entalhes",
-      "x": 17,
-      "y": 30,
-      "w": 6,
-      "h": 4,
-      "forma": "salao"
-    },
-    {
-      "id": 3,
-      "nome": "Covil dos Kobolds",
-      "x": 28,
-      "y": 29,
-      "w": 7,
-      "h": 6,
-      "forma": "caverna"
-    },
-    {
-      "id": 4,
-      "nome": "Sala do Poço",
-      "x": 5,
-      "y": 30,
-      "w": 5,
-      "h": 5,
-      "forma": "redonda"
-    },
-    {
-      "id": 5,
-      "nome": "Capela Profanada",
-      "x": 17,
-      "y": 21,
-      "w": 6,
-      "h": 5,
-      "forma": "salao"
-    },
-    {
-      "id": 6,
-      "nome": "Despensa Anã",
-      "x": 5,
-      "y": 22,
-      "w": 5,
-      "h": 4,
-      "forma": "salao"
-    },
-    {
-      "id": 7,
-      "nome": "Galeria do Cubo",
-      "x": 6,
-      "y": 14,
-      "w": 3,
-      "h": 6,
-      "forma": "corredor"
-    },
-    {
-      "id": 8,
-      "nome": "Câmara dos Ecos",
-      "x": 27,
-      "y": 22,
-      "w": 5,
-      "h": 4,
-      "forma": "salao"
-    },
-    {
-      "id": 9,
-      "nome": "Cofre Selado",
-      "x": 35,
-      "y": 22,
-      "w": 3,
-      "h": 3,
-      "forma": "salao"
-    },
-    {
-      "id": 10,
-      "nome": "Acampamento",
-      "x": 17,
-      "y": 8,
-      "w": 6,
-      "h": 4,
-      "forma": "caverna"
-    },
-    {
-      "id": 11,
-      "nome": "Ponte Quebrada",
-      "x": 4,
-      "y": 8,
-      "w": 7,
-      "h": 4,
-      "forma": "fenda"
-    },
-    {
-      "id": 12,
-      "nome": "Ninho",
-      "x": 18,
-      "y": 1,
-      "w": 5,
-      "h": 4,
-      "forma": "caverna"
-    },
-    {
-      "id": 13,
-      "nome": "Salão do Trono",
-      "x": 29,
-      "y": 7,
-      "w": 8,
-      "h": 6,
-      "forma": "salao"
-    },
-    {
-      "id": 14,
-      "nome": "Tumba de Thorgrim",
-      "x": 30,
-      "y": 16,
-      "w": 6,
-      "h": 4,
-      "forma": "salao"
-    }
-  ],
-  "conexoes": [
-    {
-      "de": 1,
-      "para": 2,
-      "tipo": "passagem"
-    },
-    {
-      "de": 2,
-      "para": 3,
-      "tipo": "porta",
-      "emperrada": true
-    },
-    {
-      "de": 2,
-      "para": 4,
-      "tipo": "passagem"
-    },
-    {
-      "de": 2,
-      "para": 5,
-      "tipo": "porta"
-    },
-    {
-      "de": 4,
-      "para": 6,
-      "tipo": "porta",
-      "emperrada": true
-    },
-    {
-      "de": 5,
-      "para": 6,
-      "tipo": "passagem"
-    },
-    {
-      "de": 5,
-      "para": 8,
-      "tipo": "porta"
-    },
-    {
-      "de": 8,
-      "para": 9,
-      "tipo": "porta_secreta",
-      "trancada": true
-    },
-    {
-      "de": 6,
-      "para": 7,
-      "tipo": "passagem"
-    },
-    {
-      "de": 7,
-      "para": 11,
-      "tipo": "passagem"
-    },
-    {
-      "de": 11,
-      "para": 10,
-      "tipo": "ponte"
-    },
-    {
-      "de": 10,
-      "para": 12,
-      "tipo": "passagem"
-    },
-    {
-      "de": 10,
-      "para": 13,
-      "tipo": "porta",
-      "emperrada": true
-    },
-    {
-      "de": 13,
-      "para": 14,
-      "tipo": "porta",
-      "trancada": true
-    }
-  ],
-  "grade": {
-    "quadrado_m": 3,
-    "largura": 41,
-    "altura": 42
+ "_doc": "Planta base v2 (desenho do Leonardo, 23/11/2026). Grade de células de 1,5 m (5 pés): 1 personagem = 1 célula. Cada área é uma união de retângulos [x0,y0,x1,y1) (x para a direita, y para baixo). Paredes ficam entre células de áreas diferentes, exceto nas 'aberturas'. Portas ficam na borda entre células. As aventuras decidem portas emperradas, trancadas, com armadilha e secretas.",
+ "id": "masmorra-base",
+ "nome": "Masmorra Base",
+ "versao": 2,
+ "grade": {
+  "celula_m": 1.5,
+  "largura": 62,
+  "altura": 38
+ },
+ "areas": [
+  {
+   "id": "24",
+   "nome": "Sala 24",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     5,
+     0,
+     12,
+     7
+    ]
+   ]
+  },
+  {
+   "id": "24p",
+   "nome": "Passagem do 24",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     12,
+     0,
+     20,
+     2
+    ],
+    [
+     12,
+     2,
+     13,
+     4
+    ]
+   ]
+  },
+  {
+   "id": "25",
+   "nome": "Corredor 25",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     17,
+     2,
+     28,
+     4
+    ]
+   ]
+  },
+  {
+   "id": "26",
+   "nome": "Túnel 26",
+   "tipo": "caverna",
+   "retangulos": [
+    [
+     28,
+     3,
+     46,
+     4
+    ]
+   ]
+  },
+  {
+   "id": "27",
+   "nome": "Corredor 27",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     46,
+     3,
+     53,
+     5
+    ]
+   ]
+  },
+  {
+   "id": "30",
+   "nome": "Sala 30",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     53,
+     3,
+     61,
+     7
+    ],
+    [
+     55,
+     7,
+     57,
+     9
+    ],
+    [
+     59,
+     7,
+     61,
+     13
+    ]
+   ]
+  },
+  {
+   "id": "31",
+   "nome": "Cubículo 31",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     57,
+     7,
+     59,
+     9
+    ]
+   ]
+  },
+  {
+   "id": "28",
+   "nome": "Salão 28 (esteira)",
+   "tipo": "mina",
+   "retangulos": [
+    [
+     46,
+     5,
+     49,
+     13
+    ],
+    [
+     46,
+     13,
+     53,
+     27
+    ],
+    [
+     53,
+     7,
+     55,
+     15
+    ]
+   ]
+  },
+  {
+   "id": "29",
+   "nome": "Salão 29 (esteira)",
+   "tipo": "mina",
+   "retangulos": [
+    [
+     55,
+     13,
+     61,
+     27
+    ]
+   ]
+  },
+  {
+   "id": "32",
+   "nome": "Corredor 32",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     35,
+     30,
+     61,
+     32
+    ],
+    [
+     46,
+     27,
+     51,
+     30
+    ],
+    [
+     56,
+     27,
+     61,
+     30
+    ],
+    [
+     35,
+     32,
+     37,
+     35
+    ]
+   ]
+  },
+  {
+   "id": "33",
+   "nome": "Gruta de cristal 33",
+   "tipo": "caverna",
+   "retangulos": [
+    [
+     40,
+     32,
+     59,
+     36
+    ]
+   ]
+  },
+  {
+   "id": "34",
+   "nome": "Sala 34",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     31,
+     33,
+     35,
+     37
+    ]
+   ]
+  },
+  {
+   "id": "fenda34",
+   "nome": "Fenda para o 34",
+   "tipo": "caverna",
+   "retangulos": [
+    [
+     28,
+     34,
+     31,
+     35
+    ]
+   ]
+  },
+  {
+   "id": "23",
+   "nome": "Corredor 23",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     12,
+     4,
+     24,
+     7
+    ]
+   ]
+  },
+  {
+   "id": "20",
+   "nome": "Corredor 20",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     13,
+     7,
+     15,
+     20
+    ]
+   ]
+  },
+  {
+   "id": "21",
+   "nome": "Sala 21",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     2,
+     8,
+     10,
+     15
+    ],
+    [
+     10,
+     8,
+     13,
+     11
+    ]
+   ]
+  },
+  {
+   "id": "22",
+   "nome": "Sala 22",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     2,
+     15,
+     10,
+     20
+    ]
+   ]
+  },
+  {
+   "id": "15",
+   "nome": "Salão 15",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     15,
+     10,
+     27,
+     20
+    ]
+   ]
+  },
+  {
+   "id": "19",
+   "nome": "Prisão 19",
+   "tipo": "prisao",
+   "retangulos": [
+    [
+     0,
+     20,
+     10,
+     32
+    ],
+    [
+     10,
+     20,
+     13,
+     22
+    ]
+   ]
+  },
+  {
+   "id": "19a",
+   "nome": "Passagem 19a (porta dupla até a fenda)",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     13,
+     20,
+     15,
+     33
+    ],
+    [
+     10,
+     33,
+     28,
+     35
+    ]
+   ]
+  },
+  {
+   "id": "19b",
+   "nome": "Passagem 19b (porta do 15 até o 19a)",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     15,
+     20,
+     17,
+     33
+    ]
+   ]
+  },
+  {
+   "id": "16",
+   "nome": "Sala 16",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     17,
+     22,
+     24,
+     27
+    ]
+   ]
+  },
+  {
+   "id": "17",
+   "nome": "Sala 17",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     17,
+     27,
+     22,
+     32
+    ]
+   ]
+  },
+  {
+   "id": "18",
+   "nome": "Sala 18",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     22,
+     29,
+     27,
+     32
+    ]
+   ]
+  },
+  {
+   "id": "9",
+   "nome": "Corredor 9",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     27,
+     7,
+     45,
+     9
+    ]
+   ]
+  },
+  {
+   "id": "7",
+   "nome": "Corredor 7",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     43,
+     9,
+     45,
+     30
+    ]
+   ]
+  },
+  {
+   "id": "10",
+   "nome": "Sala 10",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     27,
+     9,
+     32,
+     13
+    ]
+   ]
+  },
+  {
+   "id": "11",
+   "nome": "Sala 11",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     32,
+     9,
+     34,
+     13
+    ]
+   ]
+  },
+  {
+   "id": "12",
+   "nome": "Sala 12",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     34,
+     9,
+     43,
+     13
+    ]
+   ]
+  },
+  {
+   "id": "14",
+   "nome": "Sala 14",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     27,
+     13,
+     34,
+     19
+    ]
+   ]
+  },
+  {
+   "id": "13",
+   "nome": "Sala 13",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     34,
+     13,
+     41,
+     19
+    ],
+    [
+     41,
+     13,
+     43,
+     14
+    ]
+   ]
+  },
+  {
+   "id": "8",
+   "nome": "Sala 8",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     41,
+     14,
+     43,
+     19
+    ]
+   ]
+  },
+  {
+   "id": "2",
+   "nome": "Vestíbulo 2",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     27,
+     19,
+     31,
+     21
+    ]
+   ]
+  },
+  {
+   "id": "1",
+   "nome": "Cela 1",
+   "tipo": "cela",
+   "retangulos": [
+    [
+     27,
+     21,
+     31,
+     26
+    ]
+   ]
+  },
+  {
+   "id": "3",
+   "nome": "Corredor 3",
+   "tipo": "corredor",
+   "retangulos": [
+    [
+     31,
+     19,
+     36,
+     21
+    ]
+   ]
+  },
+  {
+   "id": "5",
+   "nome": "Sala 5",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     31,
+     21,
+     36,
+     26
+    ]
+   ]
+  },
+  {
+   "id": "4",
+   "nome": "Sala 4",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     36,
+     19,
+     43,
+     26
+    ]
+   ]
+  },
+  {
+   "id": "6",
+   "nome": "Sala 6",
+   "tipo": "sala",
+   "retangulos": [
+    [
+     31,
+     26,
+     43,
+     30
+    ]
+   ]
+  },
+  {
+   "id": "19A",
+   "nome": "Cela A",
+   "tipo": "cela",
+   "retangulos": [
+    [
+     3,
+     23,
+     5,
+     25
+    ]
+   ]
+  },
+  {
+   "id": "19B",
+   "nome": "Cela B",
+   "tipo": "cela",
+   "retangulos": [
+    [
+     5,
+     23,
+     7,
+     25
+    ]
+   ]
+  },
+  {
+   "id": "19C",
+   "nome": "Cela C",
+   "tipo": "cela",
+   "retangulos": [
+    [
+     3,
+     25,
+     5,
+     27
+    ]
+   ]
+  },
+  {
+   "id": "19D",
+   "nome": "Cela D",
+   "tipo": "cela",
+   "retangulos": [
+    [
+     5,
+     25,
+     7,
+     27
+    ]
+   ]
+  },
+  {
+   "id": "19E",
+   "nome": "Cela E",
+   "tipo": "cela",
+   "retangulos": [
+    [
+     3,
+     27,
+     5,
+     29
+    ]
+   ]
+  },
+  {
+   "id": "19F",
+   "nome": "Cela F",
+   "tipo": "cela",
+   "retangulos": [
+    [
+     5,
+     27,
+     7,
+     29
+    ]
+   ]
+  },
+  {
+   "id": "19G",
+   "nome": "Cela G",
+   "tipo": "cela",
+   "retangulos": [
+    [
+     3,
+     29,
+     5,
+     31
+    ]
+   ]
+  },
+  {
+   "id": "19H",
+   "nome": "Cela H",
+   "tipo": "cela",
+   "retangulos": [
+    [
+     5,
+     29,
+     7,
+     31
+    ]
+   ]
   }
+ ],
+ "portas": [
+  {
+   "de": "24",
+   "para": "24p",
+   "orient": "v",
+   "x": 12,
+   "y": 0,
+   "largura": 2,
+   "tipo": "porta"
+  },
+  {
+   "de": "24",
+   "para": "23",
+   "orient": "v",
+   "x": 12,
+   "y": 5,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "24p",
+   "para": "23",
+   "orient": "h",
+   "x": 12,
+   "y": 4,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "21",
+   "para": "22",
+   "orient": "h",
+   "x": 3,
+   "y": 15,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "20",
+   "para": "19a",
+   "orient": "h",
+   "x": 13,
+   "y": 20,
+   "largura": 2,
+   "tipo": "dupla"
+  },
+  {
+   "de": "15",
+   "para": "19b",
+   "orient": "h",
+   "x": 15,
+   "y": 20,
+   "largura": 2,
+   "tipo": "porta"
+  },
+  {
+   "de": "15",
+   "para": "14",
+   "orient": "v",
+   "x": 27,
+   "y": 15,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "16",
+   "para": "19b",
+   "orient": "v",
+   "x": 17,
+   "y": 24,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "16",
+   "para": "17",
+   "orient": "h",
+   "x": 21,
+   "y": 27,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "17",
+   "para": "18",
+   "orient": "v",
+   "x": 22,
+   "y": 30,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "fenda34",
+   "para": "34",
+   "orient": "v",
+   "x": 31,
+   "y": 34,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "34",
+   "para": "32",
+   "orient": "v",
+   "x": 35,
+   "y": 33,
+   "largura": 2,
+   "tipo": "porta"
+  },
+  {
+   "de": "32",
+   "para": "33",
+   "orient": "h",
+   "x": 42,
+   "y": 32,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "32",
+   "para": "33",
+   "orient": "h",
+   "x": 53,
+   "y": 32,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "27",
+   "para": "28",
+   "orient": "h",
+   "x": 48,
+   "y": 5,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "30",
+   "para": "31",
+   "orient": "v",
+   "x": 57,
+   "y": 7,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "9",
+   "para": "10",
+   "orient": "h",
+   "x": 28,
+   "y": 9,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "11",
+   "para": "12",
+   "orient": "v",
+   "x": 34,
+   "y": 9,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "12",
+   "para": "13",
+   "orient": "h",
+   "x": 42,
+   "y": 13,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "14",
+   "para": "13",
+   "orient": "v",
+   "x": 34,
+   "y": 13,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "8",
+   "para": "7",
+   "orient": "v",
+   "x": 43,
+   "y": 18,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "2",
+   "para": "3",
+   "orient": "v",
+   "x": 31,
+   "y": 19,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "3",
+   "para": "4",
+   "orient": "v",
+   "x": 36,
+   "y": 19,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "5",
+   "para": "4",
+   "orient": "v",
+   "x": 36,
+   "y": 21,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "5",
+   "para": "6",
+   "orient": "h",
+   "x": 33,
+   "y": 26,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "6",
+   "para": "7",
+   "orient": "v",
+   "x": 43,
+   "y": 28,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "de": "2",
+   "para": "1",
+   "orient": "h",
+   "x": 28,
+   "y": 21,
+   "largura": 2,
+   "tipo": "grade"
+  },
+  {
+   "de": "19",
+   "para": "19A",
+   "orient": "v",
+   "x": 3,
+   "y": 23,
+   "largura": 2,
+   "tipo": "cela"
+  },
+  {
+   "de": "19",
+   "para": "19B",
+   "orient": "v",
+   "x": 7,
+   "y": 23,
+   "largura": 2,
+   "tipo": "cela"
+  },
+  {
+   "de": "19",
+   "para": "19C",
+   "orient": "v",
+   "x": 3,
+   "y": 25,
+   "largura": 2,
+   "tipo": "cela"
+  },
+  {
+   "de": "19",
+   "para": "19D",
+   "orient": "v",
+   "x": 7,
+   "y": 25,
+   "largura": 2,
+   "tipo": "cela"
+  },
+  {
+   "de": "19",
+   "para": "19E",
+   "orient": "v",
+   "x": 3,
+   "y": 27,
+   "largura": 2,
+   "tipo": "cela"
+  },
+  {
+   "de": "19",
+   "para": "19F",
+   "orient": "v",
+   "x": 7,
+   "y": 27,
+   "largura": 2,
+   "tipo": "cela"
+  },
+  {
+   "de": "19",
+   "para": "19G",
+   "orient": "v",
+   "x": 3,
+   "y": 29,
+   "largura": 2,
+   "tipo": "cela"
+  },
+  {
+   "de": "19",
+   "para": "19H",
+   "orient": "v",
+   "x": 7,
+   "y": 29,
+   "largura": 2,
+   "tipo": "cela"
+  }
+ ],
+ "aberturas": [
+  [
+   "24p",
+   "25"
+  ],
+  [
+   "25",
+   "26"
+  ],
+  [
+   "26",
+   "27"
+  ],
+  [
+   "23",
+   "20"
+  ],
+  [
+   "21",
+   "20"
+  ],
+  [
+   "19",
+   "19a"
+  ],
+  [
+   "28",
+   "29"
+  ],
+  [
+   "28",
+   "32"
+  ],
+  [
+   "29",
+   "32"
+  ],
+  [
+   "30",
+   "29"
+  ],
+  [
+   "9",
+   "7"
+  ],
+  {
+   "entre": [
+    "19a",
+    "19b"
+   ],
+   "bordas": "h"
+  },
+  [
+   "19a",
+   "fenda34"
+  ]
+ ],
+ "entradas_possiveis": {
+  "prop": "escada 4×4",
+  "areas": [
+   "24",
+   "30",
+   "33",
+   "34",
+   "21",
+   "22"
+  ],
+  "variacao": "Aventura pode começar com o grupo capturado e sem equipamento na cela 1; o equipamento fica na sala 4."
+ },
+ "secretas_sugeridas": [
+  {
+   "de": "fenda34",
+   "para": "34",
+   "onde": "parede de caverna na entrada do 34"
+  },
+  {
+   "de": "19a",
+   "para": "fenda34",
+   "onde": "início da fenda"
+  }
+ ],
+ "notas": {
+  "28": "esteira de pedra (mineração do 33)",
+  "29": "esteira de pedra (mineração do 33)",
+  "33": "parede de pedra/cristal",
+  "26": "parede natural de caverna",
+  "19": "celas A–H com portas fixas; frente das celas com 3 células"
+ },
+ "esteiras": [
+  {
+   "area": "28",
+   "coluna": 50,
+   "de_y": 14,
+   "ate_y": 30
+  },
+  {
+   "area": "29",
+   "coluna": 59,
+   "de_y": 14,
+   "ate_y": 30
+  }
+ ]
 }
