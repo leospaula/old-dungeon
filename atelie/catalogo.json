@@ -1,9 +1,26 @@
 {
   "atualizado": "2026-11-23",
-  "etapas": ["Rascunho", "Imagem final", "Modelo 3D", "Esqueleto", "Animações", "Retrato"],
+  "etapas": [
+    "Rascunho",
+    "Imagem final",
+    "Modelo 3D",
+    "Esqueleto",
+    "Animações",
+    "Retrato"
+  ],
   "creditos": [
-    { "servico": "Higgsfield", "plano": "Plus", "saldo": 966, "gasto": 44 },
-    { "servico": "Tripo (API)", "plano": "créditos avulsos", "saldo": 1780, "gasto": 220 }
+    {
+      "servico": "Higgsfield",
+      "plano": "Plus",
+      "saldo": 966,
+      "gasto": 44
+    },
+    {
+      "servico": "Tripo (API)",
+      "plano": "créditos avulsos",
+      "saldo": 1780,
+      "gasto": 220
+    }
   ],
   "grupos": [
     {
@@ -11,32 +28,122 @@
       "titulo": "Grupo de Vau-Raso",
       "itens": [
         {
-          "id": "tessa", "nome": "Tessa Mão-de-Ferro", "papel": "Guerreira humana",
-          "etapas": { "Rascunho": "feito", "Imagem final": "feito", "Modelo 3D": "feito", "Esqueleto": "feito", "Animações": "teste", "Retrato": "a fazer" },
+          "id": "tessa",
+          "nome": "Tessa Mão-de-Ferro",
+          "papel": "Guerreira humana",
+          "etapas": {
+            "Rascunho": "feito",
+            "Imagem final": "feito",
+            "Modelo 3D": "feito",
+            "Esqueleto": "feito",
+            "Animações": "teste",
+            "Retrato": "a fazer"
+          },
           "modelo": "modelos/tessa.gltf.json",
-          "ficha": [["Triângulos", "18,9 mil"], ["Altura", "1,80 m"], ["Esqueleto", "Mixamo, 65 ossos"], ["Arquivo", "1,8 MB"], ["Gerador", "Tripo v3.1"]],
+          "ficha": [
+            [
+              "Triângulos",
+              "18,9 mil"
+            ],
+            [
+              "Altura",
+              "1,80 m"
+            ],
+            [
+              "Esqueleto",
+              "Mixamo, 65 ossos"
+            ],
+            [
+              "Arquivo",
+              "1,8 MB"
+            ],
+            [
+              "Gerador",
+              "Tripo v3.1"
+            ]
+          ],
           "imagens": [
-            { "src": "img/tessa-sem-itens.jpg", "legenda": "Final sem equipamento (base do 3D)" },
-            { "src": "img/tessa-final.jpg", "legenda": "Final com espada e escudo" },
-            { "src": "img/tessa-r2-v1.jpg", "legenda": "Rodada 2 · v1 (aprovada)" },
-            { "src": "img/tessa-r2-v2.jpg", "legenda": "Rodada 2 · v2" },
-            { "src": "img/tessa-r1-v1.jpg", "legenda": "Rodada 1 · v1 voxel" },
-            { "src": "img/tessa-r1-v2.jpg", "legenda": "Rodada 1 · v2 low-poly (descartada)" },
-            { "src": "img/tessa-r1-v3.jpg", "legenda": "Rodada 1 · v3 ilustração (linha dos retratos)" }
+            {
+              "src": "img/tessa-sem-itens.jpg",
+              "legenda": "Final sem equipamento (base do 3D)"
+            },
+            {
+              "src": "img/tessa-final.jpg",
+              "legenda": "Final com espada e escudo"
+            },
+            {
+              "src": "img/tessa-r2-v1.jpg",
+              "legenda": "Rodada 2 · v1 (aprovada)"
+            },
+            {
+              "src": "img/tessa-r2-v2.jpg",
+              "legenda": "Rodada 2 · v2"
+            },
+            {
+              "src": "img/tessa-r1-v1.jpg",
+              "legenda": "Rodada 1 · v1 voxel"
+            },
+            {
+              "src": "img/tessa-r1-v2.jpg",
+              "legenda": "Rodada 1 · v2 low-poly (descartada)"
+            },
+            {
+              "src": "img/tessa-r1-v3.jpg",
+              "legenda": "Rodada 1 · v3 ilustração (linha dos retratos)"
+            }
           ],
           "renders": [
-            { "src": "img/tessa-3d-v31.jpg", "legenda": "Final no Tripo v3.1: 0°, 90°, 180°, 270°" },
-            { "src": "img/tessa-3d-tripo-v25.jpg", "legenda": "Rascunho no Tripo v2.5 (336 mil triângulos, com plataforma)" },
-            { "src": "img/tessa-3d-higgsfield.jpg", "legenda": "Rascunho no Higgsfield (20,5 mil triângulos, esqueleto próprio)" }
+            {
+              "src": "img/tessa-3d-v31.jpg",
+              "legenda": "Final no Tripo v3.1: 0°, 90°, 180°, 270°"
+            },
+            {
+              "src": "img/tessa-3d-tripo-v25.jpg",
+              "legenda": "Rascunho no Tripo v2.5 (336 mil triângulos, com plataforma)"
+            },
+            {
+              "src": "img/tessa-3d-higgsfield.jpg",
+              "legenda": "Rascunho no Higgsfield (20,5 mil triângulos, esqueleto próprio)"
+            }
           ],
           "notas": "Personagem modelada sem arma; espada e escudo são itens separados presos ao osso da mão no Godot."
         },
-        { "id": "durgo", "nome": "Durgo Pedra-Funda", "papel": "Anão", "etapas": {} },
-        { "id": "caco", "nome": "Caco Sete-Dedos", "papel": "Ladrão humano", "etapas": {} },
-        { "id": "lianne", "nome": "Lianne do Bosque Alto", "papel": "Elfa", "etapas": {} },
-        { "id": "mirela", "nome": "Mirela Vaz", "papel": "Maga humana", "etapas": {} },
-        { "id": "anselmo", "nome": "Irmão Anselmo", "papel": "Clérigo humano", "etapas": {} },
-        { "id": "bento", "nome": "Bento Pé-de-Musgo", "papel": "Halfling", "etapas": {} }
+        {
+          "id": "durgo",
+          "nome": "Durgo Pedra-Funda",
+          "papel": "Anão",
+          "etapas": {}
+        },
+        {
+          "id": "caco",
+          "nome": "Caco Sete-Dedos",
+          "papel": "Ladrão humano",
+          "etapas": {}
+        },
+        {
+          "id": "lianne",
+          "nome": "Lianne do Bosque Alto",
+          "papel": "Elfa",
+          "etapas": {}
+        },
+        {
+          "id": "mirela",
+          "nome": "Mirela Vaz",
+          "papel": "Maga humana",
+          "etapas": {}
+        },
+        {
+          "id": "anselmo",
+          "nome": "Irmão Anselmo",
+          "papel": "Clérigo humano",
+          "etapas": {}
+        },
+        {
+          "id": "bento",
+          "nome": "Bento Pé-de-Musgo",
+          "papel": "Halfling",
+          "etapas": {}
+        }
       ]
     },
     {
@@ -44,20 +151,84 @@
       "titulo": "Equipamento",
       "itens": [
         {
-          "id": "espada-longa", "nome": "Espada longa", "papel": "Arma corpo a corpo · d8",
-          "etapas": { "Imagem final": "feito", "Modelo 3D": "feito" },
+          "id": "espada-longa",
+          "nome": "Espada longa",
+          "papel": "Arma corpo a corpo · d8",
+          "etapas": {
+            "Imagem final": "feito",
+            "Modelo 3D": "feito"
+          },
           "modelo": "modelos/espada-longa.gltf.json",
-          "ficha": [["Triângulos", "2,5 mil"], ["Comprimento", "1,00 m"], ["Arquivo", "750 KB"], ["Usada por", "Tessa"]],
-          "imagens": [{ "src": "img/espada-longa.jpg", "legenda": "Imagem final isolada" }],
-          "renders": [{ "src": "img/espada-3d.jpg", "legenda": "Tripo v3.1: 0°, 90°, 180°, 270°" }]
+          "ficha": [
+            [
+              "Triângulos",
+              "2,5 mil"
+            ],
+            [
+              "Comprimento",
+              "1,00 m"
+            ],
+            [
+              "Arquivo",
+              "750 KB"
+            ],
+            [
+              "Usada por",
+              "Tessa"
+            ]
+          ],
+          "imagens": [
+            {
+              "src": "img/espada-longa.jpg",
+              "legenda": "Imagem final isolada"
+            }
+          ],
+          "renders": [
+            {
+              "src": "img/espada-3d.jpg",
+              "legenda": "Tripo v3.1: 0°, 90°, 180°, 270°"
+            }
+          ]
         },
         {
-          "id": "escudo-redondo", "nome": "Escudo redondo", "papel": "Escudo · CA −1",
-          "etapas": { "Imagem final": "feito", "Modelo 3D": "ajuste" },
+          "id": "escudo-redondo",
+          "nome": "Escudo redondo",
+          "papel": "Escudo · CA −1",
+          "etapas": {
+            "Imagem final": "feito",
+            "Modelo 3D": "ajuste"
+          },
           "modelo": "modelos/escudo-redondo.gltf.json",
-          "ficha": [["Triângulos", "2,8 mil"], ["Diâmetro", "1,00 m (reduzir no Godot)"], ["Arquivo", "930 KB"], ["Usado por", "Tessa"]],
-          "imagens": [{ "src": "img/escudo-redondo.jpg", "legenda": "Imagem final isolada" }],
-          "renders": [{ "src": "img/escudo-3d.jpg", "legenda": "Tripo v3.1: o verso repete a frente e o disco está grosso" }],
+          "ficha": [
+            [
+              "Triângulos",
+              "2,8 mil"
+            ],
+            [
+              "Diâmetro",
+              "1,00 m (reduzir no Godot)"
+            ],
+            [
+              "Arquivo",
+              "930 KB"
+            ],
+            [
+              "Usado por",
+              "Tessa"
+            ]
+          ],
+          "imagens": [
+            {
+              "src": "img/escudo-redondo.jpg",
+              "legenda": "Imagem final isolada"
+            }
+          ],
+          "renders": [
+            {
+              "src": "img/escudo-3d.jpg",
+              "legenda": "Tripo v3.1: o verso repete a frente e o disco está grosso"
+            }
+          ],
           "notas": "Candidato a conserto no Tripo Studio (AI 3D Lab) ou a nova geração com vista frontal e traseira."
         }
       ]
@@ -66,15 +237,57 @@
   "animacoes": {
     "esqueleto": "Mixamo, 65 ossos, compartilhado por todo o elenco",
     "conjuntos": [
-      { "nome": "Base", "lista": ["parado", "andar", "levar golpe", "morrer", "vitória"], "estado": "a fazer" },
-      { "nome": "Corpo a corpo", "lista": ["golpe de espada", "golpe de maça", "bloquear com escudo"], "estado": "teste" },
-      { "nome": "À distância", "lista": ["atirar com arco", "arremessar (funda, adaga)"], "estado": "a fazer" },
-      { "nome": "Magia", "lista": ["lançar magia", "afastar mortos-vivos"], "estado": "a fazer" }
+      {
+        "nome": "Base",
+        "lista": [
+          "parado",
+          "andar",
+          "levar golpe",
+          "morrer",
+          "vitória"
+        ],
+        "estado": "a fazer"
+      },
+      {
+        "nome": "Corpo a corpo",
+        "lista": [
+          "golpe descendente (Mixamo) ✓ teste",
+          "golpe de espada lateral",
+          "bloquear com escudo"
+        ],
+        "estado": "teste"
+      },
+      {
+        "nome": "À distância",
+        "lista": [
+          "atirar com arco",
+          "arremessar (funda, adaga)"
+        ],
+        "estado": "a fazer"
+      },
+      {
+        "nome": "Magia",
+        "lista": [
+          "lançar magia",
+          "afastar mortos-vivos"
+        ],
+        "estado": "a fazer"
+      }
     ],
     "testes": [
       {
-        "id": "teste-slash", "nome": "Golpe (preset:slash do Tripo)",
-        "modelo": "modelos/tessa-teste-slash.gltf.json", "animacao": "slash",
+        "id": "golpe-mixamo",
+        "nome": "Golpe descendente (Mixamo) com espada e escudo",
+        "modelo": "modelos/tessa-golpe-mixamo.gltf.json",
+        "animacao": "golpe",
+        "quadros": "img/tessa-golpe-mixamo-quadros.jpg",
+        "nota": "Tessa final (v3.1) com a espada presa à mão direita e o escudo ao antebraço esquerdo, tocando 'Standing Melee Attack Downward' do Mixamo. O quadril foi ajustado para a altura dela (×0,806). Grátis."
+      },
+      {
+        "id": "teste-slash",
+        "nome": "Golpe (preset:slash do Tripo)",
+        "modelo": "modelos/tessa-teste-slash.gltf.json",
+        "animacao": "slash",
         "quadros": "img/tessa-slash-quadros.jpg",
         "nota": "Teste no rascunho v2.5, antes dos itens separados: ela ataca de mão vazia e a plataforma gira junto. Custou 10 créditos."
       }
