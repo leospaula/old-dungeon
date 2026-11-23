@@ -36,7 +36,7 @@
             "Imagem final": "feito",
             "Modelo 3D": "feito",
             "Esqueleto": "feito",
-            "Animações": "teste",
+            "Animações": "feito",
             "Retrato": "a fazer"
           },
           "modelo": "modelos/tessa.gltf.json",
@@ -240,19 +240,21 @@
       {
         "nome": "Base",
         "lista": [
-          "parado",
-          "andar",
-          "levar golpe",
-          "morrer",
-          "vitória"
+          "parado ✓",
+          "começar a andar ✓",
+          "andar ✓",
+          "levar golpe ✓",
+          "morrer ✓",
+          "vitória ✓"
         ],
-        "estado": "a fazer"
+        "estado": "feito"
       },
       {
         "nome": "Corpo a corpo",
         "lista": [
-          "golpe descendente (Mixamo) ✓ teste",
-          "golpe de espada lateral",
+          "guarda com espada e escudo ✓",
+          "golpe descendente ✓",
+          "golpe lateral",
           "bloquear com escudo"
         ],
         "estado": "teste"
@@ -260,28 +262,79 @@
       {
         "nome": "À distância",
         "lista": [
-          "atirar com arco",
+          "sacar flecha ✓",
           "arremessar (funda, adaga)"
         ],
-        "estado": "a fazer"
+        "estado": "teste"
       },
       {
         "nome": "Magia",
         "lista": [
-          "lançar magia",
+          "magia com uma mão ✓",
           "afastar mortos-vivos"
         ],
-        "estado": "a fazer"
+        "estado": "teste"
       }
     ],
     "testes": [
       {
-        "id": "golpe-mixamo",
-        "nome": "Golpe descendente (Mixamo) com espada e escudo",
-        "modelo": "modelos/tessa-golpe-mixamo.gltf.json",
-        "animacao": "golpe",
-        "quadros": "img/tessa-golpe-mixamo-quadros.jpg",
-        "nota": "Tessa final (v3.1) com a espada presa à mão direita e o escudo ao antebraço esquerdo, tocando 'Standing Melee Attack Downward' do Mixamo. Retarget pela direção dos ossos (corrige o giro de 90°, a pose A × T e os eixos dos ossos); encaixe dos itens calculado pela anatomia. Grátis."
+        "id": "biblioteca",
+        "nome": "Biblioteca da Tessa (Mixamo, 10 animações)",
+        "modelo": "modelos/tessa-biblioteca.gltf.json",
+        "animacao": "parado-espada-escudo",
+        "lista": [
+          {
+            "id": "parado",
+            "nome": "Parado",
+            "conjunto": "Base"
+          },
+          {
+            "id": "parado-espada-escudo",
+            "nome": "Guarda com espada e escudo",
+            "conjunto": "Corpo a corpo"
+          },
+          {
+            "id": "comecar-a-andar",
+            "nome": "Começar a andar",
+            "conjunto": "Base"
+          },
+          {
+            "id": "andar",
+            "nome": "Andar (no lugar)",
+            "conjunto": "Base"
+          },
+          {
+            "id": "golpe",
+            "nome": "Golpe descendente",
+            "conjunto": "Corpo a corpo"
+          },
+          {
+            "id": "levar-golpe",
+            "nome": "Levar golpe",
+            "conjunto": "Base"
+          },
+          {
+            "id": "morrer",
+            "nome": "Morrer",
+            "conjunto": "Base"
+          },
+          {
+            "id": "vitoria",
+            "nome": "Vitória",
+            "conjunto": "Base"
+          },
+          {
+            "id": "sacar-flecha",
+            "nome": "Sacar flecha",
+            "conjunto": "À distância"
+          },
+          {
+            "id": "magia",
+            "nome": "Magia com uma mão",
+            "conjunto": "Magia"
+          }
+        ],
+        "nota": "Todas as animações do Mixamo aplicadas na Tessa final com espada e escudo, por retarget pela direção dos ossos. Andar e começar a andar ficam no lugar (o código do jogo move o personagem). Sacar flecha e magia usam outro equipamento; aqui aparecem com espada e escudo só para conferir o movimento."
       },
       {
         "id": "teste-slash",

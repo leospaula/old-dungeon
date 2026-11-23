@@ -45,7 +45,7 @@ static func quadro(dir: Vector3, frente: Vector3, usar_cima: bool) -> Basis:
 	return Basis(x, dir, z)
 
 ## Converte a animação `anim` (feita para `src`) em uma nova animação para `dst`.
-static func converter(anim: Animation, src: Skeleton3D, dst: Skeleton3D, caminho_dst: String) -> Animation:
+static func converter(anim: Animation, src: Skeleton3D, dst: Skeleton3D, caminho_dst: String, no_lugar := false) -> Animation:
 	var bs := base_personagem(src); var bd := base_personagem(dst)
 	var R: Basis = bd * bs.inverse()               # leva o espaço da origem para o do destino
 	var n := src.get_bone_count()
@@ -110,5 +110,6 @@ static func converter(anim: Animation, src: Skeleton3D, dst: Skeleton3D, caminho
 			var bp: Basis = gdst[pai] if gdst.has(pai) else (dst.get_bone_global_rest(pai).basis if pai >= 0 else Basis())
 			saida.rotation_track_insert_key(trilhas[i], tempo, (bp.inverse() * b).get_rotation_quaternion())
 		var desloc: Vector3 = R * (gsrc[hs].origin - src.get_bone_global_rest(hs).origin) * razao
+		if no_lugar: desloc = Vector3(0, desloc.y, 0)   # tira o avanço horizontal (o código do jogo move o personagem)
 		saida.position_track_insert_key(tq, tempo, dst.get_bone_rest(hd).origin + desloc)
 	return saida

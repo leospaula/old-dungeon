@@ -102,6 +102,11 @@ header.top p { margin: 6px 0 0; max-width: 60ch; }
 .ficha { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: .92rem; }
 .ficha dt { color: var(--ink-soft); } .ficha dd { margin: 0; font-family: var(--font-data); font-size: .84rem; }
 .note { font-size: .92rem; border-left: 3px solid var(--warn); padding: 4px 10px; background: var(--stage-bg); margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: .85rem; padding: 4px 10px; border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); cursor: pointer; }
+.chip small { color: var(--ink-soft); margin-left: 4px; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--stage-bg); font-weight: 700; }
+.chip:focus-visible { outline: 2px solid var(--accent); }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .85rem; color: var(--ink-soft); }
 
 .gallery { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
@@ -299,6 +304,17 @@ function abrir(id, semHash) {
     ])]));
   }
 
+  if (it.lista && VISOR_ATUAL) {
+    const tira = el("img", { src: "img/anim-" + it.animacao + ".jpg", alt: "Quadros da animação" });
+    const fig = el("figure", {}, [el("div", { class: "scroll" }, [tira]), el("figcaption", { text: "6 quadros ao longo da animação" })]);
+    const chips = el("div", { class: "chips", role: "group", "aria-label": "Escolher animação" });
+    for (const a of it.lista) {
+      const c = el("button", { class: "chip", type: "button", "aria-pressed": String(a.id === it.animacao) }, [a.nome, el("small", { text: a.conjunto })]);
+      c.addEventListener("click", () => { VISOR_ATUAL.tocar(a.id); tira.src = "img/anim-" + a.id + ".jpg"; for (const x of chips.children) x.setAttribute("aria-pressed", String(x === c)); });
+      chips.append(c);
+    }
+    bench.append(el("div", { class: "strip" }, [el("h3", { text: "Animações" }), chips, fig]));
+  }
   if (it.imagens && it.imagens.length) bench.append(el("div", {}, [el("h3", { text: "Imagens" }), galeria(it.imagens)]));
   if (it.renders && it.renders.length) bench.append(el("div", {}, [el("h3", { text: "Renders no Godot" }), tiras(it.renders)]));
   if (it.quadros) bench.append(el("div", {}, [el("h3", { text: "Quadros da animação" }), tiras([{ src: it.quadros, legenda: "6 quadros ao longo da animação, ângulo de 3/4" }])]));
@@ -386,7 +402,8 @@ function corToken(nome) { return getComputedStyle(document.documentElement).getP
 function montarVisor(box, url, animNome) {
   if (VISOR_ATUAL) VISOR_ATUAL.destruir();
   const estado = { pausado: false, vivo: true, mixer: null, raf: 0 };
-  const api = { alternar() { estado.pausado = !estado.pausado; return estado.pausado; }, destruir() {} };
+  const api = { alternar() { estado.pausado = !estado.pausado; return estado.pausado; }, destruir() {},
+    tocar(nome) { estado.pedido = nome; if (estado.clips) { const c = estado.clips.find(a => a.name === nome); if (c && estado.mixer) { estado.mixer.stopAllAction(); estado.mixer.clipAction(c).reset().play(); estado.pausado = false; } } } };
   VISOR_ATUAL = api;
   const msg = box.querySelector(".msg");
   if (!window.THREE || !THREE.GLTFLoader || !THREE.OrbitControls) { msg.textContent = "Não consegui carregar o visualizador 3D."; return api; }
@@ -430,7 +447,9 @@ function montarVisor(box, url, animNome) {
       if (g.animations && g.animations.length) {
         estado.mixer = new THREE.AnimationMixer(obj);
         const clip = (animNome && g.animations.find(a => a.name === animNome)) || (animNome ? g.animations[0] : null);
+        estado.clips = g.animations;
         if (clip) estado.mixer.clipAction(clip).play();
+        if (estado.pedido) api.tocar(estado.pedido);
       }
       msg.remove(); loop();
     }, e => { msg.textContent = "Não consegui abrir o modelo."; console.error(e); });
