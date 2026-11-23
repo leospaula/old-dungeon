@@ -1,13 +1,18 @@
 ; Engine configuration file.
-; Godot 4.x — renderizador Compatibility (WebGL2) para rodar no navegador.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
 [application]
 
 config/name="Masmorra Clássica"
-run/main_scene="res://scenes/explorar.tscn"
 config/description="Dungeon crawler por turnos, em grupo, com as regras do D&D Básico (B/X) via retroclones abertos."
+run/main_scene="res://scenes/explorar.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [display]
@@ -18,7 +23,7 @@ window/stretch/mode="canvas_items"
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/default_filters/use_nearest_mipmap_filter=true
-textures/canvas_textures/default_texture_filter=0

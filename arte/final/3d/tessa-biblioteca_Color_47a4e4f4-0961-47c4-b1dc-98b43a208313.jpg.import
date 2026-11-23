@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://j6hpc773o8ok"
-path="res://.godot/imported/tessa-biblioteca_Color_47a4e4f4-0961-47c4-b1dc-98b43a208313.jpg-0025c91680ad47f1361cda475732502d.ctex"
+path.s3tc="res://.godot/imported/tessa-biblioteca_Color_47a4e4f4-0961-47c4-b1dc-98b43a208313.jpg-0025c91680ad47f1361cda475732502d.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "646c3e8c53f610298cb1239b05f47e46"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/tessa-biblioteca_Color_47a4e4f4-0961-47c4-b1dc-98b43a208313.jpg"
-dest_files=["res://.godot/imported/tessa-biblioteca_Color_47a4e4f4-0961-47c4-b1dc-98b43a208313.jpg-0025c91680ad47f1361cda475732502d.ctex"]
+dest_files=["res://.godot/imported/tessa-biblioteca_Color_47a4e4f4-0961-47c4-b1dc-98b43a208313.jpg-0025c91680ad47f1361cda475732502d.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
