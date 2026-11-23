@@ -2,3 +2,6 @@
 export/
 *.tmp
 .DS_Store
+
+# Rascunhos de arte (vão para o backup do Drive, não para o GitHub)
+arte/rascunhos/
