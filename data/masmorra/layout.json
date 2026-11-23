@@ -1,38 +1,216 @@
 {
-  "_doc": "Planta fixa da masmorra. Cada aventura só preenche o conteúdo das salas por id. Coordenadas/geometria voxel entram depois; por ora, topologia.",
+  "_doc": "Planta fixa da masmorra. Cada aventura só preenche o conteúdo das salas por id. 'grade' = x, y, largura, altura em quadrados de 3 m (10 pés), y para baixo; 'forma' orienta o desenho.",
   "id": "monte-corvo",
   "nome": "Fortaleza do Monte Corvo",
   "entrada": 1,
   "salas": [
-    { "id": 1,  "nome": "Boca da Caverna" },
-    { "id": 2,  "nome": "Corredor dos Entalhes" },
-    { "id": 3,  "nome": "Covil dos Kobolds" },
-    { "id": 4,  "nome": "Sala do Poço" },
-    { "id": 5,  "nome": "Capela Profanada" },
-    { "id": 6,  "nome": "Despensa Anã" },
-    { "id": 7,  "nome": "Galeria do Cubo" },
-    { "id": 8,  "nome": "Câmara dos Ecos" },
-    { "id": 9,  "nome": "Cofre Selado" },
-    { "id": 10, "nome": "Acampamento" },
-    { "id": 11, "nome": "Ponte Quebrada" },
-    { "id": 12, "nome": "Ninho" },
-    { "id": 13, "nome": "Salão do Trono" },
-    { "id": 14, "nome": "Tumba de Thorgrim" }
+    {
+      "id": 1,
+      "nome": "Boca da Caverna",
+      "x": 18,
+      "y": 38,
+      "w": 4,
+      "h": 3,
+      "forma": "caverna"
+    },
+    {
+      "id": 2,
+      "nome": "Corredor dos Entalhes",
+      "x": 17,
+      "y": 30,
+      "w": 6,
+      "h": 4,
+      "forma": "salao"
+    },
+    {
+      "id": 3,
+      "nome": "Covil dos Kobolds",
+      "x": 28,
+      "y": 29,
+      "w": 7,
+      "h": 6,
+      "forma": "caverna"
+    },
+    {
+      "id": 4,
+      "nome": "Sala do Poço",
+      "x": 5,
+      "y": 30,
+      "w": 5,
+      "h": 5,
+      "forma": "redonda"
+    },
+    {
+      "id": 5,
+      "nome": "Capela Profanada",
+      "x": 17,
+      "y": 21,
+      "w": 6,
+      "h": 5,
+      "forma": "salao"
+    },
+    {
+      "id": 6,
+      "nome": "Despensa Anã",
+      "x": 5,
+      "y": 22,
+      "w": 5,
+      "h": 4,
+      "forma": "salao"
+    },
+    {
+      "id": 7,
+      "nome": "Galeria do Cubo",
+      "x": 6,
+      "y": 14,
+      "w": 3,
+      "h": 6,
+      "forma": "corredor"
+    },
+    {
+      "id": 8,
+      "nome": "Câmara dos Ecos",
+      "x": 27,
+      "y": 22,
+      "w": 5,
+      "h": 4,
+      "forma": "salao"
+    },
+    {
+      "id": 9,
+      "nome": "Cofre Selado",
+      "x": 35,
+      "y": 22,
+      "w": 3,
+      "h": 3,
+      "forma": "salao"
+    },
+    {
+      "id": 10,
+      "nome": "Acampamento",
+      "x": 17,
+      "y": 8,
+      "w": 6,
+      "h": 4,
+      "forma": "caverna"
+    },
+    {
+      "id": 11,
+      "nome": "Ponte Quebrada",
+      "x": 4,
+      "y": 8,
+      "w": 7,
+      "h": 4,
+      "forma": "fenda"
+    },
+    {
+      "id": 12,
+      "nome": "Ninho",
+      "x": 18,
+      "y": 1,
+      "w": 5,
+      "h": 4,
+      "forma": "caverna"
+    },
+    {
+      "id": 13,
+      "nome": "Salão do Trono",
+      "x": 29,
+      "y": 7,
+      "w": 8,
+      "h": 6,
+      "forma": "salao"
+    },
+    {
+      "id": 14,
+      "nome": "Tumba de Thorgrim",
+      "x": 30,
+      "y": 16,
+      "w": 6,
+      "h": 4,
+      "forma": "salao"
+    }
   ],
   "conexoes": [
-    { "de": 1,  "para": 2,  "tipo": "passagem" },
-    { "de": 2,  "para": 3,  "tipo": "porta", "emperrada": true },
-    { "de": 2,  "para": 4,  "tipo": "passagem" },
-    { "de": 2,  "para": 5,  "tipo": "porta" },
-    { "de": 4,  "para": 6,  "tipo": "porta", "emperrada": true },
-    { "de": 5,  "para": 6,  "tipo": "passagem" },
-    { "de": 5,  "para": 8,  "tipo": "porta" },
-    { "de": 8,  "para": 9,  "tipo": "porta_secreta", "trancada": true },
-    { "de": 6,  "para": 7,  "tipo": "passagem" },
-    { "de": 7,  "para": 11, "tipo": "passagem" },
-    { "de": 11, "para": 10, "tipo": "ponte" },
-    { "de": 10, "para": 12, "tipo": "passagem" },
-    { "de": 10, "para": 13, "tipo": "porta", "emperrada": true },
-    { "de": 13, "para": 14, "tipo": "porta", "trancada": true }
-  ]
+    {
+      "de": 1,
+      "para": 2,
+      "tipo": "passagem"
+    },
+    {
+      "de": 2,
+      "para": 3,
+      "tipo": "porta",
+      "emperrada": true
+    },
+    {
+      "de": 2,
+      "para": 4,
+      "tipo": "passagem"
+    },
+    {
+      "de": 2,
+      "para": 5,
+      "tipo": "porta"
+    },
+    {
+      "de": 4,
+      "para": 6,
+      "tipo": "porta",
+      "emperrada": true
+    },
+    {
+      "de": 5,
+      "para": 6,
+      "tipo": "passagem"
+    },
+    {
+      "de": 5,
+      "para": 8,
+      "tipo": "porta"
+    },
+    {
+      "de": 8,
+      "para": 9,
+      "tipo": "porta_secreta",
+      "trancada": true
+    },
+    {
+      "de": 6,
+      "para": 7,
+      "tipo": "passagem"
+    },
+    {
+      "de": 7,
+      "para": 11,
+      "tipo": "passagem"
+    },
+    {
+      "de": 11,
+      "para": 10,
+      "tipo": "ponte"
+    },
+    {
+      "de": 10,
+      "para": 12,
+      "tipo": "passagem"
+    },
+    {
+      "de": 10,
+      "para": 13,
+      "tipo": "porta",
+      "emperrada": true
+    },
+    {
+      "de": 13,
+      "para": 14,
+      "tipo": "porta",
+      "trancada": true
+    }
+  ],
+  "grade": {
+    "quadrado_m": 3,
+    "largura": 41,
+    "altura": 42
+  }
 }

@@ -135,6 +135,7 @@ header.top p { margin: 6px 0 0; max-width: 60ch; }
 
 .anims { padding: 16px; display: grid; gap: 14px; }
 .sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+#mapas .sets { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
 .set { border: 1px solid var(--rule); padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
 .set ul { margin: 0; padding-left: 18px; font-size: .9rem; }
 .set .head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
@@ -164,6 +165,10 @@ dialog .close { margin-top: 8px; }
       <div><span class="muted">Escolha um personagem ou item na lista.</span></div>
     </main>
   </div>
+
+  <section class="sheet anims" id="mapas" aria-labelledby="mapas-h">
+    <h2 id="mapas-h">Mapas da masmorra</h2>
+  </section>
 
   <section class="sheet anims" id="anims" aria-labelledby="anims-h">
     <h2 id="anims-h">Biblioteca de animações</h2>
@@ -356,6 +361,19 @@ function revisao(it) {
   return box;
 }
 
+function renderMapas() {
+  const s = $("#mapas"); if (!CAT.mapas) { s.hidden = true; return; }
+  s.replaceChildren(el("div", { class: "bench-head" }, [el("h2", { id: "mapas-h", text: "Mapas da masmorra" }),
+    el("span", { class: "muted", text: "Clique para ampliar · 1 quadrado = 3 m" })]));
+  const g = el("div", { class: "sets" });
+  for (const m of CAT.mapas) {
+    const img = el("img", { src: m.src, alt: m.titulo, loading: "lazy", style: "width:100%;height:auto;display:block;cursor:zoom-in;background:var(--stage-bg)" });
+    img.addEventListener("click", () => ampliar(m.src, m.titulo));
+    g.append(el("figure", { class: "set", style: "margin:0" }, [el("h3", { text: m.titulo }), img, el("figcaption", { class: "muted", text: m.legenda, style: "font-size:.88rem" })]));
+  }
+  s.append(g);
+}
+
 function renderAnims() {
   const s = $("#anims"); const A = CAT.animacoes;
   s.replaceChildren(el("div", { class: "bench-head" }, [
@@ -465,7 +483,7 @@ async function iniciar() {
     $("#list").replaceChildren(el("section", {}, [el("span", { text: "Não consegui carregar o catálogo. Recarregue a página." })]));
     return;
   }
-  renderCredits(); renderList(); renderAnims();
+  renderCredits(); renderList(); renderMapas(); renderAnims();
   const alvo = (location.hash || "").slice(1);
   abrir(todosItens().some(i => i.id === alvo) ? alvo : "tessa", true);
 

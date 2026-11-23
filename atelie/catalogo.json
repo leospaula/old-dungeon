@@ -345,5 +345,17 @@
         "nota": "Teste no rascunho v2.5, antes dos itens separados: ela ataca de mão vazia e a plataforma gira junto. Custou 10 créditos."
       }
     ]
-  }
+  },
+  "mapas": [
+    {
+      "src": "img/planta-padrao.png",
+      "titulo": "Planta padrão",
+      "legenda": "Estrutura fixa da Fortaleza do Monte Corvo: 14 salas, corredores e tipos de porta. Vale para todas as aventuras."
+    },
+    {
+      "src": "img/aventura-01.png",
+      "titulo": "Aventura 1 — A Masmorra do Monte Corvo",
+      "legenda": "A mesma planta com o conteúdo da aventura 1: monstros, armadilhas, tesouros, segredos e onde dá para negociar."
+    }
+  ]
 }
