@@ -194,9 +194,9 @@ def main():
     for aid in L.get("entradas_possiveis", {}).get("areas", []):
         r = max(areas[aid]["retangulos"], key=lambda q: (q[2] - q[0]) * (q[3] - q[1]))
         cx, cy = (r[0] + r[2]) / 2, (r[1] + r[3]) / 2
-        bx, by = r[0] + 0.5, r[3] - 4.5
-        if aid == "33": bx, by = r[2] - 5, r[1] + 0.2
-        a, b = PX(bx, by); c_, e = PX(bx + 4, by + 4)
+        bx, by = r[0] + 1, r[3] - 3
+        if aid == "33": bx, by = r[2] - 3, r[1] + 1
+        a, b = PX(bx, by); c_, e = PX(bx + 2, by + 2)
         for k in range(0, int(c_ - a), 5):
             d.line([(a + k, b), (a + k, e)], fill=(220, 150, 140), width=1)
         d.rectangle([a, b, c_, e], outline=ENTRADA, width=2)
@@ -214,7 +214,7 @@ def main():
     itens = [("porta", "porta comum (a aventura decide se emperra, tranca ou tem armadilha)"),
              ("dupla", "porta dupla (20 → 19a)"), ("grade", "grade de cela com porta (2 → 1)"),
              ("cela", "porta de cela, fixa (A–H)"), ("natural", "parede natural de caverna"),
-             ("entrada", "possível entrada: escada 4×4 (24, 30, 33, 34, 21, 22)"),
+             ("entrada", "possível entrada: escada 2×2 (24, 30, 33, 34, 21, 22)"),
              ("esteira", "esteira de pedra (mineração do 33)"), ("cristal", "cristal (gruta 33)")]
     for k, txt in itens:
         a, b = lx, ly + 8
