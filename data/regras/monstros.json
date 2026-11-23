@@ -1,0 +1,15 @@
+{
+  "_fonte": "Estatísticas no padrão B/X (Old-School Essentials SRD / Basic Fantasy RPG). CA descendente; dano em notação de dados.",
+  "kobold":            { "nome": "Kobold",               "ca": 7, "dv": "1d4hp", "ataques": [{ "nome": "arma",      "dano": "1d4" }], "mov_m": 18, "moral": 6,  "xp": 5,   "protecao_como": "normal" },
+  "chefe_kobold":      { "nome": "Chefe kobold",         "ca": 6, "dv": "2",     "ataques": [{ "nome": "arma",      "dano": "1d6" }], "mov_m": 18, "moral": 8,  "xp": 20,  "protecao_como": "guerreiro_1" },
+  "rato_gigante":      { "nome": "Rato gigante",         "ca": 7, "dv": "1d4hp", "ataques": [{ "nome": "mordida",   "dano": "1d3", "doenca": "1-em-20" }], "mov_m": 12, "moral": 8, "xp": 5, "protecao_como": "normal" },
+  "esqueleto":         { "nome": "Esqueleto",            "ca": 7, "dv": "1",     "ataques": [{ "nome": "arma",      "dano": "1d6" }], "mov_m": 18, "moral": 12, "xp": 10,  "morto_vivo": true, "protecao_como": "guerreiro_1" },
+  "zumbi":             { "nome": "Zumbi",                "ca": 8, "dv": "2",     "ataques": [{ "nome": "pancada",   "dano": "1d8" }], "mov_m": 12, "moral": 12, "xp": 20,  "morto_vivo": true, "sempre_perde_iniciativa": true, "protecao_como": "guerreiro_1" },
+  "cubo_gelatinoso":   { "nome": "Cubo gelatinoso",      "ca": 8, "dv": "4*",    "ataques": [{ "nome": "toque",     "dano": "2d4", "paralisia": true }], "mov_m": 6, "moral": 12, "xp": 125, "imune": ["frio", "eletricidade"], "protecao_como": "guerreiro_2" },
+  "besouro_de_fogo":   { "nome": "Besouro de fogo",      "ca": 4, "dv": "1+2",   "ataques": [{ "nome": "mordida",   "dano": "2d4" }], "mov_m": 12, "moral": 7,  "xp": 15,  "protecao_como": "guerreiro_1" },
+  "estirge":           { "nome": "Estirge",              "ca": 7, "dv": "1*",    "ataques": [{ "nome": "probóscide","dano": "1d3", "drena": "1d3/rodada" }], "mov_m": 54, "voa": true, "moral": 9, "xp": 13, "protecao_como": "guerreiro_2" },
+  "aranha_caranguejo": { "nome": "Aranha-caranguejo gigante", "ca": 7, "dv": "2*", "ataques": [{ "nome": "mordida", "dano": "1d8", "veneno": true }], "mov_m": 36, "moral": 7, "xp": 25, "surpresa": "1-4", "protecao_como": "guerreiro_1" },
+  "bandido":           { "nome": "Bandido",              "ca": 6, "dv": "1",     "ataques": [{ "nome": "arma",      "dano": "1d6" }], "mov_m": 36, "moral": 8,  "xp": 10,  "protecao_como": "ladrao_1" },
+  "hobgoblin":         { "nome": "Hobgoblin",            "ca": 6, "dv": "1+1",   "ataques": [{ "nome": "arma",      "dano": "1d8" }], "mov_m": 27, "moral": 8,  "xp": 15,  "protecao_como": "guerreiro_1" },
+  "chefe_hobgoblin":   { "nome": "Chefe hobgoblin",      "ca": 5, "dv": "3",     "ataques": [{ "nome": "machado",   "dano": "1d8+1" }], "mov_m": 27, "moral": 10, "xp": 50, "protecao_como": "guerreiro_3" }
+}

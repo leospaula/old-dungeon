@@ -1,0 +1,23 @@
+; Engine configuration file.
+; Godot 4.x — renderizador Compatibility (WebGL2) para rodar no navegador.
+
+config_version=5
+
+[application]
+
+config/name="Masmorra Clássica"
+config/description="Dungeon crawler por turnos, em grupo, com as regras do D&D Básico (B/X) via retroclones abertos."
+config/features=PackedStringArray("4.5", "GL Compatibility")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=true
+textures/canvas_textures/default_texture_filter=0

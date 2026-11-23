@@ -1,0 +1,38 @@
+{
+  "_doc": "Planta fixa da masmorra. Cada aventura só preenche o conteúdo das salas por id. Coordenadas/geometria voxel entram depois; por ora, topologia.",
+  "id": "monte-corvo",
+  "nome": "Fortaleza do Monte Corvo",
+  "entrada": 1,
+  "salas": [
+    { "id": 1,  "nome": "Boca da Caverna" },
+    { "id": 2,  "nome": "Corredor dos Entalhes" },
+    { "id": 3,  "nome": "Covil dos Kobolds" },
+    { "id": 4,  "nome": "Sala do Poço" },
+    { "id": 5,  "nome": "Capela Profanada" },
+    { "id": 6,  "nome": "Despensa Anã" },
+    { "id": 7,  "nome": "Galeria do Cubo" },
+    { "id": 8,  "nome": "Câmara dos Ecos" },
+    { "id": 9,  "nome": "Cofre Selado" },
+    { "id": 10, "nome": "Acampamento" },
+    { "id": 11, "nome": "Ponte Quebrada" },
+    { "id": 12, "nome": "Ninho" },
+    { "id": 13, "nome": "Salão do Trono" },
+    { "id": 14, "nome": "Tumba de Thorgrim" }
+  ],
+  "conexoes": [
+    { "de": 1,  "para": 2,  "tipo": "passagem" },
+    { "de": 2,  "para": 3,  "tipo": "porta", "emperrada": true },
+    { "de": 2,  "para": 4,  "tipo": "passagem" },
+    { "de": 2,  "para": 5,  "tipo": "porta" },
+    { "de": 4,  "para": 6,  "tipo": "porta", "emperrada": true },
+    { "de": 5,  "para": 6,  "tipo": "passagem" },
+    { "de": 5,  "para": 8,  "tipo": "porta" },
+    { "de": 8,  "para": 9,  "tipo": "porta_secreta", "trancada": true },
+    { "de": 6,  "para": 7,  "tipo": "passagem" },
+    { "de": 7,  "para": 11, "tipo": "passagem" },
+    { "de": 11, "para": 10, "tipo": "ponte" },
+    { "de": 10, "para": 12, "tipo": "passagem" },
+    { "de": 10, "para": 13, "tipo": "porta", "emperrada": true },
+    { "de": 13, "para": 14, "tipo": "porta", "trancada": true }
+  ]
+}
