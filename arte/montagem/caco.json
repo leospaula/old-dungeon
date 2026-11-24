@@ -8,7 +8,7 @@
       "comprimento": 0.33,
       "pega": [
         0.5,
-        0.2,
+        0.16,
         0.5
       ],
       "ao_longo": 0.45,
@@ -37,7 +37,15 @@
     "parado-agachado": "arte/animacoes/mixamo/parado-agachado.fbx",
     "andar-combate": "arte/animacoes/mixamo/andar-combate.fbx",
     "bloquear": "arte/animacoes/mixamo/bloquear.fbx",
-    "esquivar": "arte/animacoes/mixamo/esquivar.fbx"
+    "esquivar": "arte/animacoes/mixamo/esquivar.fbx",
+    "parado-luta": "arte/animacoes/mixamo/parado-luta.fbx",
+    "corte-dentro": "arte/animacoes/mixamo/corte-dentro.fbx",
+    "corte-fora": "arte/animacoes/mixamo/corte-fora.fbx",
+    "estocada": "arte/animacoes/mixamo/estocada.fbx",
+    "estocada-cima": "arte/animacoes/mixamo/estocada-cima.fbx",
+    "mirar-arco": "arte/animacoes/mixamo/mirar-arco.fbx",
+    "soltar-flecha": "arte/animacoes/mixamo/soltar-flecha.fbx",
+    "magia-area": "arte/animacoes/mixamo/magia-area.fbx"
   },
   "angulo": 35,
   "no_lugar": [
@@ -47,7 +55,11 @@
     "andar-furtivo",
     "andar-combate",
     "bloquear",
-    "esquivar"
+    "esquivar",
+    "corte-dentro",
+    "corte-fora",
+    "estocada",
+    "estocada-cima"
   ],
   "_escala_no_jogo": 0.9
 }
