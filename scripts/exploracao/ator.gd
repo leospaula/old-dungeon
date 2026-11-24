@@ -196,11 +196,20 @@ func animar_dano() -> void:
 		t.tween_property(modelo, "rotation:x", -0.35, 0.08)
 		t.tween_property(modelo, "rotation:x", 0.0, 0.2)
 
+## A animação de morrer do Mixamo começa com ~0,7 s em pé e reto antes de desabar
+## (medido com tools/curva_quadril.gd). Encadeia: tranco do golpe -> queda, já do meio do desabar.
+const MORRER_INICIO := 1.0
+const DANO_ANTES_DE_CAIR := 0.28
+
 func animar_morte() -> void:
 	atualizar_rotulo()
 	rotulo.visible = false
 	if player:
-		tocar("morrer", 0.05)
+		if _tem("dano"):
+			tocar("dano", 0.05)
+			await get_tree().create_timer(DANO_ANTES_DE_CAIR).timeout
+		tocar("morrer", 0.3)
+		if _tem("morrer"): player.seek(MORRER_INICIO, false)
 	else:
 		var t := create_tween()
 		t.tween_property(modelo, "rotation:x", -PI / 2, 0.45).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
