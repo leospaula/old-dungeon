@@ -54,7 +54,7 @@ func _run() -> void:
 			portas_borda[chave] = pt
 
 	var raiz := Node3D.new(); raiz.name = "MasmorraBase"
-	var chao := _St.new(); var rocha := _St.new(); var paredes := _St.new(); var madeira := _St.new()
+	var chao := {}; var rocha := {}; var paredes := {}; var madeira := _St.new()
 	var ferro := _St.new(); var esteira := _St.new(); var cristal := _St.new()
 
 	# Chão
@@ -64,7 +64,7 @@ func _run() -> void:
 			if id == "": continue
 			var c: Color = COR_CHAO.get(tipos[id], Color(0.6, 0.6, 0.6))
 			c = c.lightened(rnd.randf_range(-0.06, 0.06)) if rnd.randf() < 0.5 else c.darkened(rnd.randf_range(0, 0.08))
-			chao.caixa(Vector3(x * CEL, -0.25, y * CEL), Vector3((x + 1) * CEL, 0.0, (y + 1) * CEL), c)
+			_bloco(chao, x, y).caixa(Vector3(x * CEL, -0.25, y * CEL), Vector3((x + 1) * CEL, 0.0, (y + 1) * CEL), c)
 
 	# Rocha: blocos que encostam em chão (8 vizinhos). Perto de caverna, altura irregular.
 	for y in range(-1, H + 1):
@@ -81,7 +81,7 @@ func _run() -> void:
 			if not perto and not dentro: continue
 			var alt := ALT + (rnd.randf_range(-0.6, 0.9) if natural else rnd.randf_range(0.0, 0.15))
 			var c := COR_ROCHA.lightened(rnd.randf_range(0.0, 0.1)) if not natural else Color(0.36, 0.31, 0.27).lightened(rnd.randf_range(0, 0.12))
-			rocha.caixa(Vector3(x * CEL, -0.25, y * CEL), Vector3((x + 1) * CEL, alt, (y + 1) * CEL), c)
+			_bloco(rocha, x, y).caixa(Vector3(x * CEL, -0.25, y * CEL), Vector3((x + 1) * CEL, alt, (y + 1) * CEL), c)
 
 	# Paredes finas entre áreas diferentes (bordas verticais e horizontais da grade)
 	for y in H:
@@ -112,9 +112,9 @@ func _run() -> void:
 				var t := rnd.randf_range(0.12, 0.3); var h := rnd.randf_range(0.4, 1.4)
 				cristal.caixa(Vector3(cx - t, 0, cz - t), Vector3(cx + t, h, cz + t), COR_CRISTAL.lightened(rnd.randf_range(0, 0.25)))
 
-	_instanciar(raiz, "Chao", chao, false)
-	_instanciar(raiz, "Rocha", rocha, false)
-	_instanciar(raiz, "Paredes", paredes, false)
+	_instanciar_blocos(raiz, "Chao", chao)
+	_instanciar_blocos(raiz, "Rocha", rocha)
+	_instanciar_blocos(raiz, "Paredes", paredes)
 	_instanciar(raiz, "Portas", madeira, false)
 	_instanciar(raiz, "Ferro", ferro, false)
 	_instanciar(raiz, "Esteiras", esteira, false)
@@ -150,6 +150,20 @@ func _run() -> void:
 		await _renders(raiz, a[2])
 	quit()
 
+## No Compatibility (WebGL) cada malha recebe no máximo 8 luzes: dividir chão, rocha e paredes
+## em blocos de BLOCO × BLOCO células faz cada pedaço receber só as tochas próximas.
+const BLOCO := 8
+
+func _bloco(d: Dictionary, x: int, y: int) -> _St:
+	var k := Vector2i(floori(float(x) / BLOCO), floori(float(y) / BLOCO))
+	if not d.has(k): d[k] = _St.new()
+	return d[k]
+
+func _instanciar_blocos(raiz: Node3D, nome: String, d: Dictionary) -> void:
+	var pai := Node3D.new(); pai.name = nome; raiz.add_child(pai)
+	for k in d:
+		_instanciar(pai, "%s_%d_%d" % [nome, k.x, k.y], d[k], false)
+
 func _par(a: String, b: String) -> String:
 	return a + "|" + b if a < b else b + "|" + a
 
@@ -157,7 +171,7 @@ func _id(x: int, y: int) -> String:
 	if x < 0 or y < 0 or x >= W or y >= H: return ""
 	return cel[y][x]
 
-func _borda(eixo: String, x: int, y: int, a: String, b: String, paredes: _St, madeira: _St, ferro: _St) -> void:
+func _borda(eixo: String, x: int, y: int, a: String, b: String, paredes: Dictionary, madeira: _St, ferro: _St) -> void:
 	if a == b or a == "" or b == "": return
 	var ab := _par(a, b)
 	if abertas.has(ab) and (abertas[ab] as String).contains(eixo): return
@@ -172,7 +186,7 @@ func _borda(eixo: String, x: int, y: int, a: String, b: String, paredes: _St, ma
 		p0 = Vector3(x * CEL - ESP / 2, 0, y * CEL - ESP / 2); p1 = Vector3(x * CEL + ESP / 2, ALT, (y + 1) * CEL + ESP / 2)
 	else:
 		p0 = Vector3(x * CEL - ESP / 2, 0, y * CEL - ESP / 2); p1 = Vector3((x + 1) * CEL + ESP / 2, ALT, y * CEL + ESP / 2)
-	paredes.caixa(p0, p1, COR_PAREDE.lightened(rnd.randf_range(-0.04, 0.06)))
+	_bloco(paredes, x, y).caixa(p0, p1, COR_PAREDE.lightened(rnd.randf_range(-0.04, 0.06)))
 
 func _grade(eixo: String, x: int, y: int, n: int, ferro: _St) -> void:
 	var comp := n * CEL
