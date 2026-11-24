@@ -36,7 +36,9 @@
         0,
         0,
         0
-      ]
+      ],
+      "pose": "bloquear",
+      "pose_t": 0.35
     }
   ],
   "animacoes": {

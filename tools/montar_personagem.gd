@@ -109,7 +109,8 @@ func _montar_itens(sk: Skeleton3D, itens: Array, ap: AnimationPlayer) -> void:
 		var z_alvo := x_alvo.cross(y_alvo).normalized(); x_alvo = y_alvo.cross(z_alvo).normalized()
 		var piv := Node3D.new(); ba.add_child(piv)
 		piv.transform = g_osso.affine_inverse() * Transform3D(Basis(x_alvo, y_alvo, z_alvo), ponto)
-		if it.has("pose"): piv.transform = _no_punho(sk, i_osso, ap, it)
+		if it.has("pose"):
+			piv.transform = _no_antebraco(sk, i_osso, f, ap, it, caixa, base) if it.modo == "escudo" else _no_punho(sk, i_osso, ap, it)
 		var giro := Node3D.new(); piv.add_child(giro)
 		giro.rotation_degrees = Vector3(it.rotacao[0], it.rotacao[1], it.rotacao[2])
 		giro.add_child(item); item.scale = Vector3.ONE * esc; item.position = -pega * esc
@@ -134,6 +135,30 @@ func _no_punho(sk: Skeleton3D, i_mao: int, ap: AnimationPlayer, it: Dictionary) 
 	var x := y.cross(z).normalized()
 	var aj: Array = it.get("ajuste_punho", [0, 0, 0])   # deslocamento fino (m, no espaço da pega)
 	return Transform3D(Basis(x, y, z), centro + x * float(aj[0]) + y * float(aj[1]) + z * float(aj[2]))
+
+## Escudo preso ao antebraço pela pose de bloqueio (`pose` em `pose_t`): a face (eixo mais fino da
+## malha) aponta para a frente da personagem e o plano fica paralelo ao antebraço. Calculado no espaço
+## do osso, então o escudo acompanha o braço em todas as animações.
+func _no_antebraco(sk: Skeleton3D, i_osso: int, i_filho: int, ap: AnimationPlayer, it: Dictionary, caixa: AABB, base: Basis) -> Transform3D:
+	var pose: String = it.pose
+	ap.play(pose); ap.seek(float(it.get("pose_t", 0.35)), true); ap.advance(0)
+	var g := sk.get_bone_global_pose(i_osso)
+	var d: Vector3 = (sk.get_bone_global_pose(i_filho).origin - g.origin)
+	# Frente = para onde a cabeça olha na pose (no bloqueio o corpo fica de lado, o olhar não).
+	var i_cab := sk.find_bone("mixamorig_Head")
+	var olhar_local: Vector3 = sk.get_bone_global_rest(i_cab).basis.inverse() * base.z
+	var frente: Vector3 = sk.get_bone_global_pose(i_cab).basis * olhar_local
+	frente.y = 0; frente = frente.normalized()
+	var n: Vector3 = (frente - d.normalized() * frente.dot(d.normalized())).normalized()
+	var fino := 0
+	for e in 3: if caixa.size[e] < caixa.size[fino]: fino = e
+	var outro := (fino + 1) % 3; var terceiro := (fino + 2) % 3
+	var cols := [Vector3.ZERO, Vector3.ZERO, Vector3.ZERO]
+	cols[fino] = n; cols[outro] = d.normalized(); cols[terceiro] = n.cross(d.normalized())
+	var b := Basis(cols[0], cols[1], cols[2])
+	if b.determinant() < 0: cols[terceiro] = -cols[terceiro]; b = Basis(cols[0], cols[1], cols[2])
+	var ponto: Vector3 = g.origin + d * float(it.ao_longo) + n * float(it.afastar)
+	return g.affine_inverse() * Transform3D(b, ponto)
 
 func _carregar(c: String) -> Node3D:
 	var fbx := c.ends_with(".fbx")

@@ -26,9 +26,10 @@ const Dados = preload("res://scripts/regras/dados.gd")
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
 const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo", "andar": "andar", "correr": "correr", "andar_furtivo": "andar-furtivo", "parado_furtivo": "parado-agachado", "andar_combate": "andar-combate", "golpe": "golpe", "dano": "levar-golpe", "morrer": "morrer", "vitoria": "vitoria", "bloquear": "bloquear", "esquivar": "esquivar"}
-## Para onde o corpo aponta em cada animação (medido com tools/medir_frente.gd); o modelo gira o contrário.
-const TESSA_GIRO := {"parado-espada-escudo": 30.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "correr": 90.0, "andar-furtivo": 90.0, "parado-agachado": 75.0, "andar-combate": 90.0, "golpe": 70.0,
-	"levar-golpe": 30.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 30.0, "bloquear": 25.0, "esquivar": 100.0}
+## Para onde o corpo aponta em cada animação (tools/medir_frente.gd); o modelo gira o contrário. Nas posturas
+## de lado (guarda, dano, bloqueio, esquiva) vale para onde a cabeça olha (--teste=mirar), não o quadril.
+const TESSA_GIRO := {"parado-espada-escudo": 76.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "correr": 90.0, "andar-furtivo": 90.0, "parado-agachado": 75.0, "andar-combate": 90.0, "golpe": 70.0,
+	"levar-golpe": 85.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 30.0, "bloquear": 85.0, "esquivar": 130.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
 const GOBLIN_ESCALA := 0.95
 ## Velocidade natural de cada animação de deslocamento já na escala do jogo (tools/medir_passada.gd).
@@ -135,6 +136,7 @@ func _criar_tessa() -> Node3D:
 	for it in p.equipamento:
 		var s := str(it)
 		if s.begins_with("tocha x"): tochas_reserva = int(s.get_slice("x", 1)) - 1
+		if s.begins_with("escudo"): a.tem_escudo = true
 	add_child(a); a.colocar(INICIO)
 	a.giro_anim = TESSA_GIRO
 	var modelo: Node3D = load(TESSA_GLB).instantiate()
@@ -156,6 +158,7 @@ func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 	a.ca = int(d.ca); a.thac0 = Regras.thac0_monstro(str(d.dv)); a.pv = Regras.pv_monstro(str(d.dv)); a.pv_max = a.pv
 	a.dano = str(d.ataques[0].dano); a.arma = str(d.ataques[0].nome)
 	a.moral = int(d.moral); a.xp = int(d.xp); a.infravisao_m = float(d.get("infravisao_m", 0.0))
+	a.tem_escudo = bool(d.get("escudo", false))
 	a.mov_combate_m = Regras.taxa_combate_m(float(d.mov_m))
 	add_child(a); a.colocar(c)
 	if id == "goblin":
@@ -835,21 +838,56 @@ func _linha_de_comando() -> void:
 			for im in imgs:
 				im.save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
 			await get_tree().create_timer(1.5).timeout
-	elif teste == "defesa":
-		# Erros forçados: bloqueio do goblin, esquiva da Tessa, esquiva do goblin, bloqueio da Tessa.
+	elif teste == "mirar":
+		# Para onde olham cabeça e escudo em cada animação de combate, em relação ao oponente.
 		_brotar_goblin()
 		await get_tree().create_timer(1.5).timeout
 		var g: Node3D = monstros[0]
-		camera.alvo = (heroi.position + g.position) / 2.0; camera.distancia = 5.0; camera.inclinacao = 32.0; camera.guinada = 290.0; camera.distancia = 3.6
+		var escudo: Node3D = null
+		for n in heroi.modelo.find_children("*", "BoneAttachment3D", true, false):
+			if str(n.bone_name).contains("LeftForeArm"): escudo = n
+		var sk: Skeleton3D = heroi.modelo.find_children("*", "Skeleton3D", true, false)[0]
+		var ic := sk.find_bone("mixamorig_Head")
+		# Frente em repouso: normal dos ombros, no sentido dos pés.
+		var R := func(n): return sk.get_bone_global_rest(sk.find_bone(n)).origin
+		var fr0: Vector3 = Vector3.UP.cross(R.call("mixamorig_RightShoulder") - R.call("mixamorig_LeftShoulder"))
+		if fr0.dot(R.call("mixamorig_LeftToeBase") - R.call("mixamorig_LeftFoot")) < 0: fr0 = -fr0
+		var olhar_local: Vector3 = sk.get_bone_global_rest(ic).basis.inverse() * fr0.normalized()
+		for papel in ["parado_combate", "golpe", "dano", "bloquear", "esquivar"]:
+			for t in [0.2, 0.35, 0.55]:
+				heroi.olhar_para(g.global_position); heroi.tocar(papel, 0.0)
+				await get_tree().create_timer(0.3).timeout
+				heroi.player.seek(t, true)
+				await get_tree().process_frame
+				var alvo: Vector3 = g.global_position - heroi.global_position; alvo.y = 0
+				var ol: Vector3 = sk.global_basis * (sk.get_bone_global_pose(ic).basis * olhar_local); ol.y = 0
+				var linha := "MIRAR %-15s t=%.2f olhar %4.0f°" % [papel, t, rad_to_deg(alvo.signed_angle_to(ol, Vector3.UP))]
+				if escudo:
+					var mi: MeshInstance3D = escudo.find_children("*", "MeshInstance3D", true, false)[0]
+					var ab := mi.get_aabb(); var eix := 0
+					for e in 3: if ab.size[e] < ab.size[eix]: eix = e
+					var nrm: Vector3 = mi.global_basis[eix].normalized()
+					if nrm.dot(alvo) < 0: nrm = -nrm
+					var nh := nrm; nh.y = 0
+					linha += "  escudo %4.0f°" % rad_to_deg(alvo.signed_angle_to(nh, Vector3.UP))
+				print(linha)
+	elif teste == "defesa":
+		# Erros forçados, vistos por trás de quem ataca: o defensor deve aparecer de frente.
+		_brotar_goblin()
+		await get_tree().create_timer(1.5).timeout
+		var g: Node3D = monstros[0]
+		var cam := Camera3D.new(); add_child(cam); cam.fov = 50
 		var k := 0
-		for caso in [[heroi, g, true], [g, heroi, false], [heroi, g, false], [g, heroi, true]]:
-			var at: Node = caso[0]; var al: Node = caso[1]
-			var precisa: int = at.thac0 - al.ca
-			Dados.forcados.append(clampi(precisa - 1 - at.mod_acerto, 2, 19) if caso[2] else 2)
+		for caso in [[heroi, g], [g, heroi]]:
+			var at: Node3D = caso[0]; var al: Node3D = caso[1]
+			var tras: Vector3 = (at.global_position - al.global_position); tras.y = 0
+			cam.global_position = al.global_position + tras.normalized() * 2.6 + tras.normalized().cross(Vector3.UP) * 1.3 + Vector3(0, 2.6, 0)
+			cam.look_at(al.global_position + Vector3(0, 0.9, 0)); cam.current = true
+			Dados.forcados.append(2)
 			combate._atacar(at, al)
 			var t0 := Time.get_ticks_msec()
 			var imgs: Array[Image] = []
-			for ms in [500, 700, 860, 1000, 1300]:
+			for ms in [450, 700, 860, 1000, 1300]:
 				while Time.get_ticks_msec() - t0 < ms: await get_tree().process_frame
 				imgs.append(get_viewport().get_texture().get_image())
 			for im in imgs:

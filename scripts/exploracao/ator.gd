@@ -20,6 +20,7 @@ var dano := "1d6"
 var arma := "arma"
 var mod_acerto := 0
 var mod_dano := 0
+var tem_escudo := false   # quem tem escudo bloqueia os golpes que erram; quem não tem, esquiva
 var mov_combate_m := 12.0
 var moral := 12
 var xp := 0
