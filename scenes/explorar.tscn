@@ -1,8 +1,7 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/exploracao/explorar.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/masmorra/masmorra_base.scn" id="2"]
-[ext_resource type="PackedScene" path="res://arte/final/3d/tessa-biblioteca.glb" id="3"]
 [ext_resource type="Script" path="res://scripts/exploracao/camera_orbital.gd" id="4"]
 
 [sub_resource type="Environment" id="ambiente"]
@@ -29,9 +28,6 @@ light_energy = 1.1
 shadow_enabled = true
 
 [node name="Masmorra" parent="." instance=ExtResource("2")]
-
-[node name="Tessa" parent="." instance=ExtResource("3")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 10.5, 0, 7.5)
 
 [node name="Camera" type="Camera3D" parent="."]
 script = ExtResource("4")

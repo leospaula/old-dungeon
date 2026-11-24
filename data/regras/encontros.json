@@ -1,0 +1,11 @@
+{
+  "_doc": "Tabela de monstros errantes. Teste a cada 2 turnos de exploração: 1 em d6 = encontro. Distância 2d6 × 3 m. Surpresa: cada lado rola d6, 1–2 = surpreendido.",
+  "nivel_1": [
+    {
+      "monstro": "goblin",
+      "quantidade": "1d3",
+      "peso": 1
+    }
+  ],
+  "_nota": "No B/X o normal seria 2d4 goblins; enquanto só a Tessa estiver em jogo, a tabela usa 1d3."
+}

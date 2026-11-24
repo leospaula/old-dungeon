@@ -202,5 +202,22 @@
     "moral": 4,
     "xp": 0,
     "foge_sempre": true
+  },
+  "goblin": {
+    "nome": "Goblin",
+    "ca": 6,
+    "dv": "1-1",
+    "ataques": [
+      {
+        "nome": "lâmina curva",
+        "dano": "1d6"
+      }
+    ],
+    "mov_m": 18,
+    "moral": 7,
+    "xp": 5,
+    "infravisao_m": 18,
+    "protecao_como": "normal",
+    "nota": "−1 no ataque à luz do dia; o rei goblin tem 3 DV"
   }
 }

@@ -91,8 +91,9 @@ func _run() -> void:
 		for x in W:
 			_borda("h", x, y, _id(x, y - 1), _id(x, y), paredes, madeira, ferro)
 	# Portas (uma peça por porta, não por célula)
+	var portas := Node3D.new(); portas.name = "Portas"
 	for pt in L.portas:
-		_porta(pt, madeira, ferro)
+		_porta(pt, portas, paredes, ferro)
 
 	# Esteiras
 	for e in L.get("esteiras", []):
@@ -115,7 +116,7 @@ func _run() -> void:
 	_instanciar_blocos(raiz, "Chao", chao)
 	_instanciar_blocos(raiz, "Rocha", rocha)
 	_instanciar_blocos(raiz, "Paredes", paredes)
-	_instanciar(raiz, "Portas", madeira, false)
+	raiz.add_child(portas)
 	_instanciar(raiz, "Ferro", ferro, false)
 	_instanciar(raiz, "Esteiras", esteira, false)
 	_instanciar(raiz, "Cristais", cristal, true)
@@ -200,28 +201,36 @@ func _grade(eixo: String, x: int, y: int, n: int, ferro: _St) -> void:
 	for h in [0.1, 1.3, 2.55]:
 		ferro.caixa(Vector3(minf(a0.x, a1.x) - 0.05, h, minf(a0.z, a1.z) - 0.05), Vector3(maxf(a0.x, a1.x) + 0.05, h + 0.08, maxf(a0.z, a1.z) + 0.05), COR_FERRO)
 
-func _porta(pt: Dictionary, madeira: _St, ferro: _St) -> void:
+## Cada porta de madeira vira um nó próprio (Portas/P01…) com uma dobradiça por folha,
+## para o jogo poder abri-la. A verga de pedra vai junto com as paredes.
+func _porta(pt: Dictionary, portas: Node3D, paredes: Dictionary, ferro: _St) -> void:
 	var n := int(pt.largura)
 	if pt.tipo in ["grade", "cela"]:
 		_grade(pt.orient, int(pt.x), int(pt.y), n, ferro)
 		return
+	var no := Node3D.new(); no.name = pt.id; portas.add_child(no)
+	no.set_meta("orient", pt.orient)
 	var folhas := 2 if pt.tipo == "dupla" else 1
 	var comp := n * CEL
+	var base := Vector3(pt.x * CEL, 0, pt.y * CEL)
+	var eixo := Vector3(0, 0, 1) if pt.orient == "v" else Vector3(1, 0, 0)
+	var lado := Vector3(1, 0, 0) if pt.orient == "v" else Vector3(0, 0, 1)
 	for f in folhas:
 		var i0 := comp * f / folhas + 0.06; var i1 := comp * (f + 1) / folhas - 0.06
-		var p0: Vector3; var p1: Vector3
-		if pt.orient == "v":
-			p0 = Vector3(pt.x * CEL - 0.08, 0, pt.y * CEL + i0); p1 = Vector3(pt.x * CEL + 0.08, 2.4, pt.y * CEL + i1)
-		else:
-			p0 = Vector3(pt.x * CEL + i0, 0, pt.y * CEL - 0.08); p1 = Vector3(pt.x * CEL + i1, 2.4, pt.y * CEL + 0.08)
-		madeira.caixa(p0, p1, COR_MADEIRA.lightened(rnd.randf_range(0, 0.08)))
+		var dobradica := i0 if f == 0 else i1
+		var sentido := 1.0 if f == 0 else -1.0
+		var piv := Node3D.new(); piv.name = "Folha%d" % f; piv.position = base + eixo * dobradica; no.add_child(piv)
+		var st := _St.new()
+		var a := -lado * 0.08; var b := lado * 0.08 + Vector3(0, 2.4, 0) + eixo * (i1 - i0) * sentido
+		st.caixa(Vector3(minf(a.x, b.x), 0, minf(a.z, b.z)), Vector3(maxf(a.x, b.x), 2.4, maxf(a.z, b.z)), COR_MADEIRA.lightened(rnd.randf_range(0, 0.08)))
+		_instanciar(piv, "Malha", st, false)
 	# Verga de pedra por cima do vão
 	var v0: Vector3; var v1: Vector3
 	if pt.orient == "v":
 		v0 = Vector3(pt.x * CEL - ESP / 2, 2.4, pt.y * CEL); v1 = Vector3(pt.x * CEL + ESP / 2, ALT, pt.y * CEL + comp)
 	else:
 		v0 = Vector3(pt.x * CEL, 2.4, pt.y * CEL - ESP / 2); v1 = Vector3(pt.x * CEL + comp, ALT, pt.y * CEL + ESP / 2)
-	madeira.caixa(v0, v1, COR_PAREDE)
+	_bloco(paredes, int(pt.x), int(pt.y)).caixa(v0, v1, COR_PAREDE)
 
 func _instanciar(raiz: Node3D, nome: String, st: _St, brilho: bool) -> void:
 	if st.vazio(): return

@@ -31,7 +31,8 @@ func configurar(raiz: Node3D, masmorra: Node3D, ambiente: WorldEnvironment, carr
 	_aplicar(masmorra.get_node("Rocha"), pedra, true)
 	_aplicar(masmorra.get_node("Paredes"), pedra, true)
 	var madeira := StandardMaterial3D.new(); madeira.vertex_color_use_as_albedo = true; madeira.roughness = 0.8
-	masmorra.get_node("Portas").material_override = madeira
+	for folha in masmorra.get_node("Portas").find_children("*", "MeshInstance3D", true, false):
+		folha.material_override = madeira
 	var ferro := StandardMaterial3D.new(); ferro.vertex_color_use_as_albedo = true; ferro.metallic = 0.8; ferro.roughness = 0.4
 	masmorra.get_node("Ferro").material_override = ferro
 	var est := StandardMaterial3D.new(); est.vertex_color_use_as_albedo = true; est.roughness = 0.9
