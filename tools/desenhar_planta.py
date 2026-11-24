@@ -34,6 +34,8 @@ def f(t, n=False):
 
 
 def main():
+    sem_entradas = "--sem-entradas" in sys.argv
+    if sem_entradas: sys.argv.remove("--sem-entradas")
     L = json.load(open(sys.argv[1]))
     saida = sys.argv[2]
     foto = sys.argv[3] if len(sys.argv) > 3 else None
@@ -173,10 +175,10 @@ def main():
 
     # Rótulos
     for aid, ar in areas.items():
-        if ar["tipo"] == "cela" and aid.startswith("19"):
+        if ar["tipo"] == "cela" and aid.startswith("19c"):
             x0_, y0_, x1_, y1_ = ar["retangulos"][0]
             a, b = PX((x0_ + x1_) / 2, (y0_ + y1_) / 2)
-            d.text((a, b), aid[2:], font=f(12, True), fill=SUAVE, anchor="mm")
+            d.text((a, b), aid[3:], font=f(12, True), fill=SUAVE, anchor="mm")
             continue
         r = max(ar["retangulos"], key=lambda q: (q[2] - q[0]) * (q[3] - q[1]))
         a, b = PX((r[0] + r[2]) / 2, (r[1] + r[3]) / 2)
@@ -190,8 +192,21 @@ def main():
             d.ellipse([a - 13, b - 13, a + 13, b + 13], fill=CHAO, outline=TINTA, width=2)
             d.text((a, b), rotulo, font=f(tam, True), fill=TINTA, anchor="mm")
 
+    # IDs das portas e secretas sugeridas
+    for pt in L["portas"]:
+        if pt["tipo"] == "cela": continue
+        n = pt["largura"]
+        if pt["orient"] == "v": a, b = PX(pt["x"], pt["y"] + n / 2); pos = (a + 4, b - 9)
+        else: a, b = PX(pt["x"] + n / 2, pt["y"]); pos = (a + 2, b - 13)
+        d.text(pos, pt["id"], font=f(9, True), fill=PORTA, stroke_width=2, stroke_fill=CHAO)
+    for sc in L.get("secretas_sugeridas", []):
+        if "x" not in sc: continue
+        a, b = PX(sc["x"], sc["y"] + 0.5)
+        d.text((a, b), "S", font=f(13, True), fill=ENTRADA, anchor="mm", stroke_width=2, stroke_fill=CHAO)
+        d.text((a + 4, b - 18), sc["id"], font=f(9, True), fill=ENTRADA, stroke_width=2, stroke_fill=CHAO)
+
     # Entradas possíveis
-    for aid in L.get("entradas_possiveis", {}).get("areas", []):
+    for aid in ([] if sem_entradas else L.get("entradas_possiveis", {}).get("areas", [])):
         r = max(areas[aid]["retangulos"], key=lambda q: (q[2] - q[0]) * (q[3] - q[1]))
         cx, cy = (r[0] + r[2]) / 2, (r[1] + r[3]) / 2
         bx, by = r[0] + 1, r[3] - 3
@@ -202,7 +217,7 @@ def main():
         d.rectangle([a, b, c_, e], outline=ENTRADA, width=2)
 
     # Título, escala, legenda
-    d.text((M, 14), L["nome"] + " — planta base (v2)", font=f(20, True), fill=TINTA)
+    d.text((M, 14), L["nome"] + " — planta base (v%d)" % L.get("versao", 2), font=f(20, True), fill=TINTA)
     d.text((M, 38), "Desenho do Leonardo passado para a grade. 1 célula = 1,5 m (5 pés) = 1 personagem.", font=f(12), fill=SUAVE)
     yb = TOPO + H * C + 18
     for k in range(5):
@@ -211,9 +226,9 @@ def main():
     d.text((M, yb + 14), "0        3 m       6 m       9 m      12 m     15 m", font=f(11), fill=SUAVE)
     lx = M + W * C + 24; ly = TOPO
     d.text((lx, ly), "Legenda", font=f(15, True), fill=TINTA); ly += 26
-    itens = [("porta", "porta comum (a aventura decide se emperra, tranca ou tem armadilha)"),
+    itens = [("porta", "porta comum, com número (P01…); a aventura decide se emperra, tranca ou tem armadilha"),
              ("dupla", "porta dupla (20 → 19a)"), ("grade", "grade de cela com porta (2 → 1)"),
-             ("cela", "porta de cela, fixa (A–H)"), ("natural", "parede natural de caverna"),
+             ("cela", "porta de cela, fixa (celas 19cA–19cH)"), ("natural", "parede natural de caverna"),
              ("entrada", "possível entrada: escada 2×2 (24, 30, 33, 34, 21, 22)"),
              ("esteira", "esteira de pedra (mineração do 33)"), ("cristal", "cristal (gruta 33)")]
     for k, txt in itens:
@@ -238,9 +253,8 @@ def main():
         ly += 14 * len(linhas) + 10
     ly += 8
     d.text((lx, ly), "Observações", font=f(15, True), fill=TINTA); ly += 24
-    for ln in ["19a e 19b: passagens que fazem parte do 19.", "Portas secretas não aparecem na planta:",
-               "cada aventura cria as suas.", "Sugestões: na fenda que leva ao 34",
-               "(na entrada do 34 e no início da fenda).", "Variação: grupo capturado na cela 1,", "equipamento jogado na sala 4."]:
+    for ln in ["19a e 19b: passagens que fazem parte do 19.", "Secretas sugeridas: S01 (início da fenda)",
+               "e S02 (a própria P35); a aventura ativa.", "Variação: grupo capturado na cela 1,", "equipamento jogado na sala 4."]:
         d.text((lx, ly), ln, font=f(11), fill=SUAVE); ly += 15
 
     if foto:

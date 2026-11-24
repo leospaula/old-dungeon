@@ -1,0 +1,104 @@
+{
+  "$schema": "../../esquemas/aventura.schema.json",
+  "id": "exemplo-fuga-da-prisao",
+  "titulo": "Exemplo: Fuga da Prisão",
+  "planta": "masmorra-base@3",
+  "nivel": [1, 2],
+  "gancho": "Vocês acordam numa cela úmida, sem armas e sem mochilas. A última lembrança é de uma emboscada na estrada. Do outro lado da grade, alguém ronca.",
+  "notas_mestre": "Aventura de EXEMPLO do formato, não é a aventura 1. A saída é a passagem escondida S01, que leva à fenda e à sala 34, onde há uma escada esquecida.",
+
+  "inicio": {
+    "tipo": "capturados",
+    "area": "1",
+    "pos": "B3",
+    "sem_equipamento": true,
+    "equipamento_em": { "area": "4", "pos": "F2", "prop": "bau" }
+  },
+
+  "portas": {
+    "P17": { "estado": "trancada", "abre_com": "chave-da-cela", "nota": "Grade da cela 1. O carcereiro tem a chave." },
+    "P14": { "estado": "fechada" },
+    "P11": { "estado": "emperrada", "dificuldade": 2 },
+    "P15": { "estado": "fechada", "armadilha": { "tipo": "alarme", "efeito": "Um sino toca na prisão.", "evento": "alarme-prisao" } },
+    "P35": { "estado": "secreta", "nota": "Do lado da fenda parece só rocha." }
+  },
+  "secretas": ["S01"],
+
+  "itens": {
+    "chave-da-cela": { "nome": "Chave de ferro da cela 1", "tipo": "chave" },
+    "mapa-da-mina": { "nome": "Mapa rabiscado da mina", "tipo": "missao", "efeito": "Mostra a passagem secreta S01." }
+  },
+
+  "pdms": {
+    "borin": { "nome": "Borin, o mineiro", "base": "bandido", "classe": "anao", "nivel": 1, "atitude": "amigavel",
+               "fala": "Me tirem daqui e eu mostro o caminho da mina!", "quer": "sair e recuperar a picareta", "carrega": ["mapa-da-mina"] }
+  },
+
+  "areas": {
+    "1": {
+      "leitura": "Uma cela de pedra com palha velha no chão. Uma grade de ferro separa vocês do corredor.",
+      "luz": "penumbra",
+      "props": [ { "tipo": "balde", "pos": "D5" }, { "tipo": "cama", "pos": "A4" } ]
+    },
+    "3": {
+      "leitura": "Um corredor estreito. Um homem barbudo dorme numa cadeira, com um molho de chaves no cinto.",
+      "luz": "iluminado",
+      "props": [ { "tipo": "mesa-carcereiro", "pos": "C1" }, { "tipo": "cadeira", "pos": "B1" }, { "tipo": "tocha-parede", "pos": "E2" } ],
+      "monstros": [ { "tipo": "bandido", "nome": "Carcereiro", "pos": "B1", "estado": "dormindo", "carrega": ["chave-da-cela"] } ]
+    },
+    "4": {
+      "leitura": "O depósito dos carcereiros. Um baú pesado está encostado na parede, ao lado de uma mesa com restos de comida.",
+      "props": [ { "tipo": "bau", "pos": "F2", "nome": "Baú com o equipamento do grupo", "trancado": false },
+                 { "tipo": "mesa", "pos": "C4" }, { "tipo": "barril", "pos": "A7" }, { "tipo": "barril", "pos": "B7" } ],
+      "tesouros": [ { "pos": "C4", "po": 15, "pp": 30 } ]
+    },
+    "19": {
+      "leitura": "Um salão com oito celas, de costas umas para as outras. Dois guardas fazem a ronda.",
+      "luz": "iluminado",
+      "props": [ { "tipo": "sino-alarme", "pos": "L1" }, { "tipo": "chaveiro", "pos": "A1" } ],
+      "monstros": [ { "tipo": "bandido", "qtd": 2, "posicoes": ["K2", "J11"], "estado": "patrulha" } ]
+    },
+    "19cC": {
+      "leitura": "Um anão de barba ruiva se levanta, desconfiado.",
+      "pdms": [ { "id": "borin", "pos": "A1" } ]
+    },
+    "15": {
+      "leitura": "Um refeitório abandonado. Ratos enormes disputam uma carcaça.",
+      "props": [ { "tipo": "mesa-grande", "pos": "E4" }, { "tipo": "banco", "pos": "E3" }, { "tipo": "banco", "pos": "E6" } ],
+      "monstros": [ { "tipo": "rato_gigante", "qtd": 3, "posicoes": ["D5", "H5", "F7"] } ]
+    },
+    "19a": {
+      "armadilhas": [ { "tipo": "fosso", "pos": "D9", "chance": "2-em-6", "dano": "1d6", "efeito": "Cai num buraco de 3 m." } ]
+    },
+    "34": {
+      "leitura": "Uma câmara pequena e empoeirada. Num canto, uma escada de madeira sobe até um alçapão.",
+      "props": [ { "tipo": "escada-entrada", "pos": "B2" }, { "tipo": "ossos", "pos": "A4" } ],
+      "tesouros": [ { "pos": "A4", "po": 40, "gemas": [25], "escondido": true } ]
+    }
+  },
+
+  "eventos": [
+    { "id": "alarme-prisao", "quando": { "porta_aberta": "P15" },
+      "faz": [ { "mensagem": "Um sino toca! Passos apressados vêm da prisão." }, { "acordar": "19" } ] },
+    { "id": "borin-mostra-o-caminho", "quando": { "item_pego": "mapa-da-mina" },
+      "faz": [ { "revelar_secreta": "S01" }, { "mensagem": "O mapa mostra uma passagem na parede da curva, perto da fenda." } ] },
+    { "id": "equipamento-recuperado", "quando": { "prop_usado": { "area": "4", "pos": "F2", "acao": "abrir" } },
+      "faz": [ { "objetivo": "recuperar-equipamento" } ] }
+  ],
+
+  "errantes": {
+    "chance": "1-em-6",
+    "a_cada_turnos": 2,
+    "tabela": [
+      { "d6": [1, 3], "encontro": "1d4 rato_gigante" },
+      { "d6": [4, 5], "encontro": "1d2 bandido" },
+      { "d6": [6, 6], "encontro": "1d3 estirge" }
+    ]
+  },
+
+  "objetivos": [
+    { "id": "recuperar-equipamento", "descricao": "Recuperar o equipamento no baú da sala 4.", "condicao": { "entrar_area": "4" }, "xp": 50 },
+    { "id": "resgatar-borin", "descricao": "Libertar Borin da cela 19cC.", "condicao": { "item_pego": "mapa-da-mina" }, "xp": 100 },
+    { "id": "fugir", "descricao": "Escapar pela escada da sala 34.", "condicao": { "grupo_em": ["34"] }, "xp": 200, "final": true }
+  ]
+}

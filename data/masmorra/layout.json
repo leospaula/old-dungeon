@@ -1,8 +1,8 @@
 {
- "_doc": "Planta base v2 (desenho do Leonardo, 23/11/2026). Grade de células de 1,5 m (5 pés): 1 personagem = 1 célula. Cada área é uma união de retângulos [x0,y0,x1,y1) (x para a direita, y para baixo). Paredes ficam entre células de áreas diferentes, exceto nas 'aberturas'. Portas ficam na borda entre células. As aventuras decidem portas emperradas, trancadas, com armadilha e secretas.",
+ "_doc": "Planta base v3 (desenho do Leonardo, 23/11/2026). Grade de células de 1,5 m (5 pés): 1 personagem = 1 célula. Cada área é uma união de retângulos [x0,y0,x1,y1) (x para a direita, y para baixo). Paredes ficam entre células de áreas diferentes, exceto nas 'aberturas'. Portas ficam na borda entre células. As aventuras decidem portas emperradas, trancadas, com armadilha e secretas.",
  "id": "masmorra-base",
  "nome": "Masmorra Base",
- "versao": 2,
+ "versao": 3,
  "grade": {
   "celula_m": 1.5,
   "largura": 62,
@@ -582,8 +582,8 @@
    ]
   },
   {
-   "id": "19A",
-   "nome": "Cela A",
+   "id": "19cA",
+   "nome": "Cela A (prisão 19)",
    "tipo": "cela",
    "retangulos": [
     [
@@ -595,8 +595,8 @@
    ]
   },
   {
-   "id": "19B",
-   "nome": "Cela B",
+   "id": "19cB",
+   "nome": "Cela B (prisão 19)",
    "tipo": "cela",
    "retangulos": [
     [
@@ -608,8 +608,8 @@
    ]
   },
   {
-   "id": "19C",
-   "nome": "Cela C",
+   "id": "19cC",
+   "nome": "Cela C (prisão 19)",
    "tipo": "cela",
    "retangulos": [
     [
@@ -621,8 +621,8 @@
    ]
   },
   {
-   "id": "19D",
-   "nome": "Cela D",
+   "id": "19cD",
+   "nome": "Cela D (prisão 19)",
    "tipo": "cela",
    "retangulos": [
     [
@@ -634,8 +634,8 @@
    ]
   },
   {
-   "id": "19E",
-   "nome": "Cela E",
+   "id": "19cE",
+   "nome": "Cela E (prisão 19)",
    "tipo": "cela",
    "retangulos": [
     [
@@ -647,8 +647,8 @@
    ]
   },
   {
-   "id": "19F",
-   "nome": "Cela F",
+   "id": "19cF",
+   "nome": "Cela F (prisão 19)",
    "tipo": "cela",
    "retangulos": [
     [
@@ -660,8 +660,8 @@
    ]
   },
   {
-   "id": "19G",
-   "nome": "Cela G",
+   "id": "19cG",
+   "nome": "Cela G (prisão 19)",
    "tipo": "cela",
    "retangulos": [
     [
@@ -673,8 +673,8 @@
    ]
   },
   {
-   "id": "19H",
-   "nome": "Cela H",
+   "id": "19cH",
+   "nome": "Cela H (prisão 19)",
    "tipo": "cela",
    "retangulos": [
     [
@@ -688,6 +688,7 @@
  ],
  "portas": [
   {
+   "id": "P01",
    "de": "24",
    "para": "24p",
    "orient": "v",
@@ -697,15 +698,7 @@
    "tipo": "porta"
   },
   {
-   "de": "24",
-   "para": "23",
-   "orient": "v",
-   "x": 12,
-   "y": 5,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
+   "id": "P02",
    "de": "24p",
    "para": "23",
    "orient": "h",
@@ -715,105 +708,17 @@
    "tipo": "porta"
   },
   {
-   "de": "21",
-   "para": "22",
-   "orient": "h",
-   "x": 3,
-   "y": 15,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
-   "de": "20",
-   "para": "19a",
-   "orient": "h",
-   "x": 13,
-   "y": 20,
-   "largura": 2,
-   "tipo": "dupla"
-  },
-  {
-   "de": "15",
-   "para": "19b",
-   "orient": "h",
-   "x": 15,
-   "y": 20,
-   "largura": 2,
-   "tipo": "porta"
-  },
-  {
-   "de": "15",
-   "para": "14",
+   "id": "P03",
+   "de": "24",
+   "para": "23",
    "orient": "v",
-   "x": 27,
-   "y": 15,
+   "x": 12,
+   "y": 5,
    "largura": 1,
    "tipo": "porta"
   },
   {
-   "de": "16",
-   "para": "19b",
-   "orient": "v",
-   "x": 17,
-   "y": 24,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
-   "de": "16",
-   "para": "17",
-   "orient": "h",
-   "x": 21,
-   "y": 27,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
-   "de": "17",
-   "para": "18",
-   "orient": "v",
-   "x": 22,
-   "y": 30,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
-   "de": "fenda34",
-   "para": "34",
-   "orient": "v",
-   "x": 31,
-   "y": 34,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
-   "de": "34",
-   "para": "32",
-   "orient": "v",
-   "x": 35,
-   "y": 33,
-   "largura": 2,
-   "tipo": "porta"
-  },
-  {
-   "de": "32",
-   "para": "33",
-   "orient": "h",
-   "x": 42,
-   "y": 32,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
-   "de": "32",
-   "para": "33",
-   "orient": "h",
-   "x": 53,
-   "y": 32,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
+   "id": "P04",
    "de": "27",
    "para": "28",
    "orient": "h",
@@ -823,6 +728,7 @@
    "tipo": "porta"
   },
   {
+   "id": "P05",
    "de": "30",
    "para": "31",
    "orient": "v",
@@ -832,6 +738,7 @@
    "tipo": "porta"
   },
   {
+   "id": "P06",
    "de": "9",
    "para": "10",
    "orient": "h",
@@ -841,6 +748,7 @@
    "tipo": "porta"
   },
   {
+   "id": "P07",
    "de": "11",
    "para": "12",
    "orient": "v",
@@ -850,15 +758,7 @@
    "tipo": "porta"
   },
   {
-   "de": "12",
-   "para": "13",
-   "orient": "h",
-   "x": 42,
-   "y": 13,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
+   "id": "P08",
    "de": "14",
    "para": "13",
    "orient": "v",
@@ -868,6 +768,37 @@
    "tipo": "porta"
   },
   {
+   "id": "P09",
+   "de": "12",
+   "para": "13",
+   "orient": "h",
+   "x": 42,
+   "y": 13,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P10",
+   "de": "21",
+   "para": "22",
+   "orient": "h",
+   "x": 3,
+   "y": 15,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P11",
+   "de": "15",
+   "para": "14",
+   "orient": "v",
+   "x": 27,
+   "y": 15,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P12",
    "de": "8",
    "para": "7",
    "orient": "v",
@@ -877,6 +808,7 @@
    "tipo": "porta"
   },
   {
+   "id": "P13",
    "de": "2",
    "para": "3",
    "orient": "v",
@@ -886,6 +818,7 @@
    "tipo": "porta"
   },
   {
+   "id": "P14",
    "de": "3",
    "para": "4",
    "orient": "v",
@@ -895,33 +828,27 @@
    "tipo": "porta"
   },
   {
-   "de": "5",
-   "para": "4",
-   "orient": "v",
-   "x": 36,
-   "y": 21,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
-   "de": "5",
-   "para": "6",
+   "id": "P15",
+   "de": "20",
+   "para": "19a",
    "orient": "h",
-   "x": 33,
-   "y": 26,
-   "largura": 1,
+   "x": 13,
+   "y": 20,
+   "largura": 2,
+   "tipo": "dupla"
+  },
+  {
+   "id": "P16",
+   "de": "15",
+   "para": "19b",
+   "orient": "h",
+   "x": 15,
+   "y": 20,
+   "largura": 2,
    "tipo": "porta"
   },
   {
-   "de": "6",
-   "para": "7",
-   "orient": "v",
-   "x": 43,
-   "y": 28,
-   "largura": 1,
-   "tipo": "porta"
-  },
-  {
+   "id": "P17",
    "de": "2",
    "para": "1",
    "orient": "h",
@@ -931,8 +858,19 @@
    "tipo": "grade"
   },
   {
+   "id": "P18",
+   "de": "5",
+   "para": "4",
+   "orient": "v",
+   "x": 36,
+   "y": 21,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P19",
    "de": "19",
-   "para": "19A",
+   "para": "19cA",
    "orient": "v",
    "x": 3,
    "y": 22,
@@ -940,8 +878,9 @@
    "tipo": "cela"
   },
   {
+   "id": "P20",
    "de": "19",
-   "para": "19B",
+   "para": "19cB",
    "orient": "v",
    "x": 7,
    "y": 22,
@@ -949,8 +888,9 @@
    "tipo": "cela"
   },
   {
+   "id": "P21",
    "de": "19",
-   "para": "19C",
+   "para": "19cC",
    "orient": "v",
    "x": 3,
    "y": 24,
@@ -958,8 +898,9 @@
    "tipo": "cela"
   },
   {
+   "id": "P22",
    "de": "19",
-   "para": "19D",
+   "para": "19cD",
    "orient": "v",
    "x": 7,
    "y": 24,
@@ -967,8 +908,19 @@
    "tipo": "cela"
   },
   {
+   "id": "P23",
+   "de": "16",
+   "para": "19b",
+   "orient": "v",
+   "x": 17,
+   "y": 24,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P24",
    "de": "19",
-   "para": "19E",
+   "para": "19cE",
    "orient": "v",
    "x": 3,
    "y": 26,
@@ -976,8 +928,9 @@
    "tipo": "cela"
   },
   {
+   "id": "P25",
    "de": "19",
-   "para": "19F",
+   "para": "19cF",
    "orient": "v",
    "x": 7,
    "y": 26,
@@ -985,8 +938,29 @@
    "tipo": "cela"
   },
   {
+   "id": "P26",
+   "de": "5",
+   "para": "6",
+   "orient": "h",
+   "x": 33,
+   "y": 26,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P27",
+   "de": "16",
+   "para": "17",
+   "orient": "h",
+   "x": 21,
+   "y": 27,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P28",
    "de": "19",
-   "para": "19G",
+   "para": "19cG",
    "orient": "v",
    "x": 3,
    "y": 28,
@@ -994,13 +968,74 @@
    "tipo": "cela"
   },
   {
+   "id": "P29",
    "de": "19",
-   "para": "19H",
+   "para": "19cH",
    "orient": "v",
    "x": 7,
    "y": 28,
    "largura": 2,
    "tipo": "cela"
+  },
+  {
+   "id": "P30",
+   "de": "6",
+   "para": "7",
+   "orient": "v",
+   "x": 43,
+   "y": 28,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P31",
+   "de": "17",
+   "para": "18",
+   "orient": "v",
+   "x": 22,
+   "y": 30,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P32",
+   "de": "32",
+   "para": "33",
+   "orient": "h",
+   "x": 42,
+   "y": 32,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P33",
+   "de": "32",
+   "para": "33",
+   "orient": "h",
+   "x": 53,
+   "y": 32,
+   "largura": 1,
+   "tipo": "porta"
+  },
+  {
+   "id": "P34",
+   "de": "34",
+   "para": "32",
+   "orient": "v",
+   "x": 35,
+   "y": 33,
+   "largura": 2,
+   "tipo": "porta"
+  },
+  {
+   "id": "P35",
+   "de": "fenda34",
+   "para": "34",
+   "orient": "v",
+   "x": 31,
+   "y": 34,
+   "largura": 1,
+   "tipo": "porta"
   }
  ],
  "aberturas": [
@@ -1074,14 +1109,19 @@
  },
  "secretas_sugeridas": [
   {
-   "de": "fenda34",
-   "para": "34",
-   "onde": "parede de caverna na entrada do 34"
-  },
-  {
+   "id": "S01",
    "de": "19a",
    "para": "fenda34",
-   "onde": "início da fenda"
+   "orient": "v",
+   "x": 28,
+   "y": 34,
+   "largura": 1,
+   "onde": "início da fenda que leva ao 34 (parede de caverna)"
+  },
+  {
+   "id": "S02",
+   "porta": "P35",
+   "onde": "a própria porta P35, na entrada do 34, pode virar secreta"
   }
  ],
  "notas": {
@@ -1104,5 +1144,11 @@
    "de_y": 15,
    "ate_y": 26
   }
- ]
+ ],
+ "coordenadas": {
+  "_doc": "Coordenadas locais de cada área no estilo tabuleiro: letra = coluna, número = linha, a partir do canto superior esquerdo do retângulo que envolve a área (A1). Só valem as células que são chão daquela área. Ex.: \"C3\".",
+  "origem": "canto superior esquerdo da caixa da área",
+  "coluna": "letra A–Z",
+  "linha": "número a partir de 1"
+ }
 }

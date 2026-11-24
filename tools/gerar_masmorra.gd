@@ -123,7 +123,7 @@ func _run() -> void:
 	# Números das áreas (Label3D, só para conferência)
 	var rotulos := Node3D.new(); rotulos.name = "Rotulos"; raiz.add_child(rotulos)
 	for ar in L.areas:
-		if (ar.id as String).length() == 3 and (ar.id as String).begins_with("19") and ar.tipo == "cela": continue
+		if ar.tipo == "cela" and (ar.id as String).begins_with("19c"): continue
 		if ar.id in ["24p", "fenda34"]: continue
 		var maior: Array = ar.retangulos[0]
 		for r in ar.retangulos:

@@ -411,13 +411,18 @@
   "mapas": [
     {
       "src": "img/planta-base-v2.png",
-      "titulo": "Planta base (v2)",
-      "legenda": "Seu desenho passado para a grade: 34 áreas, células de 1,5 m (1 personagem por célula), portas, celas A–H, esteiras do 28/29, gruta de cristal e os 6 lugares possíveis para a escada de entrada."
+      "titulo": "Planta base (v3)",
+      "legenda": "Seu desenho na grade: 34 áreas, células de 1,5 m, portas numeradas P01–P35, secretas sugeridas S01/S02 e as 6 entradas possíveis."
+    },
+    {
+      "src": "img/exemplo-fuga-da-prisao.png",
+      "titulo": "Aventura de exemplo — Fuga da Prisão",
+      "legenda": "Modelo do formato de aventura: início capturado na cela 1, portas com estado, secreta ativa, props, monstros, PdM, armadilha e objetivos."
     },
     {
       "src": "img/masmorra-base-desenho.jpg",
       "titulo": "Desenho original (papel)",
-      "legenda": "O desenho a lápis que serviu de base, para comparar."
+      "legenda": "O desenho a lápis que serviu de base."
     }
   ]
 }

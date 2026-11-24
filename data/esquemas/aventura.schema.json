@@ -1,0 +1,744 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:masmorra-classica:aventura",
+  "title": "Aventura da Masmorra Clássica",
+  "description": "Uma aventura descreve só o que muda por cima da planta base: início, estado das portas, secretas ativas e o conteúdo de cada área. Posições usam coordenadas locais da área no estilo tabuleiro (letra = coluna, número = linha; ex.: \"C3\").",
+  "type": "object",
+  "required": [
+    "id",
+    "titulo",
+    "planta",
+    "nivel",
+    "inicio",
+    "areas"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Identificador curto, igual ao nome da pasta."
+    },
+    "titulo": {
+      "type": "string"
+    },
+    "planta": {
+      "type": "string",
+      "pattern": "^masmorra-base@\\d+$",
+      "description": "Planta e versão usadas, ex.: masmorra-base@3."
+    },
+    "nivel": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "[nível mínimo, nível máximo]"
+    },
+    "gancho": {
+      "type": "string",
+      "description": "Como o grupo chega à aventura (lido para os jogadores)."
+    },
+    "notas_mestre": {
+      "type": "string"
+    },
+    "inicio": {
+      "type": "object",
+      "required": [
+        "tipo",
+        "area",
+        "pos"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "enum": [
+            "escada",
+            "capturados",
+            "livre"
+          ],
+          "description": "escada: o grupo desce pela escada 2×2; capturados: começa preso; livre: começa num ponto qualquer."
+        },
+        "area": {
+          "$ref": "#/$defs/area"
+        },
+        "pos": {
+          "$ref": "#/$defs/pos",
+          "description": "Canto superior esquerdo da escada (2×2) ou posição do grupo."
+        },
+        "giro": {
+          "$ref": "#/$defs/giro"
+        },
+        "sem_equipamento": {
+          "type": "boolean"
+        },
+        "equipamento_em": {
+          "type": "object",
+          "required": [
+            "area",
+            "pos"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "area": {
+              "$ref": "#/$defs/area"
+            },
+            "pos": {
+              "$ref": "#/$defs/pos"
+            },
+            "prop": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "portas": {
+      "type": "object",
+      "description": "Só as portas que mudam. Chave = id da planta (P01…).",
+      "propertyNames": {
+        "pattern": "^P\\d{2}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "estado": {
+            "enum": [
+              "aberta",
+              "fechada",
+              "emperrada",
+              "trancada",
+              "quebrada",
+              "secreta"
+            ]
+          },
+          "abre_com": {
+            "type": "string",
+            "description": "Id de item (chave) que abre."
+          },
+          "dificuldade": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Para forçar: sucesso em 1–N no d6."
+          },
+          "armadilha": {
+            "$ref": "#/$defs/armadilha"
+          },
+          "nota": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "secretas": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^S\\d{2}$"
+      },
+      "description": "Secretas sugeridas da planta que existem nesta aventura (S01…)."
+    },
+    "areas": {
+      "type": "object",
+      "description": "Conteúdo por área. Chave = id da área (1, 19a, 19cC…). Áreas não citadas ficam vazias.",
+      "additionalProperties": {
+        "$ref": "#/$defs/conteudo_area"
+      }
+    },
+    "itens": {
+      "type": "object",
+      "description": "Itens especiais da aventura (chaves, objetos de missão, itens mágicos), citados por id em tesouros, portas e eventos.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "nome"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "tipo": {
+            "enum": [
+              "chave",
+              "missao",
+              "magico",
+              "comum"
+            ]
+          },
+          "efeito": {
+            "type": "string"
+          },
+          "valor_po": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "pdms": {
+      "type": "object",
+      "description": "Personagens do mestre, colocados nas áreas por id.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "nome",
+          "atitude"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "base": {
+            "type": "string",
+            "description": "Tipo de monstro/classe base para as estatísticas."
+          },
+          "classe": {
+            "type": "string"
+          },
+          "nivel": {
+            "type": "integer"
+          },
+          "pv": {
+            "type": "integer"
+          },
+          "ca": {
+            "type": "integer"
+          },
+          "atitude": {
+            "enum": [
+              "hostil",
+              "desconfiada",
+              "neutra",
+              "amigavel",
+              "prestativa"
+            ]
+          },
+          "fala": {
+            "type": "string"
+          },
+          "quer": {
+            "type": "string"
+          },
+          "carrega": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "eventos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evento"
+      }
+    },
+    "errantes": {
+      "type": "object",
+      "required": [
+        "chance",
+        "a_cada_turnos",
+        "tabela"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "chance": {
+          "type": "string",
+          "pattern": "^\\d-em-6$"
+        },
+        "a_cada_turnos": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "areas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/area"
+          },
+          "description": "Se informado, a tabela só vale nessas áreas."
+        },
+        "tabela": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "d6",
+              "encontro"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "d6": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "encontro": {
+                "type": "string",
+                "pattern": "^\\d+(d\\d+)? [a-z_]+$",
+                "description": "Ex.: \"1d4 kobold\" (tipo do bestiário)."
+              }
+            }
+          }
+        }
+      }
+    },
+    "objetivos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "descricao",
+          "condicao"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "condicao": {
+            "$ref": "#/$defs/gatilho"
+          },
+          "xp": {
+            "type": "integer"
+          },
+          "recompensa_po": {
+            "type": "integer"
+          },
+          "final": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "area": {
+      "type": "string",
+      "pattern": "^[0-9]{1,2}([a-z]|c[A-H])?$|^fenda34$|^24p$"
+    },
+    "pos": {
+      "type": "string",
+      "pattern": "^[A-Z][1-9][0-9]?$",
+      "description": "Coordenada local da área: letra (coluna) + número (linha). Ex.: C3."
+    },
+    "giro": {
+      "enum": [
+        0,
+        90,
+        180,
+        270
+      ]
+    },
+    "tesouro": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "po": {
+          "type": "integer"
+        },
+        "pp": {
+          "type": "integer"
+        },
+        "pc": {
+          "type": "integer"
+        },
+        "gemas": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Valor de cada gema em po."
+        },
+        "joias": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "nome",
+              "valor_po"
+            ],
+            "properties": {
+              "nome": {
+                "type": "string"
+              },
+              "valor_po": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "itens": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ids de itens da aventura ou nomes de equipamento comum."
+        },
+        "escondido": {
+          "type": "boolean",
+          "description": "Só aparece ao revistar/procurar."
+        },
+        "pos": {
+          "$ref": "#/$defs/pos",
+          "description": "Onde está, se estiver solto no chão."
+        }
+      }
+    },
+    "armadilha": {
+      "type": "object",
+      "required": [
+        "tipo"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "enum": [
+            "fosso",
+            "agulha",
+            "dardos",
+            "lamina",
+            "gas",
+            "alarme",
+            "desabamento",
+            "rede"
+          ]
+        },
+        "pos": {
+          "$ref": "#/$defs/pos"
+        },
+        "chance": {
+          "type": "string",
+          "pattern": "^\\d-em-6$",
+          "description": "Chance de disparar ao passar."
+        },
+        "dano": {
+          "type": "string"
+        },
+        "protecao": {
+          "enum": [
+            "morte",
+            "varinhas",
+            "paralisia",
+            "sopro",
+            "magias"
+          ]
+        },
+        "efeito": {
+          "type": "string"
+        },
+        "evento": {
+          "type": "string",
+          "description": "Id de evento disparado."
+        }
+      }
+    },
+    "conteudo_area": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "leitura": {
+          "type": "string",
+          "description": "Texto lido em voz alta ao entrar."
+        },
+        "notas": {
+          "type": "string",
+          "description": "Só para o mestre."
+        },
+        "luz": {
+          "enum": [
+            "escuro",
+            "penumbra",
+            "iluminado"
+          ]
+        },
+        "props": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "tipo",
+              "pos"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "description": "Id do catálogo data/catalogos/props.json."
+              },
+              "pos": {
+                "$ref": "#/$defs/pos"
+              },
+              "giro": {
+                "$ref": "#/$defs/giro"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "conteudo": {
+                "$ref": "#/$defs/tesouro"
+              },
+              "trancado": {
+                "type": "boolean"
+              },
+              "armadilha": {
+                "$ref": "#/$defs/armadilha"
+              }
+            }
+          }
+        },
+        "monstros": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "tipo"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "description": "Id do bestiário (data/regras/monstros.json)."
+              },
+              "qtd": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "pos": {
+                "$ref": "#/$defs/pos"
+              },
+              "posicoes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/pos"
+                }
+              },
+              "nome": {
+                "type": "string"
+              },
+              "estado": {
+                "enum": [
+                  "alerta",
+                  "dormindo",
+                  "patrulha",
+                  "escondido",
+                  "preso"
+                ]
+              },
+              "carrega": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "moral": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "pdms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "pos"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "pos": {
+                "$ref": "#/$defs/pos"
+              }
+            }
+          }
+        },
+        "tesouros": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tesouro"
+          }
+        },
+        "armadilhas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/armadilha"
+          }
+        },
+        "pistas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "gatilho": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "additionalProperties": false,
+      "description": "Exatamente uma condição.",
+      "properties": {
+        "entrar_area": {
+          "$ref": "#/$defs/area"
+        },
+        "porta_aberta": {
+          "type": "string",
+          "pattern": "^P\\d{2}$"
+        },
+        "monstro_morto": {
+          "type": "string",
+          "description": "Nome ou tipo."
+        },
+        "item_pego": {
+          "type": "string"
+        },
+        "prop_usado": {
+          "type": "object",
+          "required": [
+            "area",
+            "pos",
+            "acao"
+          ],
+          "properties": {
+            "area": {
+              "$ref": "#/$defs/area"
+            },
+            "pos": {
+              "$ref": "#/$defs/pos"
+            },
+            "acao": {
+              "type": "string"
+            }
+          }
+        },
+        "grupo_em": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/area"
+          }
+        },
+        "turno": {
+          "type": "integer",
+          "description": "Ao chegar nesse turno de exploração."
+        },
+        "evento": {
+          "type": "string",
+          "description": "Quando outro evento acontece."
+        }
+      }
+    },
+    "evento": {
+      "type": "object",
+      "required": [
+        "id",
+        "quando",
+        "faz"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "quando": {
+          "$ref": "#/$defs/gatilho"
+        },
+        "uma_vez": {
+          "type": "boolean",
+          "default": true
+        },
+        "faz": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "mensagem": {
+                "type": "string"
+              },
+              "acordar": {
+                "$ref": "#/$defs/area"
+              },
+              "abrir_porta": {
+                "type": "string",
+                "pattern": "^P\\d{2}$"
+              },
+              "trancar_porta": {
+                "type": "string",
+                "pattern": "^P\\d{2}$"
+              },
+              "revelar_secreta": {
+                "type": "string",
+                "pattern": "^S\\d{2}$"
+              },
+              "surgir": {
+                "type": "object",
+                "required": [
+                  "area",
+                  "tipo"
+                ],
+                "properties": {
+                  "area": {
+                    "$ref": "#/$defs/area"
+                  },
+                  "tipo": {
+                    "type": "string"
+                  },
+                  "qtd": {
+                    "type": "integer"
+                  },
+                  "pos": {
+                    "$ref": "#/$defs/pos"
+                  }
+                }
+              },
+              "dar_item": {
+                "type": "string"
+              },
+              "moral": {
+                "type": "object",
+                "properties": {
+                  "tipo": {
+                    "type": "string"
+                  },
+                  "valor": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "objetivo": {
+                "type": "string",
+                "description": "Marca um objetivo como cumprido."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
