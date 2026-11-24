@@ -31,6 +31,7 @@ var previa_m := -1.0       # custo do caminho sob o mouse
 var grupo: Array = []
 var monstros: Array = []
 var _alc := {}
+var ordem_lados: Array = []   # ordem dos lados nesta rodada (para a tela de iniciativa)
 var _mortos := 0
 var _xp := 0
 var _moral_primeira := false
@@ -59,6 +60,7 @@ func _laco(rodada_de_surpresa: bool, grupo_surpreso: bool) -> void:
 				ig = Dados.d(6); im = Dados.d(6)
 			ordem = ["grupo", "monstros"] if ig > im else ["monstros", "grupo"]
 			registro.emit("[color=#c8b89a]— Rodada %d —[/color] iniciativa: grupo %d × monstros %d" % [rodada, ig, im])
+		ordem_lados = ordem
 		for lado in ordem:
 			var lista: Array = grupo if lado == "grupo" else monstros
 			for a in lista.duplicate():
@@ -74,6 +76,7 @@ func _laco(rodada_de_surpresa: bool, grupo_surpreso: bool) -> void:
 
 func _turno_personagem(h: Node) -> void:
 	vez = h; restante = h.mov_combate_m
+	h.set_meta("trocou", false)
 	_mostrar_alcance()
 	mudou.emit()
 	await _fim_de_turno
@@ -83,6 +86,19 @@ func _turno_personagem(h: Node) -> void:
 func adicionar(m: Node) -> void:
 	monstros.append(m)
 	mudou.emit()
+
+## Botão "Atacar/Atirar": o inimigo à vista mais perto que dá para atingir nesta vez.
+func atacar_mais_proximo() -> void:
+	if not ativo or ocupado or vez == null or vez.lado != "grupo": return
+	var melhor: Node = null; var menor := INF
+	for m in monstros:
+		if not (is_instance_valid(m) and m.vivo() and _ve(m)): continue
+		var ok: bool = _faixa(vez, m) >= 0 or grade.adjacentes(vez.celula, m.celula) or _melhor_vizinha(m) != Vector2i(-999, -999)
+		var d: float = Vector2(m.celula - vez.celula).length()
+		if ok and d < menor:
+			menor = d; melhor = m
+	if melhor: clicar(melhor.celula, melhor)
+	else: registro.emit("Nenhum inimigo ao alcance nesta vez.")
 
 func encerrar_turno() -> void:
 	if ativo and vez and vez.lado == "grupo" and not ocupado:
@@ -230,7 +246,7 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 	# Erro com motivo: quem tem escudo bloqueia, quem não tem esquiva; 1 natural = golpe em falso.
 	var defesa := "" if acerta or r == 1 else ("bloquear" if alvo.tem_escudo else "esquivar")
 	if distancia:
-		a.municao -= 1
+		a.gastar_municao()
 		var de: Vector3 = a.global_position + Vector3(0, a.altura_texto() * 0.95, 0)
 		var para: Vector3 = alvo.global_position + Vector3(0, alvo.altura_texto() * 0.8, 0)
 		var voo := maxf(de.distance_to(para) / 24.0, 0.12)

@@ -22,6 +22,9 @@ const Marcas = preload("res://scripts/visual/marcas.gd")
 const Combate = preload("res://scripts/combate/combate.gd")
 const Regras = preload("res://scripts/regras/regras.gd")
 const Dados = preload("res://scripts/regras/dados.gd")
+const Ficha = preload("res://scripts/regras/ficha.gd")
+const Hud = preload("res://scripts/interface/hud.gd")
+const Livro = preload("res://scripts/interface/livro.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
@@ -77,15 +80,14 @@ var taxa_m := 36.0
 var turno := 0
 var metros_no_turno := 0.0
 var tocha_turnos := TURNOS_POR_TOCHA
-var tochas_reserva := 0
 var xp_total := 0
 
 # Tela
-var hud_relogio: Label
-var hud_combate: Label
+var hud_ui: Control
+var livro: Control
+var diario: Array = []     # [{turno, tipo, texto}] — o diário automático do grupo
+var _area_antes := ""
 var hud_centro: Label
-var hud_log: RichTextLabel
-var _linhas: Array[String] = []
 
 func _ready() -> void:
 	$Sol.visible = false
@@ -117,6 +119,7 @@ func _ready() -> void:
 	camera.alvo = heroi.position; camera.distancia = 15.0; camera.inclinacao = 55.0; camera.guinada = -30.0
 	_atualizar_visao()
 	_registrar("A Tessa desce a escada para a [b]%s[/b]. Clique no chão para andar; clique numa porta para abri-la." % grade.nomes.get(grade.area_de(heroi.celula), ""))
+	_anotar_area()
 	_linha_de_comando()
 
 # ---------- personagens ----------
@@ -131,8 +134,8 @@ const HEROIS := {
 		"distancia": "arco curto", "papeis": {"atirar": "sacar-flecha", "soltar": "soltar-flecha"}},
 }
 const GRUPO_EM_JOGO := ["tessa", "caco", "lianne"]
-## Armas de projétil de B/X: alcance curto/médio/longo (pés × 0,3 = metros).
-const ALCANCES := {"arco curto": [15.0, 30.0, 45.0], "arco longo": [21.0, 42.0, 63.0], "funda": [12.0, 24.0, 48.0]}
+## Arma que o modelo 3D de cada um segura (as outras armas ficam na mochila/cinto e a mão aparece vazia).
+const ARMA_MODELO := {"tessa": "espada", "caco": "adaga", "lianne": "arco curto"}
 
 func _criar_grupo() -> void:
 	var G: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/personagens/grupo-inicial.json"))
@@ -141,39 +144,22 @@ func _criar_grupo() -> void:
 	var perto: Array = alc.keys().filter(func(c): return c != INICIO)
 	perto.sort_custom(func(a, b): return float(alc[a][0]) < float(alc[b][0]))
 	lugares.append_array(perto)
-	var reserva := 0
-	taxa_m = 999.0
 	for k in GRUPO_EM_JOGO.size():
 		var id: String = GRUPO_EM_JOGO[k]
 		for x in G.personagens:
 			if x.id == id: grupo.append(_criar_heroi(x, HEROIS[id], lugares[k]))
-		for it in fichas[-1].equipamento:
-			if str(it).begins_with("tocha x"): reserva += int(str(it).get_slice("x", 1))
-	tochas_reserva = reserva - 1
 	heroi = grupo[0]
+	_recalcular_grupo()
+	_gastar_tocha()   # a primeira tocha já entra acesa
 
 func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	fichas.append(p)
 	var a: Node3D = Ator.new(); a.grade = grade; a.lado = "grupo"
 	a.nome = str(p.nome).get_slice(" ", 0)
-	a.pv = int(p.pv); a.pv_max = a.pv; a.ca = int(p.ca); a.thac0 = int(p.thac0)
-	var mfor := Regras.mod(int(p.atributos["for"]))
-	a.mod_acerto = mfor; a.mod_dano = mfor
-	a.dano = str(p.armas[0].dano); a.arma = str(p.armas[0].nome)
+	a.ficha = Ficha.new(p, str(cfg.get("distancia", "")))
+	a.pv = int(p.pv); a.thac0 = int(p.thac0)
 	a.infravisao_m = float(p.get("infravisao_m", 0.0))
-	# O grupo anda no passo do mais lento (B/X).
-	var t := Regras.taxa_exploracao_m(p.equipamento)
-	taxa_m = minf(taxa_m, t)
-	a.mov_combate_m = Regras.taxa_combate_m(t)
-	for it in p.equipamento:
-		if str(it).begins_with("escudo"): a.tem_escudo = true
-	if cfg.has("distancia"):
-		for w in p.armas:
-			if str(w.nome) == cfg.distancia:
-				a.dist_arma = str(w.nome); a.dist_dano = str(w.dano); a.dist_faixas = ALCANCES[w.nome]
-				a.dist_mod = Regras.mod(int(p.atributos["des"]))
-		for it in p.equipamento:
-			if str(it).begins_with("flechas x") or str(it).begins_with("pedras de funda x"): a.municao = int(str(it).get_slice("x", 1))
+	a.set_meta("arma_modelo", ARMA_MODELO.get(str(p.id), ""))
 	add_child(a); a.colocar(onde)
 	a.giro_anim = TESSA_GIRO
 	var modelo: Node3D = load(cfg.glb).instantiate()
@@ -186,12 +172,47 @@ func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	var mao := modelo.find_child(cfg.mao, true, false)
 	a.montar_modelo(modelo, papeis, 0.0)
 	if mao: a.armas_na_mao.assign(mao.get_children())
+	_aplicar_ficha(a)
 	a.empunhar(false)   # fora do combate a arma fica guardada
 	a.rotulo.visible = false
 	a.passo_iniciado.connect(_ao_iniciar_passo.bind(a))
 	a.chegou.connect(_ao_chegar.bind(a))
 	a.parou.connect(_ao_parar.bind(a))
 	return a
+
+## Números de combate a partir da ficha (arma na mão, armadura, escudo, munição). Nada disso é salvo.
+func _aplicar_ficha(a: Node3D) -> void:
+	var f = a.ficha
+	a.ca = f.ca(); a.pv_max = f.pv_max()
+	a.mod_acerto = f.mod("for"); a.mod_dano = f.mod("for")
+	a.tem_escudo = f.mao_e != null and Ficha.info(f.mao_e).get("tipo") == "escudo"
+	var w = f.arma()
+	var inf := Ficha.info(w)
+	a.dist_faixas = []; a.municao = 0
+	a.dano = str(inf.get("dano", "1d2")); a.arma = str(inf.get("nome", "punhos"))
+	if inf.has("distancia"):
+		a.dist_arma = str(w.id); a.dist_dano = str(inf.dano); a.dist_faixas = inf.distancia
+		a.dist_mod = f.mod("des"); a.municao = f.municao_de(w)
+	a.arma_visivel = w != null and str(w.id) == str(a.get_meta("arma_modelo", ""))
+	a.mov_combate_m = Regras.taxa_combate_m(f.movimento_m())
+	if a.em_combate: a.empunhar(true)
+	a.atualizar_rotulo()
+
+## O grupo anda no passo do mais lento (B/X); a carga de cada um vem da ficha.
+func _recalcular_grupo() -> void:
+	taxa_m = 999.0
+	for h in vivos(): taxa_m = minf(taxa_m, h.ficha.movimento_m())
+
+func _tochas_reserva() -> int:
+	var n := 0
+	for h in vivos(): n += h.ficha.contar("tocha")
+	return n
+
+## Acende uma tocha nova: sai do inventário de quem lidera (ou de quem ainda tiver).
+func _gastar_tocha() -> String:
+	for h in [heroi] + vivos():
+		if h.ficha.gastar("tocha"): return h.nome
+	return ""
 
 ## Fila: quando quem lidera dá um passo, cada um vai para onde estava o da frente.
 func _puxar_fila(de: Vector2i) -> void:
@@ -228,7 +249,7 @@ func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 	else:
 		a.montar_modelo(Ator.goblin_provisorio(), {}, 0.0)
 	a.olhar_para(heroi.position)
-	a.passo_iniciado.connect(_ao_iniciar_passo)
+	a.passo_iniciado.connect(_ao_iniciar_passo.bind(a))
 	a.chegou.connect(_ao_monstro_chegar.bind(a))
 	a.visible = false
 	return a
@@ -244,6 +265,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_G: grade_forte = not grade_forte; luz.set_grade(grade_forte or combate.ativo)
 			KEY_K: if not combate.ativo and not fim: _surgir_errantes(true)
 			KEY_B: if not fim: _brotar_goblin()
+			KEY_I: _acao_hud("ficha")
 			KEY_1: _mudar_modo("devagar")
 			KEY_2: _mudar_modo("normal")
 			KEY_3: _mudar_modo("rapido")
@@ -445,6 +467,7 @@ func _ao_iniciar_passo(de: Vector2i, para: Vector2i, quem: Node3D) -> void:
 
 func _ao_chegar(_c: Vector2i, metros: float, quem: Node3D) -> void:
 	_atualizar_visao()
+	if quem == heroi: _anotar_area()
 	if combate.ativo or quem != heroi: return
 	metros_no_turno += metros
 	while metros_no_turno >= _taxa_turno():
@@ -469,9 +492,10 @@ func _passar_turno() -> void:
 	var txt := "Passa o turno %d (%s de exploração)." % [turno, _hora()]
 	if tocha_turnos == 1: txt += " A tocha está no fim."
 	if tocha_turnos <= 0:
-		if tochas_reserva > 0:
-			tochas_reserva -= 1; tocha_turnos = TURNOS_POR_TOCHA
-			txt += " A tocha apaga e a Tessa acende outra (restam %d)." % tochas_reserva
+		var quem := _gastar_tocha()
+		if quem != "":
+			tocha_turnos = TURNOS_POR_TOCHA
+			txt += " A tocha apaga e %s acende outra (restam %d)." % [quem, _tochas_reserva()]
 		else:
 			tocha_turnos = 0; luz.luz_grupo.visible = false
 			txt += " [color=#ff7a5a]A última tocha apagou.[/color]"
@@ -526,6 +550,7 @@ func _brotar_goblin() -> void:
 	await _grupo_em_guarda()
 	luz.set_grade(true)
 	_atualizar_visao()
+	_anotar_combate([m])
 	combate.iniciar(vivos(), [m], false, false)
 
 # ---------- modos de movimento ----------
@@ -542,7 +567,6 @@ func _mudar_modo(novo: String, avisar := true) -> void:
 			h.velocidade = Ator.VEL_BASE * float(m.velocidade)
 			h.papel_andar = PAPEL_DO_MODO.get(modo, "andar")
 			if not h.andando(): h.tocar("parado")   # devagar: ficam agachados
-	for k in botoes_modo: botoes_modo[k].button_pressed = (k == modo)
 	if avisar: _registrar("Movimento: [b]%s[/b] (%s)." % [m.nome, m.dica])
 	# Correndo, os errantes que ainda não tinham notado o grupo passam a ouvir.
 	if modo == "rapido":
@@ -672,6 +696,7 @@ func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
 	_registrar("Surpresa: grupo %s · monstros %s" % ["surpreendido" if sg else "atento", "surpreendidos" if sm else "atentos"])
 	luz.set_grade(true)
 	_atualizar_visao()
+	_anotar_combate(lista)
 	combate.iniciar(vivos(), lista, sg, sm)
 
 ## Todos param na próxima célula, sacam as armas e mostram o nome.
@@ -688,6 +713,11 @@ func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 	luz.set_grade(grade_forte)
 	if resultado == "vitoria":
 		xp_total += xp
+		var vivos_agora := vivos()
+		for h in vivos_agora: h.ficha.xp += xp / maxi(vivos_agora.size(), 1)
+		_diario("evento", "Vitória em %d rodada(s); %d XP para o grupo." % [rodadas, xp])
+		for h in grupo:
+			if not h.vivo(): _diario("evento", "%s caiu em combate." % h.nome)
 		_registrar("[color=#ffcf6a][b]Vitória![/b][/color] %d rodada(s) (%d s). XP: +%d (total %d)." % [rodadas, rodadas * 10, xp, xp_total])
 		for h in vivos(): h.tocar("vitoria")
 		monstros = monstros.filter(func(m): return is_instance_valid(m) and m.vivo())
@@ -710,67 +740,84 @@ func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 # ---------- tela ----------
 
 func _montar_hud() -> void:
-	var hud: CanvasLayer = $HUD
-	$HUD/Legenda.text = "Botão esquerdo: andar / atacar / abrir porta · 1/2/3: devagar, normal, rápido · Espaço: encerrar a vez · botão direito, Q/E: girar · roda: zoom · WASD: mover · F: focar · M: mestre · G: grade · K: encontro · B: brotar goblin · R: recomeçar"
-	$HUD/Legenda.label_settings = $HUD/Legenda.label_settings.duplicate()
-	$HUD/Legenda.label_settings.font_size = 13
-	var leg: Label = $HUD/Legenda
-	leg.text = leg.text.replace(" · botão direito", "\nbotão direito")
-	leg.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	leg.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	leg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	leg.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	leg.offset_left = -600; leg.offset_right = -16; leg.offset_top = -90; leg.offset_bottom = -12
-	var estilo := LabelSettings.new(); estilo.font_size = 16; estilo.outline_size = 5; estilo.outline_color = Color.BLACK
-	var barra := HBoxContainer.new(); barra.position = Vector2(16, 12); barra.add_theme_constant_override("separation", 6)
-	hud.add_child(barra)
-	for k in ["devagar", "normal", "rapido"]:
-		var b := Button.new(); b.toggle_mode = true; b.focus_mode = Control.FOCUS_NONE
-		b.add_theme_color_override("font_pressed_color", Color(1, 0.8, 0.35))
-		b.add_theme_color_override("font_hover_pressed_color", Color(1, 0.85, 0.45))
-		b.text = "%d · %s" % [["devagar", "normal", "rapido"].find(k) + 1, MOV.modos[k].nome]
-		b.tooltip_text = str(MOV.modos[k].dica)
-		b.pressed.connect(_mudar_modo.bind(k))
-		barra.add_child(b); botoes_modo[k] = b
-	var brotar := Button.new(); brotar.text = "B · Brotar goblin (teste)"; brotar.focus_mode = Control.FOCUS_NONE
-	brotar.tooltip_text = "Põe 1 goblin ao lado da Tessa e começa (ou reforça) o combate"
-	brotar.add_theme_color_override("font_color", Color(1, 0.6, 0.45))
-	brotar.pressed.connect(func(): if not fim: _brotar_goblin())
-	barra.add_child(VSeparator.new()); barra.add_child(brotar)
-	hud_relogio = Label.new(); hud_relogio.label_settings = estilo
-	hud_relogio.set_anchors_preset(Control.PRESET_TOP_RIGHT); hud_relogio.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	hud_relogio.offset_left = -520; hud_relogio.offset_right = -16; hud_relogio.offset_top = 12
-	hud.add_child(hud_relogio)
-	var grande := estilo.duplicate(); grande.font_size = 20; grande.font_color = Color(1, 0.9, 0.7)
-	hud_combate = Label.new(); hud_combate.label_settings = grande
-	hud_combate.set_anchors_preset(Control.PRESET_CENTER_TOP); hud_combate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hud_combate.offset_left = -400; hud_combate.offset_right = 400; hud_combate.offset_top = 118
-	hud.add_child(hud_combate)
-	var enorme := estilo.duplicate(); enorme.font_size = 40; enorme.font_color = Color(1, 0.6, 0.45); enorme.outline_size = 10
+	$HUD/Legenda.visible = false
+	hud_ui = Hud.new(); $HUD.add_child(hud_ui)
+	hud_ui.definir_grupo(grupo)
+	hud_ui.modo_pedido.connect(func(k): _mudar_modo(k))
+	hud_ui.acao_pedida.connect(_acao_hud)
+	hud_ui.trocar_arma.connect(_trocar_arma)
+	hud_ui.usar_item.connect(_usar_item)
+	hud_ui.ficha_pedida.connect(_abrir_ficha)
+	var enorme := LabelSettings.new(); enorme.font_size = 40; enorme.font_color = Color(1, 0.6, 0.45); enorme.outline_size = 10; enorme.outline_color = Color.BLACK
 	hud_centro = Label.new(); hud_centro.label_settings = enorme
 	hud_centro.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud_centro.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; hud_centro.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hud_centro.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud.add_child(hud_centro)
-	var fundo := PanelContainer.new()
-	var sb := StyleBoxFlat.new(); sb.bg_color = Color(0.04, 0.03, 0.02, 0.62); sb.set_corner_radius_all(6); sb.set_content_margin_all(10)
-	fundo.add_theme_stylebox_override("panel", sb)
-	fundo.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	fundo.offset_left = 12; fundo.offset_right = 640; fundo.offset_top = -210; fundo.offset_bottom = -12
-	fundo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud.add_child(fundo)
-	hud_log = RichTextLabel.new(); hud_log.bbcode_enabled = true; hud_log.scroll_following = true
-	hud_log.add_theme_font_size_override("normal_font_size", 14); hud_log.add_theme_font_size_override("bold_font_size", 14)
-	hud_log.add_theme_font_size_override("italics_font_size", 14)
-	hud_log.add_theme_color_override("default_color", Color(0.92, 0.88, 0.8))
-	hud_log.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fundo.add_child(hud_log)
+	$HUD.add_child(hud_centro)
+	livro = Livro.new(); livro.visible = false; $HUD.add_child(livro)
+	livro.diario = diario
+	livro.adjacentes = func(a, b): return a.celula == b.celula or grade.adjacentes(a.celula, b.celula) or Vector2(a.celula - b.celula).length() < 1.5
+	livro.mudou.connect(_ficha_mudou)
+	livro.usar.connect(_usar_item)
+
+func _ficha_mudou(h: Node3D) -> void:
+	_aplicar_ficha(h); _recalcular_grupo(); hud_ui.refazer()
+
+func _anotar_combate(lista: Array) -> void:
+	var tipos := {}
+	for m in lista: tipos[str(m.nome).get_slice(" ", 0)] = true
+	for t in tipos: _diario("criatura", "%s — %s" % [t, grade.nomes.get(grade.area_de(heroi.celula), "")])
+	_diario("evento", "Combate contra %s." % ", ".join(tipos.keys()))
+
+func _anotar_area() -> void:
+	var area: String = grade.nomes.get(grade.area_de(heroi.celula), "")
+	if area != "" and area != _area_antes:
+		_area_antes = area; _diario("lugar", area)
+
+func _diario(tipo: String, texto: String) -> void:
+	if tipo != "evento" and diario.any(func(x): return x.tipo == tipo and x.texto == texto): return
+	diario.append({"turno": turno, "tipo": tipo, "texto": texto})
 
 func _registrar(txt: String) -> void:
-	_linhas.append(txt)
-	if _linhas.size() > 60: _linhas.pop_front()
-	hud_log.text = "\n".join(_linhas)
+	if hud_ui: hud_ui.registrar(txt)
 	print(txt)
+
+func _acao_hud(acao: String) -> void:
+	match acao:
+		"atacar": combate.atacar_mais_proximo()
+		"encerrar": combate.encerrar_turno()
+		"brotar": if not fim: _brotar_goblin()
+		"ficha": _abrir_ficha(combate.vez if combate.ativo and combate.vez and combate.vez.lado == "grupo" else heroi)
+
+## Trocar de arma no combate: uma vez por vez, sem gastar o ataque.
+func _trocar_arma(h: Node3D, item) -> void:
+	if combate.ativo and (combate.vez != h or combate.ocupado or bool(h.get_meta("trocou", false))): return
+	h.ficha.empunhar(item)
+	_aplicar_ficha(h)
+	h.set_meta("trocou", true)
+	_registrar("%s empunha: %s." % [h.nome, Ficha.info(item).nome])
+	if combate.ativo: combate._mostrar_alcance()
+
+func _usar_item(h: Node3D, item) -> void:
+	var inf := Ficha.info(item)
+	match str(item.id):
+		"tocha":
+			if h.ficha.gastar("tocha"):
+				tocha_turnos = TURNOS_POR_TOCHA; luz.luz_grupo.visible = true
+				_registrar("%s acende uma tocha nova (6 turnos de luz)." % h.nome)
+				_atualizar_visao()
+		"rações":
+			if h.ficha.gastar("rações"): _registrar("%s come uma ração (restam %d)." % [h.nome, h.ficha.contar("rações")])
+		"odre":
+			_registrar("%s bebe do odre." % h.nome)
+		_:
+			_registrar("[i]%s: o uso deste item entra com as habilidades.[/i]" % inf.nome)
+	_ficha_mudou(h)
+
+func _abrir_ficha(h: Node3D) -> void:
+	if livro.visible: livro.fechar(); return
+	livro.grupo = grupo; livro.em_combate = combate.ativo
+	livro.mostrar(h)
 
 func _process(dt: float) -> void:
 	# A câmera acompanha quem está agindo (se o jogador puder vê-lo).
@@ -788,29 +835,32 @@ func _fora_da_tela(p: Vector3) -> bool:
 	var t := camera.unproject_position(p); var r := get_viewport().get_visible_rect().size
 	return t.x < r.x * 0.08 or t.x > r.x * 0.92 or t.y < r.y * 0.1 or t.y > r.y * 0.72
 
-func _linha_grupo() -> String:
-	var partes: Array[String] = []
-	for h in grupo:
-		var extra := (" · %d %s" % [h.municao, "flechas" if h.dist_arma.begins_with("arco") else "pedras"]) if not h.dist_faixas.is_empty() else ""
-		partes.append("%s PV %d/%d CA %d%s" % [h.nome, maxi(h.pv, 0), h.pv_max, h.ca, extra])
-	return "\n".join(partes)
-
 func _atualizar_hud() -> void:
-	var area: String = grade.nomes.get(grade.area_de(heroi.celula), "")
-	var tocha := "tocha: %d de %d turnos (+%d de reserva)" % [tocha_turnos, TURNOS_POR_TOCHA, tochas_reserva] if tocha_turnos > 0 else "sem luz"
-	var prox := turno + (2 - turno % 2)
-	hud_relogio.text = "%s\nTurno %d · %s · andado no turno: %.1f de %d m\n%s · teste de errantes no turno %d\nXP %d\n%s" % [
-		area, turno, _hora(), metros_no_turno, int(_taxa_turno()), tocha, prox, xp_total, _linha_grupo()]
-	if combate.ativo and combate.vez and is_instance_valid(combate.vez):
-		var v: Node = combate.vez
+	if hud_ui == null: return
+	var luz_txt := ("tocha: %d de %d turnos · %d de reserva" % [tocha_turnos, TURNOS_POR_TOCHA, _tochas_reserva()]) if tocha_turnos > 0 else "sem luz"
+	if not combate.ativo:
+		var area: String = grade.nomes.get(grade.area_de(heroi.celula), "")
+		var prox := turno + (2 - turno % 2)
+		hud_ui.atualizar_exploracao(MOV.modos, modo, [area, "Turno %d · %s" % [turno, _hora()],
+			"andado no turno: %.1f de %d m" % [metros_no_turno, int(_taxa_turno())], "teste de errantes no turno %d" % prox, "XP do grupo: %d" % xp_total], heroi, luz_txt)
+		return
+	var v: Node = combate.vez
+	var info := ""
+	if v and is_instance_valid(v):
 		if v.lado == "grupo":
 			var previa := "  →  este caminho: %.1f m" % combate.previa_m if combate.previa_m >= 0 else ""
-			hud_combate.text = "Rodada %d · vez de %s · movimento: %.1f de %.0f m%s\nclique para andar · num inimigo para %s · numa porta para abrir · Espaço encerra a vez" % [
-				combate.rodada, v.nome, combate.restante, v.mov_combate_m, previa, "atirar (%s, %d)" % [v.dist_arma, v.municao] if not v.dist_faixas.is_empty() and v.municao > 0 else "atacar"]
+			info = "Vez de %s · movimento %.1f de %.0f m%s" % [v.nome, combate.restante, v.mov_combate_m, previa]
 		else:
-			hud_combate.text = "Rodada %d · vez %s" % [combate.rodada, ("do " + v.nome) if v.visible else "de algo no escuro"]
-	else:
-		hud_combate.text = ""
+			info = "Vez %s" % (("do " + v.nome) if v.visible else "de algo no escuro")
+	var ordem: Array = []
+	for lado in combate.ordem_lados:
+		var lista: Array = combate.grupo if lado == "grupo" else combate.monstros
+		for a in lista:
+			if not is_instance_valid(a): continue
+			var visto: bool = a.lado == "grupo" or a.visible
+			ordem.append({"nome": a.nome if visto else "?", "lado": a.lado, "vivo": a.vivo(), "vez": a == v,
+				"retrato": str(a.ficha.id) if a.get("ficha") else ""})
+	hud_ui.atualizar_combate(combate.rodada, ordem, v, info, heroi, luz_txt)
 
 # ---------- testes por linha de comando ----------
 
@@ -964,6 +1014,23 @@ func _linha_de_comando() -> void:
 			var alvo: Vector3 = g.global_position - eu.global_position; alvo.y = 0
 			var ol: Vector3 = sk.global_basis * (sk.get_bone_global_pose(ic).basis * olhar_local); ol.y = 0
 			print("OLHAR %s %-20s t=%.2f giro %4.0f  olhar %4.0f°" % [eu.nome, caso[1], caso[2], float(eu.giro_anim.get(caso[1], 0.0)), rad_to_deg(alvo.signed_angle_to(ol, Vector3.UP))])
+	elif teste == "livro":
+		var aba := "ficha"
+		for x in OS.get_cmdline_user_args():
+			if x.begins_with("--aba="): aba = x.get_slice("=", 1)
+		var quem := 0
+		for x in OS.get_cmdline_user_args():
+			if x.begins_with("--heroi="): quem = int(x.get_slice("=", 1))
+		livro.grupo = grupo; livro.mostrar(grupo[quem], aba)
+		await get_tree().create_timer(0.5).timeout
+	elif teste == "tela":
+		# Combate de verdade (goblin brotado) para ver a tela de combate na vez de um personagem.
+		_brotar_goblin(); _brotar_goblin()
+		await get_tree().create_timer(1.5).timeout
+		for _i in 40:
+			if combate.vez and combate.vez.lado == "grupo": break
+			await get_tree().create_timer(0.25).timeout
+		await get_tree().create_timer(0.5).timeout
 	elif teste == "caco":
 		# O Caco ataca um goblin ao lado: corte para dentro, corte para fora e estocada no crítico.
 		var caco: Node3D = grupo[1]
@@ -1050,6 +1117,9 @@ func _linha_de_comando() -> void:
 		_surgir_errantes(true)
 		await get_tree().create_timer(3.0).timeout
 	for _f in 30: await get_tree().process_frame
+	if OS.get_cmdline_user_args().has("--depurar-hud"):
+		print("HUD ", hud_ui.size, " vis=", hud_ui.visible, " filhos=", hud_ui.get_child_count(), " layer_vis=", $HUD.visible)
+		for c in hud_ui.get_children(): print("  ", c.get_class(), " ", c.position, " ", c.size, " vis=", c.visible, " mod=", c.modulate)
 	if captura != "":
 		get_viewport().get_texture().get_image().save_png(captura)
 	get_tree().quit()

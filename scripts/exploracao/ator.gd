@@ -25,7 +25,9 @@ var dist_dano := "1d6"
 var dist_arma := ""
 var dist_mod := 0           # DES nos disparos
 var municao := 0
-var tem_escudo := false   # quem tem escudo bloqueia os golpes que erram; quem não tem, esquiva
+var tem_escudo := false
+var ficha = null          # ficha.gd (só personagens)
+var arma_visivel := true  # a arma do modelo 3D só aparece se for a que está na mão   # quem tem escudo bloqueia os golpes que erram; quem não tem, esquiva
 var mov_combate_m := 12.0
 var moral := 12
 var xp := 0
@@ -96,7 +98,7 @@ func atualizar_rotulo() -> void:
 ## Saca (combate) ou guarda a arma (exploração).
 func empunhar(sim: bool) -> void:
 	em_combate = sim
-	for a in armas_na_mao: a.visible = sim
+	for a in armas_na_mao: a.visible = sim and arma_visivel
 	if not andando() and vivo(): tocar("parado")
 
 func tocar(papel: String, misturar := 0.2) -> void:
@@ -209,6 +211,10 @@ func animar_golpe(alvo: Node3D, papel := "golpe") -> void:
 		t.tween_property(modelo, "position", ida, 0.18).set_trans(Tween.TRANS_QUAD)
 		t.tween_property(modelo, "position", Vector3.ZERO, 0.25)
 		await get_tree().create_timer(0.2).timeout
+
+func gastar_municao() -> void:
+	municao -= 1
+	if ficha: ficha.gastar_municao(ficha.arma())
 
 func tempo_tiro() -> float:
 	return player.get_animation(anim["atirar"]).length * 0.95 if player and _tem("atirar") else 0.3
