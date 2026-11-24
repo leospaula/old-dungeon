@@ -31,11 +31,14 @@ const TESSA_GIRO := {"parado-espada-escudo": 30.0, "parado": 45.0, "andar": 90.0
 	"levar-golpe": 30.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 30.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
 const GOBLIN_ESCALA := 0.95
+## Velocidade natural da animação de andar já na escala do jogo (tools/medir_passada.gd).
+const PASSADA_TESSA := 1.25
+const PASSADA_GOBLIN := 0.88
 const TESSA_ESCALA := 1.5   # o modelo heroico veio com ~1,03 m; no jogo ela tem ~1,55 m
 const INICIO := Vector2i(7, 5)
 const TURNOS_POR_TOCHA := 6
 const SEM_CELULA := Vector2i(-999, -999)
-const VEL_ERRANTE := 2.0
+const VEL_ERRANTE := 1.6
 
 @onready var camera: Camera3D = $Camera
 var grade: RefCounted
@@ -133,6 +136,7 @@ func _criar_tessa() -> Node3D:
 	a.giro_anim = TESSA_GIRO
 	var modelo: Node3D = load(TESSA_GLB).instantiate()
 	modelo.scale = Vector3.ONE * TESSA_ESCALA
+	a.passada = PASSADA_TESSA
 	var mao := modelo.find_child("mixamorig_RightHand", true, false)
 	a.montar_modelo(modelo, TESSA_ANIM, 0.0)
 	if mao: a.armas_na_mao.assign(mao.get_children())
@@ -155,6 +159,7 @@ func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 		# Modelo de verdade, com as mesmas animações (e o mesmo giro) dos personagens; espada curta sempre na mão.
 		var modelo: Node3D = load(GOBLIN_GLB).instantiate()
 		modelo.scale = Vector3.ONE * GOBLIN_ESCALA
+		a.passada = PASSADA_GOBLIN
 		a.giro_anim = TESSA_GIRO
 		a.montar_modelo(modelo, TESSA_ANIM, 0.0)
 		a.empunhar(true)
@@ -457,7 +462,7 @@ func _brotar_goblin() -> void:
 	porta_alvo = {}
 	heroi.parar()
 	if heroi.andando(): await heroi.parou
-	heroi.velocidade = 3.2
+	heroi.velocidade = Ator.VEL_BASE
 	heroi.empunhar(true)
 	heroi.rotulo.visible = true
 	luz.set_grade(true)
@@ -473,7 +478,7 @@ func _taxa_turno() -> float:
 func _mudar_modo(novo: String, avisar := true) -> void:
 	modo = novo
 	var m: Dictionary = MOV.modos[modo]
-	if not combate.ativo: heroi.velocidade = 3.2 * float(m.velocidade)
+	if not combate.ativo: heroi.velocidade = Ator.VEL_BASE * float(m.velocidade)
 	for k in botoes_modo: botoes_modo[k].button_pressed = (k == modo)
 	if avisar: _registrar("Movimento: [b]%s[/b] (%s)." % [m.nome, m.dica])
 	# Correndo, os errantes que ainda não tinham notado o grupo passam a ouvir.
@@ -586,11 +591,11 @@ func _checar_avistamento() -> void:
 func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
 	var lista := errantes.duplicate(); errantes.clear()
 	var furtivos := lista.any(func(x): return not bool(x.get_meta("ciente", true)))
-	heroi.velocidade = 3.2
+	heroi.velocidade = Ator.VEL_BASE
 	porta_alvo = {}
 	heroi.parar()
 	for m in lista:
-		m.parar(); m.velocidade = 3.2
+		m.parar(); m.velocidade = Ator.VEL_BASE
 	for a in [heroi] + lista:
 		if a.andando(): await a.parou
 	var mm: Dictionary = MOV.modos[modo]

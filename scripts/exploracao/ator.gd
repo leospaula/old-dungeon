@@ -25,7 +25,11 @@ var moral := 12
 var xp := 0
 var fugindo := false
 var infravisao_m := 0.0
-var velocidade := 3.2     # m/s andando na tela
+const VEL_BASE := 2.2     # m/s andando na tela (ritmo normal)
+var velocidade := VEL_BASE
+## Velocidade "natural" da animação de andar no tamanho do jogo (m/s), medida com tools/medir_passada.gd.
+## O ritmo das pernas acompanha a velocidade real para o pé não escorregar no chão. 0 = sem sincronia.
+var passada := 0.0
 var celula := Vector2i.ZERO
 
 var modelo: Node3D
@@ -90,9 +94,13 @@ func tocar(papel: String, misturar := 0.2) -> void:
 	if papel == "parado" and em_combate and anim.has("parado_combate"): papel = "parado_combate"
 	if player and anim.has(papel) and player.has_animation(anim[papel]):
 		player.play(anim[papel], misturar)
+		player.speed_scale = _ritmo_andar() if papel == "andar" else 1.0
 		var giro := -deg_to_rad(float(giro_anim.get(anim[papel], 0.0)))
 		if absf(modelo.rotation.y - giro) > 0.01:
 			create_tween().tween_property(modelo, "rotation:y", giro, maxf(misturar, 0.05))
+
+func _ritmo_andar() -> float:
+	return clampf(velocidade / passada, 0.4, 2.8) if passada > 0.0 else 1.0
 
 ## Segue um caminho (lista de células, sem a atual).
 func seguir(cam: Array[Vector2i]) -> void:
@@ -125,6 +133,7 @@ func _process(dt: float) -> void:
 	var d := alvo - position
 	olhar_para(alvo)
 	var passo := velocidade * dt
+	if player and player.current_animation == anim.get("andar", ""): player.speed_scale = _ritmo_andar()
 	if player == null and modelo:
 		_passo += dt * 12.0; modelo.position.y = absf(sin(_passo)) * 0.06
 	if d.length() <= passo:
