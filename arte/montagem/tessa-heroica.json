@@ -53,7 +53,9 @@
     "correr": "arte/animacoes/mixamo/correr.fbx",
     "andar-furtivo": "arte/animacoes/mixamo/andar-furtivo.fbx",
     "parado-agachado": "arte/animacoes/mixamo/parado-agachado.fbx",
-    "andar-combate": "arte/animacoes/mixamo/andar-combate.fbx"
+    "andar-combate": "arte/animacoes/mixamo/andar-combate.fbx",
+    "bloquear": "arte/animacoes/mixamo/bloquear.fbx",
+    "esquivar": "arte/animacoes/mixamo/esquivar.fbx"
   },
   "angulo": 35,
   "no_lugar": [
@@ -61,7 +63,9 @@
     "comecar-a-andar",
     "correr",
     "andar-furtivo",
-    "andar-combate"
+    "andar-combate",
+    "bloquear",
+    "esquivar"
   ],
   "_escala_no_jogo": 1.5
 }

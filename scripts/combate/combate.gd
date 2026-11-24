@@ -205,6 +205,10 @@ func _atacar(a: Node, alvo: Node) -> void:
 	var total: int = r + a.mod_acerto
 	var acerta: bool = r == 20 or (r != 1 and total >= precisa)
 	Efeitos.dado(a, r, acerta, 0.6)
+	# Erro com motivo: passou perto = bloqueou (escudo/arma); longe = esquivou; 1 natural = golpe em falso.
+	var quase := total >= precisa - 3
+	var defesa := "" if acerta or r == 1 else ("bloquear" if quase else "esquivar")
+	if defesa != "": alvo.defender(defesa, a.global_position, a.GOLPE_IMPACTO)
 	await a.animar_golpe(alvo)
 	if not is_instance_valid(alvo): return
 	var mod_txt := (" %+d = %d" % [a.mod_acerto, total]) if a.mod_acerto != 0 else ""
@@ -234,19 +238,17 @@ func _atacar(a: Node, alvo: Node) -> void:
 			alvo.animar_dano()
 		await Efeitos.congelar(self, 0.06 + 0.05 * forca)
 	else:
-		# Erro com motivo: passou perto = bloqueou (escudo/arma); longe = esquivou; 1 natural = golpe em falso.
-		var quase := total >= precisa - 3
 		var tem_escudo: bool = alvo.lado == "grupo"
 		var o_que := "Golpe em falso!" if r == 1 else ("Bloqueou!" if quase else "Esquivou!")
 		if r == 1:
 			a.recuar(alvo.global_position, 0.25)
 		elif quase:
-			alvo.recuar(a.global_position, 0.12)
+			alvo.recuar(a.global_position, 0.08 if alvo._tem("bloquear") else 0.12)
 			alvo.piscar(Color(0.75, 0.85, 1.0, 0.45), 0.1)
 			if camera: camera.tremer(0.025)
 			if not tem_escudo: o_que = "Aparou!"
 		else:
-			alvo.recuar(a.global_position, 0.35, true)
+			if not alvo._tem("esquivar"): alvo.recuar(a.global_position, 0.35, true)
 		Efeitos.texto(alvo.get_parent(), topo, o_que, Color(0.78, 0.8, 0.85), 0.75, 0.6, 0.85)
 		registro.emit(txt + "[color=#9aa4b0]erra (%s).[/color]" % o_que.trim_suffix("!").to_lower())
 	await get_tree().create_timer(0.55).timeout

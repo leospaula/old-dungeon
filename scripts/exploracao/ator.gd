@@ -190,6 +190,20 @@ func animar_golpe(alvo: Node3D) -> void:
 		t.tween_property(modelo, "position", Vector3.ZERO, 0.25)
 		await get_tree().create_timer(0.2).timeout
 
+## Defesa (bloquear/esquivar) cronometrada para o auge cair no instante em que a lâmina chega.
+## Auge medido com tools/curva_quadril.gd: escudo firme ~0,35 s; maior inclinação da esquiva ~0,55 s.
+const DEFESA_AUGE := {"bloquear": 0.35, "esquivar": 0.55}
+func defender(papel: String, de: Vector3, impacto_em: float) -> void:
+	if not _tem(papel): return
+	var espera := maxf(impacto_em - float(DEFESA_AUGE.get(papel, 0.3)), 0.0)
+	await get_tree().create_timer(espera).timeout
+	if not vivo(): return
+	olhar_para(de)
+	tocar(papel, 0.12)
+	var dur: float = player.get_animation(anim[papel]).length
+	await get_tree().create_timer(dur + 0.15).timeout
+	if vivo() and player.current_animation == anim[papel]: tocar("parado", 0.25)
+
 ## Clarão no corpo (sobreposição sem luz que some rápido).
 var _clarao: StandardMaterial3D
 func piscar(cor: Color, dur := 0.14) -> void:

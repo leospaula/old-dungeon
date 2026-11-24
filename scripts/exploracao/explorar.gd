@@ -25,10 +25,10 @@ const Dados = preload("res://scripts/regras/dados.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
-const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo", "andar": "andar", "correr": "correr", "andar_furtivo": "andar-furtivo", "parado_furtivo": "parado-agachado", "andar_combate": "andar-combate", "golpe": "golpe", "dano": "levar-golpe", "morrer": "morrer", "vitoria": "vitoria"}
+const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo", "andar": "andar", "correr": "correr", "andar_furtivo": "andar-furtivo", "parado_furtivo": "parado-agachado", "andar_combate": "andar-combate", "golpe": "golpe", "dano": "levar-golpe", "morrer": "morrer", "vitoria": "vitoria", "bloquear": "bloquear", "esquivar": "esquivar"}
 ## Para onde o corpo aponta em cada animação (medido com tools/medir_frente.gd); o modelo gira o contrário.
 const TESSA_GIRO := {"parado-espada-escudo": 30.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "correr": 90.0, "andar-furtivo": 90.0, "parado-agachado": 75.0, "andar-combate": 90.0, "golpe": 70.0,
-	"levar-golpe": 30.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 30.0}
+	"levar-golpe": 30.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 30.0, "bloquear": 25.0, "esquivar": 100.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
 const GOBLIN_ESCALA := 0.95
 ## Velocidade natural de cada animação de deslocamento já na escala do jogo (tools/medir_passada.gd).
@@ -835,6 +835,26 @@ func _linha_de_comando() -> void:
 			for im in imgs:
 				im.save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
 			await get_tree().create_timer(1.5).timeout
+	elif teste == "defesa":
+		# Erros forçados: bloqueio do goblin, esquiva da Tessa, esquiva do goblin, bloqueio da Tessa.
+		_brotar_goblin()
+		await get_tree().create_timer(1.5).timeout
+		var g: Node3D = monstros[0]
+		camera.alvo = (heroi.position + g.position) / 2.0; camera.distancia = 5.0; camera.inclinacao = 32.0; camera.guinada = 290.0; camera.distancia = 3.6
+		var k := 0
+		for caso in [[heroi, g, true], [g, heroi, false], [heroi, g, false], [g, heroi, true]]:
+			var at: Node = caso[0]; var al: Node = caso[1]
+			var precisa: int = at.thac0 - al.ca
+			Dados.forcados.append(clampi(precisa - 1 - at.mod_acerto, 2, 19) if caso[2] else 2)
+			combate._atacar(at, al)
+			var t0 := Time.get_ticks_msec()
+			var imgs: Array[Image] = []
+			for ms in [500, 700, 860, 1000, 1300]:
+				while Time.get_ticks_msec() - t0 < ms: await get_tree().process_frame
+				imgs.append(get_viewport().get_texture().get_image())
+			for im in imgs:
+				im.save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
+			await get_tree().create_timer(1.8).timeout
 	elif teste == "combate":
 		_surgir_errantes(true)
 		await get_tree().create_timer(3.0).timeout

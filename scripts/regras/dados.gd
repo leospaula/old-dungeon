@@ -1,7 +1,11 @@
 extends RefCounted
 ## Dados de mesa: "1d8", "2d4+1", "1d6-1", "3". Usa o gerador global (já aleatório ao iniciar).
 
+## Só para testes: resultados forçados, consumidos em ordem pelo próximo d().
+static var forcados: Array[int] = []
+
 static func d(lados: int) -> int:
+	if not forcados.is_empty(): return forcados.pop_front()
 	return randi_range(1, lados)
 
 static func rolar(expr: String) -> int:
