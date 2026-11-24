@@ -24,13 +24,14 @@ const Regras = preload("res://scripts/regras/regras.gd")
 const Dados = preload("res://scripts/regras/dados.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
-const TESSA_GLB := "res://arte/final/3d/tessa-biblioteca.glb"
+const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
 const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo", "andar": "andar", "golpe": "golpe", "dano": "levar-golpe", "morrer": "morrer", "vitoria": "vitoria"}
 ## Para onde o corpo aponta em cada animação (medido com tools/medir_frente.gd); o modelo gira o contrário.
 const TESSA_GIRO := {"parado-espada-escudo": 30.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "golpe": 70.0,
 	"levar-golpe": 30.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 30.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
-const GOBLIN_ESCALA := 0.8
+const GOBLIN_ESCALA := 0.95
+const TESSA_ESCALA := 1.5   # o modelo heroico veio com ~1,03 m; no jogo ela tem ~1,55 m
 const INICIO := Vector2i(7, 5)
 const TURNOS_POR_TOCHA := 6
 const SEM_CELULA := Vector2i(-999, -999)
@@ -131,6 +132,7 @@ func _criar_tessa() -> Node3D:
 	add_child(a); a.colocar(INICIO)
 	a.giro_anim = TESSA_GIRO
 	var modelo: Node3D = load(TESSA_GLB).instantiate()
+	modelo.scale = Vector3.ONE * TESSA_ESCALA
 	var mao := modelo.find_child("mixamorig_RightHand", true, false)
 	a.montar_modelo(modelo, TESSA_ANIM, 0.0)
 	if mao: a.armas_na_mao.assign(mao.get_children())
