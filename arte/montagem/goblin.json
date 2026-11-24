@@ -1,0 +1,40 @@
+{
+  "modelo": "arte/final/3d/goblin.glb",
+  "itens": [
+    {
+      "arquivo": "arte/final/3d/espada-curta.glb",
+      "osso": "mixamorig_RightHand",
+      "modo": "arma",
+      "comprimento": 0.55,
+      "pega": [
+        0.5,
+        0.12,
+        0.5
+      ],
+      "ao_longo": 0.45,
+      "afastar": 0.0,
+      "rotacao": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "animacoes": {
+    "parado": "arte/animacoes/mixamo/parado.fbx",
+    "parado-espada-escudo": "arte/animacoes/mixamo/parado-espada-escudo.fbx",
+    "comecar-a-andar": "arte/animacoes/mixamo/comecar-a-andar.fbx",
+    "andar": "arte/animacoes/mixamo/andar.fbx",
+    "golpe": "arte/animacoes/mixamo/golpe-descendente.fbx",
+    "levar-golpe": "arte/animacoes/mixamo/levar-golpe.fbx",
+    "morrer": "arte/animacoes/mixamo/morrer.fbx",
+    "vitoria": "arte/animacoes/mixamo/vitoria.fbx",
+    "sacar-flecha": "arte/animacoes/mixamo/sacar-flecha.fbx",
+    "magia": "arte/animacoes/mixamo/magia-uma-mao.fbx"
+  },
+  "angulo": 35,
+  "no_lugar": [
+    "andar",
+    "comecar-a-andar"
+  ]
+}

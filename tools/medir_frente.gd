@@ -3,7 +3,8 @@ extends SceneTree
 func _init() -> void:
 	_run.call_deferred()
 func _run() -> void:
-	var t: Node3D = load("res://arte/final/3d/tessa-biblioteca.glb").instantiate()
+	var arq: String = OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "res://arte/final/3d/tessa-biblioteca.glb"
+	var t: Node3D = load(arq).instantiate()
 	root.add_child(t)
 	var sk: Skeleton3D = t.find_children("*", "Skeleton3D", true, false)[0]
 	var ap: AnimationPlayer = t.find_children("*", "AnimationPlayer", true, false)[0]

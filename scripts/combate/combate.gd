@@ -77,6 +77,11 @@ func _turno_personagem(h: Node) -> void:
 	await _fim_de_turno
 	marca_alcance.limpar(); marca_caminho.limpar()
 
+## Monstro que entra no meio do combate (age a partir da próxima vez do lado dos monstros).
+func adicionar(m: Node) -> void:
+	monstros.append(m)
+	mudou.emit()
+
 func encerrar_turno() -> void:
 	if ativo and vez and vez.lado == "grupo" and not ocupado:
 		_fim_de_turno.emit()

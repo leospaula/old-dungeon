@@ -29,6 +29,8 @@ const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo
 ## Para onde o corpo aponta em cada animação (medido com tools/medir_frente.gd); o modelo gira o contrário.
 const TESSA_GIRO := {"parado-espada-escudo": 30.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "golpe": 70.0,
 	"levar-golpe": 30.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 30.0}
+const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
+const GOBLIN_ESCALA := 0.8
 const INICIO := Vector2i(7, 5)
 const TURNOS_POR_TOCHA := 6
 const SEM_CELULA := Vector2i(-999, -999)
@@ -56,6 +58,7 @@ var MOV := {}               # data/regras/movimento.json
 var modo := "normal"       # devagar · normal · rapido
 var fichas: Array = []     # fichas (dicionários) do grupo em jogo
 var botoes_modo := {}
+var _goblins_brotados := 0
 var grade_forte := false
 var fim := false
 var porta_alvo := {}       # porta que a Tessa vai abrir quando chegar
@@ -146,7 +149,15 @@ func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 	a.moral = int(d.moral); a.xp = int(d.xp); a.infravisao_m = float(d.get("infravisao_m", 0.0))
 	a.mov_combate_m = Regras.taxa_combate_m(float(d.mov_m))
 	add_child(a); a.colocar(c)
-	a.montar_modelo(Ator.goblin_provisorio(), {}, 0.0)
+	if id == "goblin":
+		# Modelo de verdade, com as mesmas animações (e o mesmo giro) dos personagens; espada curta sempre na mão.
+		var modelo: Node3D = load(GOBLIN_GLB).instantiate()
+		modelo.scale = Vector3.ONE * GOBLIN_ESCALA
+		a.giro_anim = TESSA_GIRO
+		a.montar_modelo(modelo, TESSA_ANIM, 0.0)
+		a.empunhar(true)
+	else:
+		a.montar_modelo(Ator.goblin_provisorio(), {}, 0.0)
 	a.olhar_para(heroi.position)
 	a.passo_iniciado.connect(_ao_iniciar_passo)
 	a.chegou.connect(_ao_monstro_chegar.bind(a))
@@ -163,6 +174,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_M: mestre = not mestre; luz.set_mestre(mestre); _atualizar_visao()
 			KEY_G: grade_forte = not grade_forte; luz.set_grade(grade_forte or combate.ativo)
 			KEY_K: if not combate.ativo and not fim: _surgir_errantes(true)
+			KEY_B: if not fim: _brotar_goblin()
 			KEY_1: _mudar_modo("devagar")
 			KEY_2: _mudar_modo("normal")
 			KEY_3: _mudar_modo("rapido")
@@ -410,6 +422,46 @@ func _passar_turno() -> void:
 			ciente = not f
 		_surgir_errantes(false, ciente)
 
+# ---------- teste: brotar goblin ----------
+
+## Teste: põe 1 goblin ao lado da Tessa. Fora de combate, começa o combate (sem surpresa);
+## em combate, o goblin entra na luta. Cada clique (ou tecla B) gera mais um.
+func _brotar_goblin() -> void:
+	var ocup := {heroi.celula: true}
+	for m in monstros:
+		if is_instance_valid(m) and m.vivo(): ocup[m.proxima_celula()] = true
+	var alc: Dictionary = grade.alcance(heroi.celula, 9.0, {}, true)
+	var lugares: Array = alc.keys().filter(func(c): return not ocup.has(c))
+	if lugares.is_empty():
+		_registrar("Não há lugar livre perto da Tessa para brotar um goblin.")
+		return
+	var frente: Vector3 = heroi.frente_vetor()
+	lugares.sort_custom(func(a, b):
+		var da := float(alc[a][0]) - 0.3 * Vector2(a - heroi.celula).normalized().dot(Vector2(frente.x, frente.z))
+		var db := float(alc[b][0]) - 0.3 * Vector2(b - heroi.celula).normalized().dot(Vector2(frente.x, frente.z))
+		return da < db)
+	_goblins_brotados += 1
+	var m := _criar_monstro("goblin", "Goblin %d" % _goblins_brotados, lugares[0])
+	m.visible = true
+	monstros.append(m)
+	m.scale = Vector3(0.01, 0.01, 0.01)
+	create_tween().tween_property(m, "scale", Vector3.ONE, 0.3)
+	_registrar("[i](teste)[/i] %s brota ao lado da Tessa." % m.nome)
+	if combate.ativo:
+		combate.adicionar(m)
+		return
+	for e in errantes.duplicate():
+		errantes.erase(e); monstros.erase(e); e.queue_free()
+	porta_alvo = {}
+	heroi.parar()
+	if heroi.andando(): await heroi.parou
+	heroi.velocidade = 3.2
+	heroi.empunhar(true)
+	heroi.rotulo.visible = true
+	luz.set_grade(true)
+	_atualizar_visao()
+	combate.iniciar([heroi], [m], false, false)
+
 # ---------- modos de movimento ----------
 
 ## Metros andados que fazem passar 1 turno de 10 min no modo atual.
@@ -576,7 +628,7 @@ func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 
 func _montar_hud() -> void:
 	var hud: CanvasLayer = $HUD
-	$HUD/Legenda.text = "Botão esquerdo: andar / atacar / abrir porta · 1/2/3: devagar, normal, rápido · Espaço: encerrar a vez · botão direito, Q/E: girar · roda: zoom · WASD: mover · F: focar · M: mestre · G: grade · K: encontro · R: recomeçar"
+	$HUD/Legenda.text = "Botão esquerdo: andar / atacar / abrir porta · 1/2/3: devagar, normal, rápido · Espaço: encerrar a vez · botão direito, Q/E: girar · roda: zoom · WASD: mover · F: focar · M: mestre · G: grade · K: encontro · B: brotar goblin · R: recomeçar"
 	$HUD/Legenda.label_settings = $HUD/Legenda.label_settings.duplicate()
 	$HUD/Legenda.label_settings.font_size = 13
 	var leg: Label = $HUD/Legenda
@@ -597,6 +649,11 @@ func _montar_hud() -> void:
 		b.tooltip_text = str(MOV.modos[k].dica)
 		b.pressed.connect(_mudar_modo.bind(k))
 		barra.add_child(b); botoes_modo[k] = b
+	var brotar := Button.new(); brotar.text = "B · Brotar goblin (teste)"; brotar.focus_mode = Control.FOCUS_NONE
+	brotar.tooltip_text = "Põe 1 goblin ao lado da Tessa e começa (ou reforça) o combate"
+	brotar.add_theme_color_override("font_color", Color(1, 0.6, 0.45))
+	brotar.pressed.connect(func(): if not fim: _brotar_goblin())
+	barra.add_child(VSeparator.new()); barra.add_child(brotar)
 	hud_relogio = Label.new(); hud_relogio.label_settings = estilo
 	hud_relogio.set_anchors_preset(Control.PRESET_TOP_RIGHT); hud_relogio.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hud_relogio.offset_left = -520; hud_relogio.offset_right = -16; hud_relogio.offset_top = 12
@@ -692,6 +749,12 @@ func _linha_de_comando() -> void:
 		print("   errantes: ", errantes.size(), " cientes: ", errantes.map(func(x): return x.get_meta("ciente")))
 		await get_tree().create_timer(3.0).timeout
 		print("   andando à toa: ", errantes.map(func(x): return x.andando()))
+	elif teste == "brotar":
+		for i in 3:
+			_brotar_goblin()
+			await get_tree().create_timer(0.6).timeout
+		camera.alvo = heroi.position; camera.distancia = 6.5; camera.inclinacao = 42.0; camera.guinada = 160.0
+		await get_tree().create_timer(5.0).timeout
 	elif teste == "inicio":
 		camera.alvo = Vector3(15, 0, 7); camera.distancia = 11.0; camera.inclinacao = 50.0; camera.guinada = -20.0
 		_acender_porta("P03"); _desenhar_portas()
