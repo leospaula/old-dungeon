@@ -275,6 +275,22 @@
           ],
           "renders": [
             {
+              "src": "img/luz-antes-depois.jpg",
+              "legenda": "Sala 24: tinta pintada (atual) × luz de verdade no WebGL"
+            },
+            {
+              "src": "img/luz-parede-norte.jpg",
+              "legenda": "Luz de verdade: tochas com sombra, textura pintada com relevo, preenchimento frio"
+            },
+            {
+              "src": "img/luz-de-cima.jpg",
+              "legenda": "Luz de verdade, vista de cima"
+            },
+            {
+              "src": "img/luz-contorno.jpg",
+              "legenda": "Luz de verdade + contorno de tinta"
+            },
+            {
               "src": "img/estilo-r2-bloco.jpg",
               "legenda": "Estilo aprovado (rodada 2): pedra em tinta e aquarela, modo mestre"
             },
