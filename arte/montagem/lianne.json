@@ -1,0 +1,53 @@
+{
+  "modelo": "arte/final/3d/lianne.glb",
+  "itens": [
+    {
+      "arquivo": "arte/final/3d/arco-curto.glb",
+      "osso": "mixamorig_LeftHand",
+      "modo": "arma",
+      "comprimento": 1.16,
+      "pega": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "ao_longo": 0.45,
+      "afastar": 0.0,
+      "rotacao": [
+        0,
+        0,
+        0
+      ],
+      "pose": "sacar-flecha"
+    }
+  ],
+  "animacoes": {
+    "parado": "arte/animacoes/mixamo/parado.fbx",
+    "parado-espada-escudo": "arte/animacoes/mixamo/parado-espada-escudo.fbx",
+    "comecar-a-andar": "arte/animacoes/mixamo/comecar-a-andar.fbx",
+    "andar": "arte/animacoes/mixamo/andar.fbx",
+    "golpe": "arte/animacoes/mixamo/golpe-descendente.fbx",
+    "levar-golpe": "arte/animacoes/mixamo/levar-golpe.fbx",
+    "morrer": "arte/animacoes/mixamo/morrer.fbx",
+    "vitoria": "arte/animacoes/mixamo/vitoria.fbx",
+    "sacar-flecha": "arte/animacoes/mixamo/sacar-flecha.fbx",
+    "magia": "arte/animacoes/mixamo/magia-uma-mao.fbx",
+    "correr": "arte/animacoes/mixamo/correr.fbx",
+    "andar-furtivo": "arte/animacoes/mixamo/andar-furtivo.fbx",
+    "parado-agachado": "arte/animacoes/mixamo/parado-agachado.fbx",
+    "andar-combate": "arte/animacoes/mixamo/andar-combate.fbx",
+    "bloquear": "arte/animacoes/mixamo/bloquear.fbx",
+    "esquivar": "arte/animacoes/mixamo/esquivar.fbx"
+  },
+  "angulo": 35,
+  "no_lugar": [
+    "andar",
+    "comecar-a-andar",
+    "correr",
+    "andar-furtivo",
+    "andar-combate",
+    "bloquear",
+    "esquivar"
+  ],
+  "_escala_no_jogo": 0.86
+}
