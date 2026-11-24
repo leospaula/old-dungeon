@@ -827,11 +827,13 @@ func _linha_de_comando() -> void:
 		for par in [[heroi, g], [g, heroi], [heroi, g]]:
 			if not (par[0].vivo() and par[1].vivo()): continue
 			combate._atacar(par[0], par[1])
-			for ms in [300, 560, 620, 700, 900, 1200]:
-				var t0 := Time.get_ticks_msec()
-				while Time.get_ticks_msec() - t0 < (ms - (0 if ms == 300 else [300, 560, 620, 700, 900, 1200][[300, 560, 620, 700, 900, 1200].find(ms) - 1])):
-					await get_tree().process_frame
-				get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
+			var t0 := Time.get_ticks_msec()
+			var imgs: Array[Image] = []
+			for ms in [600, 760, 820, 870, 930, 1100]:
+				while Time.get_ticks_msec() - t0 < ms: await get_tree().process_frame
+				imgs.append(get_viewport().get_texture().get_image())
+			for im in imgs:
+				im.save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
 			await get_tree().create_timer(1.5).timeout
 	elif teste == "combate":
 		_surgir_errantes(true)

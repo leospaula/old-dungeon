@@ -174,11 +174,15 @@ func _process(dt: float) -> void:
 		position += d.normalized() * passo
 
 ## Golpe: anima e devolve quando a lâmina "acerta" (para o dano aparecer na hora certa).
+## Instante em que a lâmina chega no alvo na animação "golpe" (a mão desce mais rápido em ~0,86 s;
+## medido com tools/curva_quadril.gd). Dano e efeitos saem nesse momento.
+const GOLPE_IMPACTO := 0.86
+
 func animar_golpe(alvo: Node3D) -> void:
 	olhar_para(alvo.global_position)
 	if player:
 		tocar("golpe", 0.1)
-		await get_tree().create_timer(0.55).timeout
+		await get_tree().create_timer(GOLPE_IMPACTO).timeout
 	else:
 		var ida := (alvo.global_position - global_position).normalized() * 0.45
 		var t := create_tween()

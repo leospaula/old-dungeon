@@ -204,7 +204,7 @@ func _atacar(a: Node, alvo: Node) -> void:
 	var precisa: int = a.thac0 - alvo.ca
 	var total: int = r + a.mod_acerto
 	var acerta: bool = r == 20 or (r != 1 and total >= precisa)
-	Efeitos.dado(a, r, acerta, 0.45)
+	Efeitos.dado(a, r, acerta, 0.6)
 	await a.animar_golpe(alvo)
 	if not is_instance_valid(alvo): return
 	var mod_txt := (" %+d = %d" % [a.mod_acerto, total]) if a.mod_acerto != 0 else ""
@@ -225,7 +225,7 @@ func _atacar(a: Node, alvo: Node) -> void:
 		alvo.recuar(a.global_position, 0.18 + 0.12 * forca)
 		if camera: camera.tremer((0.09 if no_grupo else 0.06) * forca)
 		Efeitos.texto(alvo.get_parent(), topo, ("CRÍTICO!  %d" % dano) if critico else str(dano),
-			Color(1, 0.35, 0.25) if no_grupo else Color(1, 0.85, 0.35), 0.9 + 0.12 * minf(dano, 6) + (0.4 if critico else 0.0))
+			Color(1, 0.35, 0.25) if no_grupo else Color(1, 0.85, 0.35), minf(0.9 + 0.1 * minf(dano, 6) + (0.15 if critico else 0.0), 1.4))
 		if alvo.pv <= 0:
 			alvo.animar_morte()
 			registro.emit("[color=#ff7a5a]%s cai.[/color]" % _nome(alvo))
