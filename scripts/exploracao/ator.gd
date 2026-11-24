@@ -25,7 +25,7 @@ var moral := 12
 var xp := 0
 var fugindo := false
 var infravisao_m := 0.0
-const VEL_BASE := 1.25    # m/s andando na tela (ritmo normal = passo natural da animação da Tessa)
+const VEL_BASE := 2.0     # m/s andando na tela (ritmo normal)
 var velocidade := VEL_BASE
 ## Velocidade "natural" da animação de andar no tamanho do jogo (m/s), medida com tools/medir_passada.gd.
 ## O ritmo das pernas acompanha a velocidade real para o pé não escorregar no chão. 0 = sem sincronia.
