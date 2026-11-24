@@ -42,7 +42,7 @@ func _run() -> void:
 		var anim_f: Animation = ap_f.get_animation(ap_f.get_animation_list()[0])
 		var sk_f := _achar(fonte, "Skeleton3D") as Skeleton3D
 		var anim: Animation = Retarget.converter(anim_f, sk_f, sk, caminho_sk, nome in cfg.get("no_lugar", []))
-		anim.loop_mode = Animation.LOOP_LINEAR if (nome as String).begins_with("parado") or nome == "andar" else Animation.LOOP_NONE
+		anim.loop_mode = Animation.LOOP_LINEAR if (nome as String).begins_with("parado") or nome in ["andar", "correr", "andar-furtivo"] else Animation.LOOP_NONE
 		lib.add_animation(nome, anim)
 		fonte.free()
 

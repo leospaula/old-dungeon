@@ -25,14 +25,16 @@ func _run() -> void:
 		amostras.append([ps, (sk.global_transform * sk.get_bone_global_pose(quadril)).origin * esc])
 	var dt := A.length / N
 	var vels := []
+	var soma := Vector3.ZERO
 	var faixa := [INF, -INF]
 	for i in N:
 		var p0: Array = amostras[i][0]; var p1: Array = amostras[i + 1][0]
 		var k := 0 if p0[0].y < p0[1].y else 1   # pé mais baixo = apoiado
 		var v: Vector3 = (p1[k] - p0[k]) / dt; v.y = 0
-		vels.append(v.length())
+		vels.append(v.length()); soma -= v   # o pé apoiado vai para trás: o corpo vai para o lado oposto
 		faixa[0] = minf(faixa[0], p0[0].x); faixa[1] = maxf(faixa[1], p0[0].x)
 	vels.sort()
 	var h0: Vector3 = amostras[0][1]; var h1: Vector3 = amostras[N][1]
 	print("%s  duração %.2fs  pé apoiado: mediana %.2f m/s  (p25 %.2f  p75 %.2f)  deslocamento do quadril no ciclo %s" % [anim, A.length, vels[N / 2], vels[N / 4], vels[3 * N / 4], (h1 - h0).snappedf(0.01)])
+	print("   direção do avanço: %.0f graus (para giro_anim)" % rad_to_deg(atan2(soma.x, soma.z)))
 	quit()

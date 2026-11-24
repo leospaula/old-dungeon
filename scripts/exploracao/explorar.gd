@@ -25,15 +25,17 @@ const Dados = preload("res://scripts/regras/dados.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
-const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo", "andar": "andar", "golpe": "golpe", "dano": "levar-golpe", "morrer": "morrer", "vitoria": "vitoria"}
+const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo", "andar": "andar", "correr": "correr", "andar_furtivo": "andar-furtivo", "golpe": "golpe", "dano": "levar-golpe", "morrer": "morrer", "vitoria": "vitoria"}
 ## Para onde o corpo aponta em cada animação (medido com tools/medir_frente.gd); o modelo gira o contrário.
-const TESSA_GIRO := {"parado-espada-escudo": 30.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "golpe": 70.0,
+const TESSA_GIRO := {"parado-espada-escudo": 30.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "correr": 90.0, "andar-furtivo": 90.0, "golpe": 70.0,
 	"levar-golpe": 30.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 30.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
 const GOBLIN_ESCALA := 0.95
-## Velocidade natural da animação de andar já na escala do jogo (tools/medir_passada.gd).
-const PASSADA_TESSA := 1.25
-const PASSADA_GOBLIN := 0.88
+## Velocidade natural de cada animação de deslocamento já na escala do jogo (tools/medir_passada.gd).
+const PASSADA_TESSA := {"andar": 1.25, "correr": 2.11, "andar_furtivo": 0.97}
+const PASSADA_GOBLIN := {"andar": 0.88, "correr": 1.47, "andar_furtivo": 0.67}
+## Animação de deslocamento de cada modo de movimento (em combate é sempre "andar").
+const PAPEL_DO_MODO := {"devagar": "andar_furtivo", "normal": "andar", "rapido": "correr"}
 const TESSA_ESCALA := 1.5   # o modelo heroico veio com ~1,03 m; no jogo ela tem ~1,55 m
 const INICIO := Vector2i(7, 5)
 const TURNOS_POR_TOCHA := 6
@@ -136,7 +138,7 @@ func _criar_tessa() -> Node3D:
 	a.giro_anim = TESSA_GIRO
 	var modelo: Node3D = load(TESSA_GLB).instantiate()
 	modelo.scale = Vector3.ONE * TESSA_ESCALA
-	a.passada = PASSADA_TESSA
+	a.passadas = PASSADA_TESSA
 	var mao := modelo.find_child("mixamorig_RightHand", true, false)
 	a.montar_modelo(modelo, TESSA_ANIM, 0.0)
 	if mao: a.armas_na_mao.assign(mao.get_children())
@@ -159,7 +161,7 @@ func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 		# Modelo de verdade, com as mesmas animações (e o mesmo giro) dos personagens; espada curta sempre na mão.
 		var modelo: Node3D = load(GOBLIN_GLB).instantiate()
 		modelo.scale = Vector3.ONE * GOBLIN_ESCALA
-		a.passada = PASSADA_GOBLIN
+		a.passadas = PASSADA_GOBLIN
 		a.giro_anim = TESSA_GIRO
 		a.montar_modelo(modelo, TESSA_ANIM, 0.0)
 		a.empunhar(true)
@@ -463,6 +465,7 @@ func _brotar_goblin() -> void:
 	heroi.parar()
 	if heroi.andando(): await heroi.parou
 	heroi.velocidade = Ator.VEL_BASE
+	heroi.papel_andar = "andar"
 	heroi.empunhar(true)
 	heroi.rotulo.visible = true
 	luz.set_grade(true)
@@ -478,7 +481,9 @@ func _taxa_turno() -> float:
 func _mudar_modo(novo: String, avisar := true) -> void:
 	modo = novo
 	var m: Dictionary = MOV.modos[modo]
-	if not combate.ativo: heroi.velocidade = Ator.VEL_BASE * float(m.velocidade)
+	if not combate.ativo:
+		heroi.velocidade = Ator.VEL_BASE * float(m.velocidade)
+		heroi.papel_andar = PAPEL_DO_MODO.get(modo, "andar")
 	for k in botoes_modo: botoes_modo[k].button_pressed = (k == modo)
 	if avisar: _registrar("Movimento: [b]%s[/b] (%s)." % [m.nome, m.dica])
 	# Correndo, os errantes que ainda não tinham notado o grupo passam a ouvir.
@@ -592,6 +597,7 @@ func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
 	var lista := errantes.duplicate(); errantes.clear()
 	var furtivos := lista.any(func(x): return not bool(x.get_meta("ciente", true)))
 	heroi.velocidade = Ator.VEL_BASE
+	heroi.papel_andar = "andar"
 	porta_alvo = {}
 	heroi.parar()
 	for m in lista:
@@ -740,7 +746,10 @@ func _linha_de_comando() -> void:
 	if teste == "frente":
 		camera.alvo = heroi.position + Vector3(0, 1, 0); camera.distancia = 4.0; camera.inclinacao = 15.0; camera.guinada = 180.0
 		heroi.olhar_para(heroi.position + Vector3(0, 0, -5))
-		if not OS.get_cmdline_user_args().has("--parado"): heroi.tocar("andar")
+		var papel := "andar"
+		for x in OS.get_cmdline_user_args():
+			if x.begins_with("--papel="): papel = x.get_slice("=", 1)
+		if not OS.get_cmdline_user_args().has("--parado"): heroi.tocar(papel)
 		for _f in 40: await get_tree().process_frame
 	elif teste == "modos":
 		for k in ["devagar", "rapido"]:
@@ -771,8 +780,9 @@ func _linha_de_comando() -> void:
 		heroi.olhar_para(heroi.position + Vector3(0, 0, -5))
 		heroi.tocar("golpe", 0.0)
 		for _f in 25: await get_tree().process_frame
-	elif teste == "andar":
+	elif teste == "andar" or teste == "correr" or teste == "furtivo":
 		camera.distancia = 8.0; camera.inclinacao = 40.0
+		if teste != "andar": _mudar_modo("rapido" if teste == "correr" else "devagar", false)
 		_andar_para(Vector2i(10, 2))
 		for _f in 70: await get_tree().process_frame
 	elif teste == "porta":

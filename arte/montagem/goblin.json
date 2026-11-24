@@ -30,11 +30,15 @@
     "morrer": "arte/animacoes/mixamo/morrer.fbx",
     "vitoria": "arte/animacoes/mixamo/vitoria.fbx",
     "sacar-flecha": "arte/animacoes/mixamo/sacar-flecha.fbx",
-    "magia": "arte/animacoes/mixamo/magia-uma-mao.fbx"
+    "magia": "arte/animacoes/mixamo/magia-uma-mao.fbx",
+    "correr": "arte/animacoes/mixamo/correr.fbx",
+    "andar-furtivo": "arte/animacoes/mixamo/andar-furtivo.fbx"
   },
   "angulo": 35,
   "no_lugar": [
     "andar",
-    "comecar-a-andar"
+    "comecar-a-andar",
+    "correr",
+    "andar-furtivo"
   ]
 }

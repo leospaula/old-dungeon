@@ -27,9 +27,12 @@ var fugindo := false
 var infravisao_m := 0.0
 const VEL_BASE := 2.0     # m/s andando na tela (ritmo normal)
 var velocidade := VEL_BASE
-## Velocidade "natural" da animação de andar no tamanho do jogo (m/s), medida com tools/medir_passada.gd.
-## O ritmo das pernas acompanha a velocidade real para o pé não escorregar no chão. 0 = sem sincronia.
-var passada := 0.0
+## Velocidade "natural" de cada animação de deslocamento no tamanho do jogo (m/s), medida com
+## tools/medir_passada.gd (papel -> m/s). O ritmo das pernas acompanha a velocidade real para o pé
+## não escorregar no chão. Papel sem medida = sem sincronia.
+var passadas := {}
+## Papel usado para se deslocar: "andar", "correr" ou "andar_furtivo" (segue o modo de movimento).
+var papel_andar := "andar"
 var celula := Vector2i.ZERO
 
 var modelo: Node3D
@@ -65,7 +68,7 @@ func montar_modelo(m: Node3D, papeis: Dictionary, giro := 0.0) -> void:
 	add_child(m)
 	player = _achar_player(m)
 	if player:
-		for papel in ["parado", "andar"]:
+		for papel in ["parado", "andar", "correr", "andar_furtivo"]:
 			if anim.has(papel) and player.has_animation(anim[papel]):
 				player.get_animation(anim[papel]).loop_mode = Animation.LOOP_LINEAR
 	rotulo = Label3D.new(); rotulo.billboard = BaseMaterial3D.BILLBOARD_ENABLED; rotulo.font_size = 40
@@ -94,13 +97,18 @@ func tocar(papel: String, misturar := 0.2) -> void:
 	if papel == "parado" and em_combate and anim.has("parado_combate"): papel = "parado_combate"
 	if player and anim.has(papel) and player.has_animation(anim[papel]):
 		player.play(anim[papel], misturar)
-		player.speed_scale = _ritmo_andar() if papel == "andar" else 1.0
+		player.speed_scale = _ritmo(papel)
 		var giro := -deg_to_rad(float(giro_anim.get(anim[papel], 0.0)))
 		if absf(modelo.rotation.y - giro) > 0.01:
 			create_tween().tween_property(modelo, "rotation:y", giro, maxf(misturar, 0.05))
 
-func _ritmo_andar() -> float:
-	return clampf(velocidade / passada, 0.4, 2.8) if passada > 0.0 else 1.0
+func _ritmo(papel: String) -> float:
+	var p := float(passadas.get(papel, 0.0))
+	return clampf(velocidade / p, 0.4, 2.8) if p > 0.0 else 1.0
+
+## Papel de deslocamento disponível (cai para "andar" se o modelo não tiver a animação).
+func _papel_desloc() -> String:
+	return papel_andar if anim.has(papel_andar) and player and player.has_animation(anim[papel_andar]) else "andar"
 
 ## Segue um caminho (lista de células, sem a atual).
 func seguir(cam: Array[Vector2i]) -> void:
@@ -110,7 +118,7 @@ func seguir(cam: Array[Vector2i]) -> void:
 	if not estava:
 		_de = celula
 		passo_iniciado.emit(_de, _caminho[0])
-		tocar("andar")
+		tocar(_papel_desloc())
 
 ## Para na próxima célula (não fica entre duas).
 func parar() -> void:
@@ -133,7 +141,10 @@ func _process(dt: float) -> void:
 	var d := alvo - position
 	olhar_para(alvo)
 	var passo := velocidade * dt
-	if player and player.current_animation == anim.get("andar", ""): player.speed_scale = _ritmo_andar()
+	if player:
+		var pd := _papel_desloc()
+		if player.current_animation != anim.get(pd, ""): tocar(pd)   # trocou de modo no meio do caminho
+		player.speed_scale = _ritmo(pd)
 	if player == null and modelo:
 		_passo += dt * 12.0; modelo.position.y = absf(sin(_passo)) * 0.06
 	if d.length() <= passo:
