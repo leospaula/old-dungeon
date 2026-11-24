@@ -183,12 +183,26 @@ func _process(dt: float) -> void:
 ## Instante em que a lâmina chega no alvo na animação "golpe" (a mão desce mais rápido em ~0,86 s;
 ## medido com tools/curva_quadril.gd). Dano e efeitos saem nesse momento.
 const GOLPE_IMPACTO := 0.86
+## Instante do impacto de cada animação de ataque (pico de velocidade da mão, tools/curva_quadril.gd).
+const IMPACTOS := {"golpe-descendente": 0.86, "golpe": 0.86, "corte-dentro": 1.2, "corte-fora": 0.92, "estocada-cima": 0.78}
+var _alterna := false
 
-func animar_golpe(alvo: Node3D) -> void:
+## Qual golpe vem agora: no crítico, o golpe especial (se houver); senão alterna entre os golpes que tiver.
+func escolher_golpe(critico: bool) -> String:
+	if critico and _tem("golpe_critico"): return "golpe_critico"
+	if _tem("golpe2"):
+		_alterna = not _alterna
+		return "golpe2" if _alterna else "golpe"
+	return "golpe"
+
+func tempo_impacto(papel := "golpe") -> float:
+	return float(IMPACTOS.get(anim.get(papel, ""), GOLPE_IMPACTO))
+
+func animar_golpe(alvo: Node3D, papel := "golpe") -> void:
 	olhar_para(alvo.global_position)
 	if player:
-		tocar("golpe", 0.1)
-		await get_tree().create_timer(GOLPE_IMPACTO).timeout
+		tocar(papel, 0.1)
+		await get_tree().create_timer(tempo_impacto(papel)).timeout
 	else:
 		var ida := (alvo.global_position - global_position).normalized() * 0.45
 		var t := create_tween()
@@ -204,6 +218,7 @@ func animar_tiro(alvo: Node3D) -> void:
 	olhar_para(alvo.global_position)
 	if player and _tem("atirar"): tocar("atirar", 0.12)
 	await get_tree().create_timer(tempo_tiro()).timeout
+	if player and _tem("soltar"): tocar("soltar", 0.05)   # a corda solta: a flecha sai agora
 
 ## Defesa (bloquear/esquivar) cronometrada para o auge cair no instante em que a lâmina chega.
 ## Auge medido com tools/curva_quadril.gd: escudo firme ~0,35 s; maior inclinação da esquiva ~0,55 s.

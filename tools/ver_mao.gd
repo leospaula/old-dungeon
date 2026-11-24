@@ -1,6 +1,6 @@
 extends SceneTree
 ## Close da mão direita (arma) em várias animações e ângulos, para conferir a empunhadura.
-## Uso: godot --path . --script tools/ver_mao.gd -- <biblioteca.glb> <saida.png> [anim1,anim2,...] [distancia]
+## Uso: godot --path . --script tools/ver_mao.gd -- <biblioteca.glb> <saida.png> [anim1,anim2,...] [distancia] [osso da mão]
 const TAM := Vector2i(320, 320)
 func _init() -> void:
 	_run.call_deferred()
@@ -19,7 +19,7 @@ func _run() -> void:
 	env.environment.ambient_light_energy = 0.7; vp.add_child(env)
 	var luz := DirectionalLight3D.new(); luz.rotation_degrees = Vector3(-40, 30, 0); vp.add_child(luz)
 	var cam := Camera3D.new(); cam.fov = 40; vp.add_child(cam); cam.current = true
-	var mao := sk.find_bone("mixamorig_RightHand")
+	var mao := sk.find_bone(a[4] if a.size() > 4 else "mixamorig_RightHand")
 	var angs := [0.0, 90.0, 180.0, 270.0]
 	var folha := Image.create(TAM.x * angs.size(), TAM.y * anims.size(), false, Image.FORMAT_RGBA8)
 	for li in anims.size():

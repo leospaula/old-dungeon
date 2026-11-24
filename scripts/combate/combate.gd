@@ -239,8 +239,9 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 		if not is_instance_valid(alvo): return
 		await Efeitos.flecha(a.get_parent(), de, para)
 	else:
-		if defesa != "": alvo.defender(defesa, a.global_position, a.GOLPE_IMPACTO)
-		await a.animar_golpe(alvo)
+		var golpe: String = a.escolher_golpe(r == 20)
+		if defesa != "": alvo.defender(defesa, a.global_position, a.tempo_impacto(golpe))
+		await a.animar_golpe(alvo, golpe)
 	if not is_instance_valid(alvo): return
 	var mod_txt := (" %+d = %d" % [mod, total]) if mod != 0 else ""
 	var acao := ("atira (%s, %s) em" % [a.dist_arma, ["curta", "média", "longa"][faixa]]) if distancia else "ataca"
