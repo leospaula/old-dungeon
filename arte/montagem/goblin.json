@@ -33,13 +33,16 @@
     "sacar-flecha": "arte/animacoes/mixamo/sacar-flecha.fbx",
     "magia": "arte/animacoes/mixamo/magia-uma-mao.fbx",
     "correr": "arte/animacoes/mixamo/correr.fbx",
-    "andar-furtivo": "arte/animacoes/mixamo/andar-furtivo.fbx"
+    "andar-furtivo": "arte/animacoes/mixamo/andar-furtivo.fbx",
+    "parado-agachado": "arte/animacoes/mixamo/parado-agachado.fbx",
+    "andar-combate": "arte/animacoes/mixamo/andar-combate.fbx"
   },
   "angulo": 35,
   "no_lugar": [
     "andar",
     "comecar-a-andar",
     "correr",
-    "andar-furtivo"
+    "andar-furtivo",
+    "andar-combate"
   ]
 }

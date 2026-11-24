@@ -68,7 +68,7 @@ func montar_modelo(m: Node3D, papeis: Dictionary, giro := 0.0) -> void:
 	add_child(m)
 	player = _achar_player(m)
 	if player:
-		for papel in ["parado", "andar", "correr", "andar_furtivo"]:
+		for papel in ["parado", "parado_furtivo", "andar", "correr", "andar_furtivo", "andar_combate"]:
 			if anim.has(papel) and player.has_animation(anim[papel]):
 				player.get_animation(anim[papel]).loop_mode = Animation.LOOP_LINEAR
 	rotulo = Label3D.new(); rotulo.billboard = BaseMaterial3D.BILLBOARD_ENABLED; rotulo.font_size = 40
@@ -94,7 +94,9 @@ func empunhar(sim: bool) -> void:
 	if not andando() and vivo(): tocar("parado")
 
 func tocar(papel: String, misturar := 0.2) -> void:
-	if papel == "parado" and em_combate and anim.has("parado_combate"): papel = "parado_combate"
+	if papel == "parado":
+		if em_combate and _tem("parado_combate"): papel = "parado_combate"
+		elif papel_andar == "andar_furtivo" and _tem("parado_furtivo"): papel = "parado_furtivo"   # agachado
 	if player and anim.has(papel) and player.has_animation(anim[papel]):
 		player.play(anim[papel], misturar)
 		player.speed_scale = _ritmo(papel)
@@ -102,13 +104,24 @@ func tocar(papel: String, misturar := 0.2) -> void:
 		if absf(modelo.rotation.y - giro) > 0.01:
 			create_tween().tween_property(modelo, "rotation:y", giro, maxf(misturar, 0.05))
 
+func _tem(papel: String) -> bool:
+	return anim.has(papel) and player != null and player.has_animation(anim[papel])
+
+## Em combate, o andar em guarda é mais curto: cada um anda no ritmo dele (passada × RITMO_COMBATE).
+const RITMO_COMBATE := 1.8
+func vel_atual() -> float:
+	if em_combate and float(passadas.get("andar_combate", 0.0)) > 0.0 and _tem("andar_combate"):
+		return float(passadas.andar_combate) * RITMO_COMBATE
+	return velocidade
+
 func _ritmo(papel: String) -> float:
 	var p := float(passadas.get(papel, 0.0))
-	return clampf(velocidade / p, 0.4, 2.8) if p > 0.0 else 1.0
+	return clampf(vel_atual() / p, 0.4, 2.8) if p > 0.0 else 1.0
 
-## Papel de deslocamento disponível (cai para "andar" se o modelo não tiver a animação).
+## Papel de deslocamento: em combate, andar em guarda; fora dele, o do modo (cai para "andar").
 func _papel_desloc() -> String:
-	return papel_andar if anim.has(papel_andar) and player and player.has_animation(anim[papel_andar]) else "andar"
+	if em_combate and _tem("andar_combate"): return "andar_combate"
+	return papel_andar if _tem(papel_andar) else "andar"
 
 ## Segue um caminho (lista de células, sem a atual).
 func seguir(cam: Array[Vector2i]) -> void:
@@ -140,7 +153,7 @@ func _process(dt: float) -> void:
 	var alvo: Vector3 = grade.centro(_caminho[0])
 	var d := alvo - position
 	olhar_para(alvo)
-	var passo := velocidade * dt
+	var passo := vel_atual() * dt
 	if player:
 		var pd := _papel_desloc()
 		if player.current_animation != anim.get(pd, ""): tocar(pd)   # trocou de modo no meio do caminho
