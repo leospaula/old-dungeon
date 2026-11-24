@@ -7,6 +7,9 @@ const SOMBRAS_MAX := 3          # só as tochas mais próximas do grupo projetam
 const CEL := 1.5
 
 var tochas: Array[OmniLight3D] = []
+var tochas_nos: Array[Node3D] = []
+var tochas_cel: Array[Vector2i] = []
+var materiais: Array[ShaderMaterial] = []
 var luz_grupo: OmniLight3D
 var chao_mat: ShaderMaterial
 var env: Environment
@@ -30,16 +33,13 @@ func configurar(raiz: Node3D, masmorra: Node3D, ambiente: WorldEnvironment, carr
 	pedra.set_shader_parameter("cor_tex", parede); pedra.set_shader_parameter("normal_tex", parede_n); pedra.set_shader_parameter("natural_tex", laje)
 	_aplicar(masmorra.get_node("Rocha"), pedra, true)
 	_aplicar(masmorra.get_node("Paredes"), pedra, true)
-	var madeira := StandardMaterial3D.new(); madeira.vertex_color_use_as_albedo = true; madeira.roughness = 0.8
+	materiais = [chao_mat, pedra]
+	var madeira := _objeto(0.0, 0.8)
 	for folha in masmorra.get_node("Portas").find_children("*", "MeshInstance3D", true, false):
 		folha.material_override = madeira
-	var ferro := StandardMaterial3D.new(); ferro.vertex_color_use_as_albedo = true; ferro.metallic = 0.8; ferro.roughness = 0.4
-	masmorra.get_node("Ferro").material_override = ferro
-	var est := StandardMaterial3D.new(); est.vertex_color_use_as_albedo = true; est.roughness = 0.9
-	masmorra.get_node("Esteiras").material_override = est
-	var cr := StandardMaterial3D.new(); cr.vertex_color_use_as_albedo = true; cr.emission_enabled = true
-	cr.emission = Color(0.4, 0.7, 1.0); cr.emission_energy_multiplier = 0.8; cr.roughness = 0.2
-	masmorra.get_node("Cristais").material_override = cr
+	masmorra.get_node("Ferro").material_override = _objeto(0.8, 0.4)
+	masmorra.get_node("Esteiras").material_override = _objeto(0.0, 0.9)
+	masmorra.get_node("Cristais").material_override = _objeto(0.0, 0.2, Color(0.4, 0.7, 1.0), 0.8)
 	if masmorra.has_node("Rotulos"): masmorra.get_node("Rotulos").visible = false
 
 	luz_grupo = OmniLight3D.new(); luz_grupo.light_color = Color(1.0, 0.72, 0.42); luz_grupo.light_energy = 0.9
@@ -80,9 +80,10 @@ func tochas_automaticas(raiz: Node3D, layout_path: String, areas: Array, por_are
 			var na_norte := not cel.has(c + Vector2i(0, -1))
 			var pos := Vector3((c.x + 0.5) * CEL, 2.0, c.y * CEL + 0.2) if na_norte else Vector3(c.x * CEL + 0.2, 2.0, (c.y + 0.5) * CEL)
 			_tocha(raiz, pos, Vector3(0, 0, 1) if na_norte else Vector3(1, 0, 0))
+			tochas_cel.append(c)
 
 func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
-	var t := Node3D.new(); t.position = pos; raiz.add_child(t)
+	var t := Node3D.new(); t.position = pos; raiz.add_child(t); tochas_nos.append(t)
 	var cabo := MeshInstance3D.new(); var cm := CylinderMesh.new(); cm.top_radius = 0.05; cm.bottom_radius = 0.035; cm.height = 0.5; cabo.mesh = cm
 	var mm := StandardMaterial3D.new(); mm.albedo_color = Color(0.25, 0.15, 0.08); cabo.material_override = mm
 	cabo.rotation_degrees = Vector3(-25, 0, 0) if absf(dentro.z) > 0.5 else Vector3(0, 0, -25)
@@ -100,6 +101,23 @@ func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
 	var fm := StandardMaterial3D.new(); fm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED; fm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	fm.albedo_color = Color(1.0, 0.75, 0.35); fm.emission_enabled = true; fm.emission = Color(1, 0.6, 0.2); fm.emission_energy_multiplier = 1.2
 	qm.material = fm; f.mesh = qm; t.add_child(f)
+
+func _objeto(metalico: float, rugosidade: float, emissao := Color.BLACK, forca := 0.0) -> ShaderMaterial:
+	var m := ShaderMaterial.new(); m.shader = load("res://shaders/objeto_luz.gdshader")
+	m.set_shader_parameter("metalico", metalico); m.set_shader_parameter("rugosidade", rugosidade)
+	m.set_shader_parameter("emissao", Vector3(emissao.r, emissao.g, emissao.b)); m.set_shader_parameter("emissao_forca", forca)
+	materiais.append(m)
+	return m
+
+## Liga a névoa de guerra em todos os materiais da masmorra.
+func set_nevoa(tex: Texture2D, tam: Vector2) -> void:
+	for m in materiais:
+		m.set_shader_parameter("nevoa_tex", tex); m.set_shader_parameter("nevoa_tam", tam)
+
+## Tochas de parede só existem para o jogador depois de vistas (senão a luz delas denunciaria salas).
+func atualizar_tochas(exploradas: Dictionary, mestre_: bool) -> void:
+	for i in tochas_nos.size():
+		tochas_nos[i].visible = mestre_ or exploradas.has(tochas_cel[i])
 
 ## Aplica o material em todos os blocos (malhas filhas) de um grupo da masmorra.
 func _aplicar(grupo: Node, mat: Material, sombra: bool) -> void:
@@ -122,7 +140,9 @@ func _process(_dt: float) -> void:
 	var p := alvo.global_position
 	luz_grupo.global_position = p + Vector3(0.4, 1.6, 0.3)
 	# Orçamento de sombras: só as tochas mais próximas
-	var ordem := tochas.duplicate()
+	var ordem := tochas.filter(func(l): return l.is_visible_in_tree())
 	ordem.sort_custom(func(a, b): return a.global_position.distance_squared_to(p) < b.global_position.distance_squared_to(p))
 	for i in ordem.size():
 		ordem[i].shadow_enabled = i < SOMBRAS_MAX
+	for l in tochas:
+		if not l.is_visible_in_tree(): l.shadow_enabled = false

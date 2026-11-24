@@ -8,7 +8,6 @@ signal passo_iniciado(de: Vector2i, para: Vector2i)
 signal chegou(celula: Vector2i, metros: float)
 signal parou
 
-const VELOCIDADE := 3.2   # m/s andando na tela
 
 var grade: RefCounted
 var nome := ""
@@ -25,12 +24,17 @@ var mov_combate_m := 12.0
 var moral := 12
 var xp := 0
 var fugindo := false
+var infravisao_m := 0.0
+var velocidade := 3.2     # m/s andando na tela
 var celula := Vector2i.ZERO
 
 var modelo: Node3D
 var player: AnimationPlayer
 var anim := {}            # papel -> nome da animação ("parado", "andar", "golpe", "dano", "morrer", "vitoria")
-var frente := 0.0         # giro extra do modelo (radianos) para olhar para +Z
+var frente := 0.0         # giro extra do nó (radianos) para o modelo olhar para +Z
+## Correção por animação (graus): a importação deixou cada animação virada num ângulo diferente
+## (ex.: "andar" de lado, 90°). O modelo gira o contrário para o corpo apontar para a frente do nó.
+var giro_anim := {}
 var rotulo: Label3D
 var _caminho: Array[Vector2i] = []
 var _de := Vector2i.ZERO
@@ -77,6 +81,9 @@ func atualizar_rotulo() -> void:
 func tocar(papel: String, misturar := 0.2) -> void:
 	if player and anim.has(papel) and player.has_animation(anim[papel]):
 		player.play(anim[papel], misturar)
+		var giro := -deg_to_rad(float(giro_anim.get(anim[papel], 0.0)))
+		if absf(modelo.rotation.y - giro) > 0.01:
+			create_tween().tween_property(modelo, "rotation:y", giro, maxf(misturar, 0.05))
 
 ## Segue um caminho (lista de células, sem a atual).
 func seguir(cam: Array[Vector2i]) -> void:
@@ -92,6 +99,11 @@ func seguir(cam: Array[Vector2i]) -> void:
 func parar() -> void:
 	if _caminho.size() > 1: _caminho.resize(1)
 
+## Para onde o ator está olhando (no chão).
+func frente_vetor() -> Vector3:
+	var a := rotation.y - frente
+	return Vector3(sin(a), 0, cos(a))
+
 func olhar_para(p: Vector3) -> void:
 	var d := p - global_position; d.y = 0
 	if d.length() > 0.01: rotation.y = atan2(d.x, d.z) + frente
@@ -103,7 +115,7 @@ func _process(dt: float) -> void:
 	var alvo: Vector3 = grade.centro(_caminho[0])
 	var d := alvo - position
 	olhar_para(alvo)
-	var passo := VELOCIDADE * dt
+	var passo := velocidade * dt
 	if player == null and modelo:
 		_passo += dt * 12.0; modelo.position.y = absf(sin(_passo)) * 0.06
 	if d.length() <= passo:

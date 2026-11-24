@@ -2,6 +2,7 @@
 // tingida pela cor do bloco (caverna mais marrom), topo escuro. Iluminado pelas luzes do Godot.
 shader_type spatial;
 render_mode cull_back;
+#include "res://shaders/nevoa.gdshaderinc"
 uniform sampler2D cor_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D natural_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -23,7 +24,9 @@ void fragment() {
 	c *= vec3(0.9, 0.93, 1.0);
 	if (n.y > 0.7) c *= 0.35;                                           // topo da rocha: escuro
 	c *= mix(0.6, 1.0, smoothstep(0.0, 1.0, w.y));                      // sombra de contato na base
-	ALBEDO = c;
+	float v = nevoa(w, n);
+	ALBEDO = lembranca(c, v);
+	if (v < 0.2) { SPECULAR = 0.0; }
 	NORMAL_MAP = texture(normal_tex, uv).rgb;
 	NORMAL_MAP_DEPTH = natural ? 0.8 : 1.4;
 	ROUGHNESS = 0.92;

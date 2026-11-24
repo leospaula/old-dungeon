@@ -16,6 +16,9 @@ var grade: RefCounted
 var marca_alcance: Node    # marcas.gd
 var marca_caminho: Node
 var marca_vez: Node
+var exploradas := {}       # o jogador só anda pelo que já viu (visao.gd)
+var visivel: Callable      # (ator) -> bool: o jogador está vendo esse ator?
+var abrir_porta: Callable  # (porta, de_celula) -> void
 
 var ativo := false
 var ocupado := false
@@ -34,7 +37,8 @@ var _moral_metade := false
 func iniciar(g: Array, m: Array, surpreso_grupo: bool, surpreso_monstros: bool) -> void:
 	grupo = g; monstros = m; ativo = true; rodada = 0; _mortos = 0; _xp = 0
 	_moral_primeira = false; _moral_metade = false
-	var nomes := ", ".join(monstros.map(func(x): return x.nome))
+	var vistos := monstros.filter(func(x): return _ve(x))
+	var nomes := ", ".join(vistos.map(func(x): return x.nome)) if not vistos.is_empty() else "algo no escuro"
 	registro.emit("[b]Combate![/b] %s." % nomes)
 	if surpreso_grupo and not surpreso_monstros: registro.emit("O grupo foi [color=#ff9a6a]surpreendido[/color]: os monstros agem primeiro, sozinhos.")
 	elif surpreso_monstros and not surpreso_grupo: registro.emit("Os monstros foram [color=#9ad0ff]surpreendidos[/color]: o grupo tem uma rodada livre.")
@@ -135,13 +139,13 @@ func pairar(c: Vector2i, alvo: Node) -> void:
 	mudou.emit()
 
 func _mostrar_alcance() -> void:
-	_alc = grade.alcance(vez.celula, restante, _ocupadas(vez))
+	_alc = grade.alcance(vez.celula, restante, _ocupadas(vez), false, exploradas)
 	marca_alcance.limpar()
 	var cels: Array = _alc.keys().filter(func(k): return k != vez.celula)
 	marca_alcance.por(cels, Color(0.35, 0.65, 1.0, 0.28))
 	var alvos: Array = []
 	for m in monstros:
-		if is_instance_valid(m) and m.vivo() and (grade.adjacentes(vez.celula, m.celula) or _melhor_vizinha(m) != Vector2i(-999, -999)):
+		if is_instance_valid(m) and m.vivo() and _ve(m) and (grade.adjacentes(vez.celula, m.celula) or _melhor_vizinha(m) != Vector2i(-999, -999)):
 			alvos.append(m.celula)
 	marca_alcance.por(alvos, Color(0.95, 0.25, 0.15, 0.3))
 	marca_vez.limpar(); marca_vez.por([vez.celula], Color(1.0, 0.8, 0.3, 0.45), 0.02)
@@ -149,7 +153,7 @@ func _mostrar_alcance() -> void:
 ## Célula mais adiantada, dentro do alcance, no caminho de `quem` até `alvo`.
 func _rumo(alc: Dictionary, quem: Node, alvo: Node) -> Vector2i:
 	var destino: Vector2i = quem.celula
-	for c in grade.caminho(quem.celula, alvo.celula, _ocupadas(quem)):
+	for c in grade.caminho(quem.celula, alvo.celula, _ocupadas(quem), quem.lado == "monstros"):
 		if alc.has(c): destino = c
 		else: break
 	return destino
@@ -171,7 +175,7 @@ func _turno_monstro(m: Node) -> void:
 	if alvo == null: return
 	if not grade.adjacentes(m.celula, alvo.celula):
 		var ocup := _ocupadas(m)
-		var alc: Dictionary = grade.alcance(m.celula, m.mov_combate_m, ocup)
+		var alc: Dictionary = grade.alcance(m.celula, m.mov_combate_m, ocup, true)
 		var destino := Vector2i(-999, -999); var menor := INF
 		for c in alc:
 			if grade.adjacentes(c, alvo.celula) and float(alc[c][0]) < menor:
@@ -194,7 +198,7 @@ func _atacar(a: Node, alvo: Node) -> void:
 	var total: int = r + a.mod_acerto
 	var acerta: bool = r == 20 or (r != 1 and total >= precisa)
 	var mod_txt := (" %+d = %d" % [a.mod_acerto, total]) if a.mod_acerto != 0 else ""
-	var txt := "%s ataca %s: d20 [b]%d[/b]%s (precisa %d) → " % [a.nome, alvo.nome, r, mod_txt, precisa]
+	var txt := "%s ataca %s: d20 [b]%d[/b]%s (precisa %d) → " % [_nome(a), _nome(alvo), r, mod_txt, precisa]
 	if acerta:
 		var expr: String = a.dano + (("%+d" % a.mod_dano) if a.mod_dano != 0 else "")
 		var dd := Dados.detalhar(expr)
@@ -204,7 +208,7 @@ func _atacar(a: Node, alvo: Node) -> void:
 		registro.emit(txt)
 		if alvo.pv <= 0:
 			alvo.animar_morte()
-			registro.emit("[color=#ff7a5a]%s cai.[/color]" % alvo.nome)
+			registro.emit("[color=#ff7a5a]%s cai.[/color]" % _nome(alvo))
 			_baixa(alvo)
 		else:
 			alvo.animar_dano()
@@ -238,7 +242,7 @@ func _testar_moral() -> void:
 
 func _fugir(m: Node) -> void:
 	m.fugindo = true; _xp += m.xp
-	var alc: Dictionary = grade.alcance(m.celula, m.mov_combate_m * 2.0, _ocupadas(m))
+	var alc: Dictionary = grade.alcance(m.celula, m.mov_combate_m * 2.0, _ocupadas(m), true)
 	var melhor: Vector2i = m.celula; var maior := -1.0
 	for c in alc:
 		var perto := INF
@@ -262,6 +266,33 @@ func _checar_fim() -> bool:
 
 # ---------- utilidades ----------
 
+func _ve(a: Node) -> bool:
+	return a.lado == "grupo" or not visivel.is_valid() or visivel.call(a)
+
+func _nome(a: Node) -> String:
+	return a.nome if _ve(a) else "Algo no escuro"
+
+## Clique numa porta fechada durante a vez do personagem: abre se estiver ao lado (gasta a ação);
+## senão anda até o lado dela (se der) e abre.
+func clicar_porta(pt: Dictionary) -> void:
+	if not ativo or ocupado or vez == null or vez.lado != "grupo": return
+	var lado := Vector2i(-999, -999); var menor := INF
+	for par in grade.lados_da_porta(pt):
+		for c in par:
+			if _alc.has(c) and float(_alc[c][0]) < menor: menor = float(_alc[c][0]); lado = c
+	if lado == Vector2i(-999, -999):
+		registro.emit("A porta está longe demais para abrir nesta rodada.")
+		return
+	ocupado = true
+	if lado != vez.celula:
+		restante -= menor
+		marca_alcance.limpar(); marca_caminho.limpar()
+		await _andar(vez, grade.refazer(_alc, lado))
+	abrir_porta.call(pt, vez.celula)
+	await get_tree().create_timer(0.4).timeout
+	ocupado = false
+	_fim_de_turno.emit()
+
 func _andar(a: Node, cam: Array[Vector2i]) -> void:
 	if cam.is_empty(): return
 	a.seguir(cam)
@@ -275,7 +306,7 @@ func _ocupadas(exceto: Node) -> Dictionary:
 
 func _monstro_em(c: Vector2i) -> Node:
 	for m in monstros:
-		if is_instance_valid(m) and m.vivo() and m.celula == c: return m
+		if is_instance_valid(m) and m.vivo() and m.celula == c and _ve(m): return m
 	return null
 
 func _inimigo_ao_lado(h: Node) -> Node:
@@ -287,6 +318,6 @@ func _mais_proximo(a: Node, lista: Array) -> Node:
 	var melhor: Node = null; var menor := INF
 	for x in lista:
 		if not is_instance_valid(x) or not x.vivo(): continue
-		var d: int = grade.caminho(a.celula, x.celula).size()
+		var d: int = grade.caminho(a.celula, x.celula, {}, true).size()
 		if d > 0 and d < menor: menor = d; melhor = x
 	return melhor
