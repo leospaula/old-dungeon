@@ -275,23 +275,31 @@
           ],
           "renders": [
             {
-              "src": "img/masmorra-3d-perspectiva.jpg",
-              "legenda": "Visão geral"
+              "src": "img/estilo-r2-bloco.jpg",
+              "legenda": "Estilo aprovado (rodada 2): pedra em tinta e aquarela, modo mestre"
             },
             {
-              "src": "img/masmorra-3d-centro-e-prisao.jpg",
-              "legenda": "Prisão 19, passagens 19a/19b e bloco central"
+              "src": "img/estilo-r2-perto.jpg",
+              "legenda": "Rodada 2: Tessa como miniatura, luz da tocha (9 m)"
             },
             {
-              "src": "img/masmorra-3d-salao-esteiras.jpg",
-              "legenda": "Salão 28/29 com as esteiras"
+              "src": "img/estilo-r2-perto-baixa.jpg",
+              "legenda": "Rodada 2: parede de pedra aparelhada, câmera baixa"
             },
             {
-              "src": "img/masmorra-3d-topo.jpg",
-              "legenda": "Vista de cima"
+              "src": "img/estilo-r2-mapa.jpg",
+              "legenda": "Rodada 2: o mapa inteiro como diorama sobre a mesa"
+            },
+            {
+              "src": "img/estilo-r2-mapa-tocha.jpg",
+              "legenda": "Rodada 2: com a tocha, só o entorno do grupo aparece"
+            },
+            {
+              "src": "img/estilos-r1-comparacao.jpg",
+              "legenda": "Rodada 1: atual × tinta × diorama × 1+2 (aprovado: 1+2)"
             }
           ],
-          "notas": "Blocos de pedra (voxel) gerados por script a partir de data/masmorra/layout.json. Ainda sem texturas: cores por tipo de área. Portas fechadas, grades nas celas, esteiras e cristais."
+          "notas": "Estilo aprovado: 1+2 (tinta e aquarela + diorama na mesa). Shaders em res://shaders/: chão de lajes, pedra aparelhada/rocha natural, rocha hachurada, contorno de tinta, luz da tocha e grão de papel. Tudo sem pós-processamento pesado (WebGL)."
         }
       ]
     }
