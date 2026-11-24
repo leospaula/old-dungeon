@@ -1,0 +1,306 @@
+<title>Ficha da Tessa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Alegreya:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: pergaminho sobre a mesa de pedra da masmorra; abas trocam entre as propostas de ficha. Visual único (escuro em volta, pergaminho claro), sem tema alternado, por escolha. */
+:root {
+  color-scheme: dark;
+  --mesa: #1c1915;
+  --mesa-2: #27221c;
+  --perg: #ecdfc2;
+  --perg-2: #e2d2ae;
+  --tinta: #2a1f15;
+  --tinta-2: #5b4a37;
+  --rubro: #8e2a1c;
+  --ouro: #a87a22;
+  --linha: #b9a37c;
+  --verde: #3f6b3a;
+  --display: "IM Fell English SC", "IM Fell English", Georgia, serif;
+  --titulo: "IM Fell English", Georgia, serif;
+  --texto: "Alegreya", Georgia, "Times New Roman", serif;
+}
+* { box-sizing: border-box; }
+html { background: var(--mesa); }
+body {
+  margin: 0; background: radial-gradient(ellipse at 50% 0%, var(--mesa-2), var(--mesa) 70%); color: var(--perg);
+  font-family: var(--texto); font-size: 16px; line-height: 1.4;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 40px;
+}
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 16px; }
+header.topo { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: end; justify-content: space-between; }
+header.topo h1 { font-family: var(--display); font-weight: 400; font-size: clamp(1.6rem, 3.5vw, 2.3rem); margin: 0; letter-spacing: .02em; color: #f3e6c8; }
+header.topo p { margin: 4px 0 0; color: #cbb994; max-width: 70ch; }
+nav.abas { display: flex; flex-wrap: wrap; gap: 6px; }
+nav.abas button { font-family: var(--display); font-size: 1rem; background: transparent; color: #e7d6b0; border: 1px solid #6a5a44; padding: 6px 14px; cursor: pointer; }
+nav.abas button[aria-selected="true"] { background: var(--perg); color: var(--tinta); border-color: var(--perg); }
+nav.abas button:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; }
+
+/* Pergaminho */
+.perg { background: var(--perg); color: var(--tinta); position: relative; border: 1px solid #c8b38a;
+  box-shadow: 0 10px 30px rgb(0 0 0 / .5), inset 0 0 60px rgb(120 90 40 / .18); padding: 22px; }
+.perg::before { content: ""; position: absolute; inset: 8px; border: 1px solid var(--linha); pointer-events: none; }
+h2, h3 { font-family: var(--display); font-weight: 400; color: var(--rubro); margin: 0 0 8px; letter-spacing: .04em; text-wrap: balance; }
+h2 { font-size: 1.25rem; border-bottom: 1px solid var(--linha); padding-bottom: 3px; }
+h3 { font-size: 1.05rem; }
+.capitular::first-letter { font-size: 1.6em; color: var(--rubro); }
+.rotulo { font-family: var(--display); font-size: .78rem; letter-spacing: .08em; color: var(--tinta-2); }
+.num { font-variant-numeric: tabular-nums lining-nums; font-weight: 700; }
+.mut { color: var(--tinta-2); }
+
+/* Folha completa */
+.folha { display: grid; grid-template-columns: minmax(0, 290px) minmax(0, 1fr) minmax(0, 1.05fr); gap: 22px; }
+@media (max-width: 1080px) { .folha { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .folha .col3 { grid-column: 1 / -1; } }
+@media (max-width: 680px) { .folha { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.cab .nome { font-family: var(--titulo); font-size: 1.55rem; line-height: 1.1; }
+.cab dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 8px 0 0; font-size: .95rem; }
+.cab dt { font-family: var(--display); font-size: .8rem; color: var(--tinta-2); align-self: center; }
+.cab dd { margin: 0; border-bottom: 1px dotted var(--linha); }
+.retrato { border: 3px double var(--tinta); background: var(--perg-2); padding: 4px; }
+.retrato img { display: block; width: 100%; height: auto; filter: sepia(.15); }
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.selo { display: grid; justify-items: center; gap: 2px; }
+.selo svg { width: 62px; height: 62px; }
+.selo .valor { font-family: var(--titulo); font-size: 1.5rem; font-weight: 700; }
+.xp .barra { height: 10px; border: 1px solid var(--tinta); background: var(--perg-2); margin: 4px 0; }
+.xp .barra i { display: block; height: 100%; background: var(--ouro); }
+
+.atributos { display: grid; gap: 6px; }
+.attr { display: grid; grid-template-columns: 46px 112px 38px minmax(0, 1fr); gap: 8px; align-items: center; }
+.attr .caixa { border: 2px solid var(--tinta); height: 40px; display: grid; place-items: center; font-family: var(--titulo); font-size: 1.35rem; font-weight: 700; background: #f4ead4; }
+.attr .nome { font-family: var(--display); font-size: .95rem; }
+.attr .mod { text-align: center; font-weight: 700; border-bottom: 1px solid var(--tinta); }
+.attr .uso { font-size: .82rem; color: var(--tinta-2); line-height: 1.2; }
+@media (max-width: 480px) { .attr { grid-template-columns: 42px 1fr 34px; } .attr .uso { grid-column: 2 / -1; } }
+
+.protecoes { display: grid; gap: 5px; }
+.prot { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; }
+.prot .roda { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--tinta); background: #f4ead4; display: grid; place-items: center; font-family: var(--titulo); font-weight: 700; font-size: 1.15rem; box-shadow: 0 0 0 3px var(--perg), 0 0 0 5px var(--tinta); }
+.prot span { font-family: var(--display); font-size: .9rem; line-height: 1.15; }
+.ataque { display: grid; grid-template-columns: auto 1fr 1fr; gap: 10px; align-items: center; }
+.ataque .thac0 { border: 2px solid var(--tinta); padding: 6px 12px; text-align: center; background: #f4ead4; }
+.ataque .thac0 b { display: block; font-family: var(--titulo); font-size: 1.6rem; }
+.lista { margin: 0; padding-left: 18px; }
+.lista li { margin: 2px 0; }
+
+.slots-eq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.slot { border: 1.5px solid var(--tinta); background: #f4ead4; padding: 6px 8px; min-height: 52px; display: grid; gap: 1px; align-content: center; position: relative; }
+.slot .onde { font-family: var(--display); font-size: .72rem; color: var(--tinta-2); letter-spacing: .06em; }
+.slot .item { font-weight: 600; font-size: .92rem; line-height: 1.15; }
+.slot .det { font-size: .78rem; color: var(--tinta-2); }
+.slot.vazio { background: transparent; border-style: dashed; color: var(--tinta-2); }
+.mochila { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 560px) { .mochila { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.mochila .slot { min-height: 64px; text-align: center; padding: 4px; }
+.mochila .slot .q { position: absolute; right: 4px; bottom: 2px; font-size: .78rem; font-weight: 700; }
+.mochila .slot.duplo { grid-column: span 2; }
+.mochila .slot.trava { background: repeating-linear-gradient(45deg, transparent 0 6px, rgb(91 74 55 / .15) 6px 8px); border-style: dotted; }
+.moedas { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; text-align: center; }
+.moedas div { border: 1px solid var(--linha); padding: 4px 2px; }
+.moedas b { display: block; font-family: var(--titulo); font-size: 1.2rem; }
+.carga { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.pilula { display: inline-block; padding: 1px 10px; border: 1.5px solid currentColor; font-family: var(--display); font-size: .82rem; }
+.pilula.media { color: var(--ouro); } .pilula.leve { color: var(--verde); } .pilula.pesada { color: var(--rubro); }
+.diario { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .diario { grid-template-columns: minmax(0, 1fr); } }
+.diario ul { margin: 0; padding-left: 18px; font-size: .92rem; }
+.nota-auto { font-size: .8rem; color: var(--tinta-2); font-style: italic; }
+
+/* Abas internas da proposta B */
+.livro { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 22px; }
+@media (max-width: 760px) { .livro { grid-template-columns: minmax(0, 1fr); } }
+.marcadores { display: flex; gap: 0; border-bottom: 2px solid var(--tinta); margin-bottom: 14px; flex-wrap: wrap; }
+.marcadores button { font-family: var(--display); font-size: 1rem; background: var(--perg-2); color: var(--tinta); border: 1.5px solid var(--tinta); border-bottom: 0; padding: 5px 16px; margin-right: 4px; cursor: pointer; }
+.marcadores button[aria-selected="true"] { background: var(--rubro); color: var(--perg); }
+.marcadores button:focus-visible { outline: 2px solid var(--ouro); }
+
+/* Proposta C: em jogo */
+.cena { background: linear-gradient(#2b2620, #15120f); border: 1px solid #3b332a; min-height: 220px; display: grid; place-items: center; color: #8d7d63; font-style: italic; padding: 20px; text-align: center; }
+.grupo { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.carta { background: var(--perg); color: var(--tinta); border: 1px solid #c8b38a; padding: 8px 10px; display: grid; gap: 4px; cursor: pointer; text-align: left; font: inherit; }
+.carta:focus-visible { outline: 2px solid var(--ouro); }
+.carta[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ouro); }
+.carta .n { font-family: var(--titulo); font-weight: 700; font-size: 1rem; line-height: 1.1; }
+.carta .c { font-family: var(--display); font-size: .75rem; color: var(--tinta-2); }
+.carta .pv { height: 8px; border: 1px solid var(--tinta); background: var(--perg-2); }
+.carta .pv i { display: block; height: 100%; background: var(--rubro); }
+.carta .linha { display: flex; justify-content: space-between; font-size: .82rem; }
+.carta .cinto { display: flex; gap: 4px; }
+.carta .cinto span { border: 1px solid var(--tinta); font-size: .7rem; padding: 0 4px; }
+
+/* Mapeamento */
+.tabela { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+th { font-family: var(--display); font-weight: 400; color: var(--rubro); font-size: .9rem; letter-spacing: .04em; }
+td .tag { font-family: var(--display); font-size: .75rem; padding: 0 6px; border: 1px solid currentColor; white-space: nowrap; }
+.tag.igual { color: var(--verde); } .tag.adapt { color: var(--ouro); } .tag.novo { color: var(--rubro); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="topo">
+    <div>
+      <h1>Ficha da Tessa</h1>
+      <p>Três maneiras de levar a ficha do livreto para a tela, todas com as mesmas informações da ficha original. Os números são os da Tessa; CA, ataque, proteções, movimento e carga são calculados pelo jogo.</p>
+    </div>
+    <nav class="abas" role="tablist" aria-label="Propostas">
+      <button role="tab" data-v="folha">A · Folha completa</button>
+      <button role="tab" data-v="livro">B · Livro com abas</button>
+      <button role="tab" data-v="em-jogo">C · Durante o jogo</button>
+      <button role="tab" data-v="mapeamento">Da ficha original</button>
+    </nav>
+  </header>
+  <main id="palco"></main>
+</div>
+
+<script>
+const T = {
+  nome: "Tessa Mão-de-Ferro", jogador: "Jogador 1", classe: "Guerreira", nivel: 1, alinhamento: "Ordeira",
+  dv: "d8", pv: 9, pvMax: 9, ca: 3, thac0: 19, xp: 0, proximo: 2000, bonusXp: "+10%", req: "FOR 16",
+  atributos: [
+    ["FOR", "Força", 16, "+2", "acerto e dano corpo a corpo, forçar portas"],
+    ["INT", "Inteligência", 9, "0", "idiomas extras"],
+    ["SAB", "Sabedoria", 10, "0", "proteção contra magia"],
+    ["DES", "Destreza", 13, "+1", "acerto à distância; melhora a CA"],
+    ["CON", "Constituição", 14, "+1", "pontos de vida por dado"],
+    ["CAR", "Carisma", 8, "−1", "reação de PdMs; moral de contratados"]
+  ],
+  protecoes: [[12, "Veneno ou raio mortal"], [13, "Varinhas mágicas"], [14, "Petrificação ou paralisia"], [15, "Baforada de dragão"], [16, "Feitiços, cajados e bastões"]],
+  idiomas: ["Comum", "Ordeiro (alinhamento)"],
+  especiais: ["Usa qualquer arma e qualquer armadura.", "Melhor progressão de ataque e de pontos de vida."],
+  equipado: [["Mão direita", "Espada longa", "d8 · +2 dano"], ["Mão esquerda", "Escudo", "CA −1"], ["Corpo", "Cota de malha", "CA 5 · carga média"], ["Cinto", "Tocha", "acesa: 6 turnos"], ["Cinto", "", ""]],
+  mochila: [["Tochas", 5], ["Rações", 7], ["Odre", 1], ["Corda 15 m", 1], ["Lança", 1, true]],
+  espacos: 12, magicos: [],
+  moedas: { pl: 0, po: 8, pe: 0, pp: 0, pc: 0 }, gemas: [], carga: "média", mov: "27 m por turno · 9 m por rodada",
+  diario: {
+    "Lugares explorados": ["Vau-Raso (vila)", "Estrada do vale"],
+    "Pessoas": ["Mercador de Vau-Raso: paga 300 po pelos saqueadores"],
+    "Monstros encontrados": ["Nenhum ainda"]
+  }
+};
+const GRUPO = [
+  ["Tessa", "Guerreira", 9, 9, 3, 19, ["Tocha"]], ["Durgo", "Anão", 10, 10, 3, 19, ["Tocha"]], ["Caco", "Ladrão", 4, 4, 5, 19, ["Pedras"]],
+  ["Lianne", "Elfa", 6, 6, 4, 19, ["Flechas"]], ["Mirela", "Maga", 4, 4, 8, 19, ["Óleo"]], ["Anselmo", "Clérigo", 7, 7, 4, 19, ["Água benta"]],
+  ["Bento", "Halfling", 7, 7, 5, 19, ["Tocha", "Pedras"]]
+];
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const SVG = {
+  escudo: v => `<svg viewBox="0 0 60 64" aria-hidden="true"><path d="M30 3 L55 10 V30 C55 46 43 56 30 61 C17 56 5 46 5 30 V10 Z" fill="#f4ead4" stroke="#2a1f15" stroke-width="2.5"/><text x="30" y="40" text-anchor="middle" font-family="IM Fell English, Georgia, serif" font-size="24" font-weight="700" fill="#2a1f15">${v}</text></svg>`,
+  dado: v => `<svg viewBox="0 0 60 64" aria-hidden="true"><path d="M30 4 L55 18 V46 L30 60 L5 46 V18 Z" fill="#f4ead4" stroke="#2a1f15" stroke-width="2.5"/><path d="M5 18 L30 32 L55 18 M30 32 V60" fill="none" stroke="#b9a37c" stroke-width="1.5"/><text x="30" y="28" text-anchor="middle" font-family="IM Fell English, Georgia, serif" font-size="17" font-weight="700" fill="#2a1f15">${v}</text></svg>`,
+  coracao: (v, m) => `<svg viewBox="0 0 60 64" aria-hidden="true"><path d="M30 58 C10 44 4 32 4 21 C4 11 11 5 19 5 C24 5 28 8 30 12 C32 8 36 5 41 5 C49 5 56 11 56 21 C56 32 50 44 30 58 Z" fill="#f4ead4" stroke="#8e2a1c" stroke-width="2.5"/><text x="30" y="33" text-anchor="middle" font-family="IM Fell English, Georgia, serif" font-size="20" font-weight="700" fill="#2a1f15">${v}</text><text x="30" y="46" text-anchor="middle" font-family="Alegreya, Georgia, serif" font-size="10" fill="#5b4a37">de ${m}</text></svg>`
+};
+
+function blocoCabecalho() {
+  return `<section class="cab"><div class="rotulo">Personagem</div><div class="nome">${esc(T.nome)}</div>
+    <dl><dt>Jogador</dt><dd>${esc(T.jogador)}</dd><dt>Classe</dt><dd>${T.classe}</dd><dt>Nível</dt><dd class="num">${T.nivel}</dd><dt>Alinhamento</dt><dd>${T.alinhamento}</dd></dl></section>`;
+}
+const blocoRetrato = () => `<figure class="retrato" style="margin:0"><img src="retrato-tessa.jpg" alt="Retrato da Tessa em ilustração de tinta e aquarela"></figure>`;
+const blocoTrio = () => `<section class="trio">
+  <div class="selo">${SVG.escudo(T.ca)}<span class="rotulo">Classe de armadura</span></div>
+  <div class="selo">${SVG.dado(T.dv)}<span class="rotulo">Dado de vida</span></div>
+  <div class="selo">${SVG.coracao(T.pv, T.pvMax)}<span class="rotulo">Pontos de vida</span></div></section>`;
+const blocoXp = () => `<section class="xp"><h2>Experiência</h2><div class="num" style="font-size:1.1rem">${T.xp.toLocaleString("pt-BR")} <span class="mut" style="font-weight:400">de ${T.proximo.toLocaleString("pt-BR")} para o nível ${T.nivel + 1}</span></div>
+  <div class="barra" aria-hidden="true"><i style="width:${Math.min(100, T.xp / T.proximo * 100)}%"></i></div>
+  <div class="mut" style="font-size:.88rem">Requisito principal ${T.req} · bônus de XP <b class="num">${T.bonusXp}</b></div></section>`;
+const blocoAtributos = () => `<section><h2 class="capitular">Atributos</h2><div class="atributos">${T.atributos.map(([s, n, v, m, u]) =>
+  `<div class="attr"><div class="caixa num" aria-label="${n} ${v}">${v}</div><div class="nome">${n}</div><div class="mod num">${m}</div><div class="uso">${u}</div></div>`).join("")}</div></section>`;
+const blocoProtecoes = () => `<section><h2 class="capitular">Jogadas de proteção</h2><div class="protecoes">${T.protecoes.map(([v, n]) =>
+  `<div class="prot"><div class="roda num">${v}</div><span>${n}</span></div>`).join("")}</div>
+  <p class="mut" style="font-size:.82rem;margin:6px 0 0">Role d20: igual ou acima do número resiste.</p></section>`;
+const blocoAtaque = () => `<section><h2 class="capitular">Ataque</h2><div class="ataque">
+  <div class="thac0"><span class="rotulo">THAC0</span><b class="num">${T.thac0}</b></div>
+  <div class="slot"><span class="onde">Corpo a corpo</span><span class="item num">+2 acerto · +2 dano</span></div>
+  <div class="slot"><span class="onde">À distância</span><span class="item num">+1 acerto</span></div></div>
+  <p class="mut" style="font-size:.82rem;margin:6px 0 0">Acerta quando d20 + ajustes ≥ THAC0 − CA do alvo.</p></section>`;
+const blocoIdiomas = () => `<section><h2>Idiomas e habilidades especiais</h2><div><span class="rotulo">Idiomas</span> ${T.idiomas.join(" · ")}</div>
+  <ul class="lista">${T.especiais.map(e => `<li>${e}</li>`).join("")}</ul></section>`;
+function blocoEquipado() {
+  return `<section><h2 class="capitular">Equipado</h2><div class="slots-eq">${T.equipado.map(([o, i, d]) =>
+    `<div class="slot ${i ? "" : "vazio"}"><span class="onde">${o}</span><span class="item">${i || "vazio"}</span>${d ? `<span class="det">${d}</span>` : ""}</div>`).join("")}</div></section>`;
+}
+function blocoMochila() {
+  let usados = 0; const html = [];
+  for (const [n, q, grande] of T.mochila) { usados += grande ? 2 : 1; html.push(`<div class="slot ${grande ? "duplo" : ""}"><span class="item">${n}</span>${q > 1 ? `<span class="q num">×${q}</span>` : ""}${grande ? `<span class="det">2 espaços</span>` : ""}</div>`); }
+  for (let i = usados; i < T.espacos; i++) html.push(`<div class="slot vazio"></div>`);
+  return `<section><h2 class="capitular">Mochila <span class="mut" style="font-family:var(--texto);font-size:.9rem;letter-spacing:0">${usados} de ${T.espacos} espaços (10 + FOR)</span></h2><div class="mochila">${html.join("")}</div></section>`;
+}
+const blocoMagicos = () => `<section><h2>Itens mágicos</h2>${T.magicos.length ? "" : `<p class="mut" style="margin:0">Nenhum ainda.</p>`}</section>`;
+const blocoMoedas = () => `<section><h2 class="capitular">Dinheiro e tesouro</h2><div class="moedas">
+  ${[["pl", "Platina"], ["po", "Ouro"], ["pe", "Electrum"], ["pp", "Prata"], ["pc", "Cobre"]].map(([k, n]) => `<div><b class="num">${T.moedas[k]}</b><span class="rotulo">${n}</span></div>`).join("")}</div>
+  <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.92rem"><span><span class="rotulo">Gemas e joias</span> nenhuma</span><span><span class="rotulo">Valor total</span> <b class="num">8 po</b></span><span class="mut">200 moedas ocupam 1 espaço</span></div></section>`;
+const blocoCarga = () => `<section><h2>Carga e movimento</h2><div class="carga"><span class="pilula media">Carga ${T.carga}</span><span class="num">${T.mov}</span><span class="mut" style="font-size:.85rem">(por causa da cota de malha)</span></div></section>`;
+function blocoDiario() {
+  return `<section><h2 class="capitular">Diário de aventura</h2><div class="diario">${Object.entries(T.diario).map(([t, l]) =>
+    `<div><h3>${t}</h3><ul>${l.map(x => `<li>${x}</li>`).join("")}</ul></div>`).join("")}</div>
+    <p class="nota-auto">O jogo preenche sozinho à medida que o grupo explora; o jogador pode acrescentar notas.</p></section>`;
+}
+
+function folha() {
+  return `<div class="perg"><div class="folha">
+    <div class="col">${blocoCabecalho()}${blocoRetrato()}${blocoTrio()}${blocoXp()}</div>
+    <div class="col">${blocoAtributos()}${blocoProtecoes()}${blocoAtaque()}${blocoIdiomas()}</div>
+    <div class="col col3">${blocoEquipado()}${blocoMochila()}${blocoMagicos()}${blocoMoedas()}${blocoCarga()}</div>
+  </div><div style="margin-top:18px">${blocoDiario()}</div></div>`;
+}
+function livro(pagina) {
+  const pags = { ficha: "Ficha", inventario: "Inventário", diario: "Diário" };
+  const corpo = pagina === "inventario"
+    ? `<div class="col">${blocoEquipado()}${blocoMochila()}${blocoMoedas()}${blocoMagicos()}${blocoCarga()}</div>`
+    : pagina === "diario" ? blocoDiario()
+    : `<div class="folha" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"><div class="col">${blocoAtributos()}${blocoAtaque()}</div><div class="col">${blocoProtecoes()}${blocoIdiomas()}${blocoXp()}</div></div>`;
+  return `<div class="perg"><div class="livro">
+    <div class="col">${blocoCabecalho()}${blocoRetrato()}${blocoTrio()}</div>
+    <div style="min-width:0"><div class="marcadores" role="tablist" aria-label="Páginas da ficha">${Object.entries(pags).map(([k, n]) =>
+      `<button role="tab" data-p="${k}" aria-selected="${k === pagina}">${n}</button>`).join("")}</div>${corpo}</div></div></div>`;
+}
+function emJogo(sel) {
+  const cartas = GRUPO.map(([n, c, pv, max, ca, th, cinto], i) => `<button class="carta" data-i="${i}" aria-pressed="${i === sel}">
+    <span class="n">${n}</span><span class="c">${c}</span><span class="pv" aria-label="PV ${pv} de ${max}"><i style="width:${pv / max * 100}%"></i></span>
+    <span class="linha"><span>PV <b class="num">${pv}/${max}</b></span><span>CA <b class="num">${ca}</b></span><span>THAC0 <b class="num">${th}</b></span></span>
+    <span class="cinto">${cinto.map(x => `<span>${x}</span>`).join("")}</span></button>`).join("");
+  return `<div style="display:grid;gap:10px"><div class="cena">A masmorra em 3D aparece aqui. Embaixo, uma carta por personagem com o essencial para jogar: PV, CA, THAC0 e o cinto de acesso rápido. Clicar numa carta abre a ficha completa ao lado (proposta A ou B).</div>
+    <div class="grupo">${cartas}</div>
+    ${sel === 0 ? `<div class="perg" style="padding:16px"><div class="folha" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)"><div class="col">${blocoTrio()}${blocoAtaque()}</div><div class="col">${blocoProtecoes()}</div><div class="col">${blocoEquipado()}</div></div></div>`
+      : `<p style="color:#cbb994;margin:0">Nesta prévia, só a carta da Tessa abre a ficha.</p>`}</div>`;
+}
+function mapeamento() {
+  const L = [
+    ["Nome do jogador, nome do personagem, alinhamento, classe, nível", "Cabeçalho", "igual", ""],
+    ["Dungeon Master", "—", "adapt", "O jogo faz o papel de mestre. Pode virar o nome da campanha ou da mesa."],
+    ["Desenho do personagem ou símbolo", "Retrato", "igual", "Linha de ilustração v3."],
+    ["Classe de armadura, dado de vida, pontos de vida", "Escudo, dado e coração", "igual", "PV mostra atual e máximo."],
+    ["Habilidades (6) e ajustes", "Atributos", "igual", "Valor, modificador e para que serve, em frase curta."],
+    ["Jogadas de proteção (5)", "Jogadas de proteção", "igual", "Mesmos 5 grupos e números da classe."],
+    ["Línguas", "Idiomas", "igual", "Comum, idioma do alinhamento e extras pela INT."],
+    ["Habilidades especiais (feitiços, ladrão, clérigo)", "Habilidades especiais", "igual", "Muda conforme a classe: porcentagens do ladrão, magias memorizadas, afastar mortos-vivos, infravisão…"],
+    ["Tabela de jogadas de ataque (CA 9 a 0)", "THAC0", "adapt", "Só o número, como decidido. O jogo faz a conta: d20 + ajustes ≥ THAC0 − CA."],
+    ["Ajustes na jogada de ataque (corpo a corpo, distância)", "Ataque", "igual", ""],
+    ["Equipamento carregado: itens mágicos", "Itens mágicos", "igual", ""],
+    ["Equipamento carregado: itens normais", "Equipado + mochila", "adapt", "Vira espaços: mãos, corpo, cinto (2) e mochila de 10 + FOR."],
+    ["Dinheiro e tesouro (P.L., P.O., P.E., P.P., P.C.), pedras preciosas, valor total", "Dinheiro e tesouro", "igual", "200 moedas ocupam 1 espaço; gemas e joias, 10 por espaço."],
+    ["Experiência, valor do requisito principal, bônus/penalidade, preciso para o próximo nível", "Experiência", "igual", "Com barra de progresso."],
+    ["Outras anotações: locais explorados, pessoas e monstros", "Diário de aventura", "adapt", "O jogo preenche sozinho enquanto o grupo explora."],
+    ["—", "Carga e movimento", "novo", "Calculado pelo equipamento e pela mochila."]
+  ];
+  const tag = { igual: "mantido", adapt: "adaptado", novo: "novo" };
+  return `<div class="perg"><h2>Da ficha original para a do jogo</h2><div class="tabela"><table><thead><tr><th>Na ficha original</th><th>No jogo</th><th></th><th>Observação</th></tr></thead><tbody>
+    ${L.map(([a, b, t, o]) => `<tr><td>${a}</td><td>${b}</td><td><span class="tag ${t}">${tag[t]}</span></td><td class="mut">${o}</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+
+let VISTA = "folha", PAGINA = "ficha", SEL = 0;
+function render() {
+  for (const b of document.querySelectorAll("nav.abas button")) b.setAttribute("aria-selected", String(b.dataset.v === VISTA));
+  const p = $("#palco");
+  p.innerHTML = VISTA === "livro" ? livro(PAGINA) : VISTA === "em-jogo" ? emJogo(SEL) : VISTA === "mapeamento" ? mapeamento() : folha();
+  for (const b of p.querySelectorAll(".marcadores button")) b.addEventListener("click", () => { PAGINA = b.dataset.p; render(); });
+  for (const b of p.querySelectorAll(".carta")) b.addEventListener("click", () => { SEL = +b.dataset.i; render(); });
+}
+for (const b of document.querySelectorAll("nav.abas button")) b.addEventListener("click", () => { VISTA = b.dataset.v; try { history.replaceState(null, "", "#" + VISTA); } catch (e) {} render(); });
+const h = (location.hash || "").slice(1); if (["folha", "livro", "em-jogo", "mapeamento"].includes(h)) VISTA = h;
+window.addEventListener("hashchange", () => { const k = location.hash.slice(1); if (["folha", "livro", "em-jogo", "mapeamento"].includes(k)) { VISTA = k; render(); } });
+render();
+</script>
