@@ -30,7 +30,6 @@ func _run() -> void:
 
 	var pers := _carregar(cfg.modelo); vp.add_child(pers)
 	var sk := _achar(pers, "Skeleton3D") as Skeleton3D
-	_montar_itens(sk, cfg.itens)
 
 	var ap := AnimationPlayer.new(); pers.add_child(ap); ap.root_node = ap.get_path_to(pers)
 	var lib := AnimationLibrary.new(); ap.add_animation_library("", lib)
@@ -45,6 +44,9 @@ func _run() -> void:
 		anim.loop_mode = Animation.LOOP_LINEAR if (nome as String).begins_with("parado") or nome in ["andar", "correr", "andar-furtivo"] else Animation.LOOP_NONE
 		lib.add_animation(nome, anim)
 		fonte.free()
+
+	_montar_itens(sk, cfg.itens, ap)
+	ap.stop(); sk.reset_bone_poses()
 
 	if a.size() > 2:
 		var doc := GLTFDocument.new(); var st := GLTFState.new()
@@ -81,7 +83,7 @@ func _run() -> void:
 		print("ok %s duração=%.2f" % [nome, anim.length])
 	quit()
 
-func _montar_itens(sk: Skeleton3D, itens: Array) -> void:
+func _montar_itens(sk: Skeleton3D, itens: Array, ap: AnimationPlayer) -> void:
 	var base := Retarget.base_personagem(sk)   # X = esquerda, Y = cima, Z = frente
 	for it in itens:
 		var i_osso := sk.find_bone(it.osso)
@@ -107,9 +109,31 @@ func _montar_itens(sk: Skeleton3D, itens: Array) -> void:
 		var z_alvo := x_alvo.cross(y_alvo).normalized(); x_alvo = y_alvo.cross(z_alvo).normalized()
 		var piv := Node3D.new(); ba.add_child(piv)
 		piv.transform = g_osso.affine_inverse() * Transform3D(Basis(x_alvo, y_alvo, z_alvo), ponto)
+		if it.has("pose"): piv.transform = _no_punho(sk, i_osso, ap, it)
 		var giro := Node3D.new(); piv.add_child(giro)
 		giro.rotation_degrees = Vector3(it.rotacao[0], it.rotacao[1], it.rotacao[2])
 		giro.add_child(item); item.scale = Vector3.ONE * esc; item.position = -pega * esc
+
+## Empunhadura pela mão fechada de verdade: com a animação `pose` (punho cerrado), acha o furo do
+## punho (média das juntas dos 4 dedos), o eixo do cabo (do mindinho para o indicador, a lâmina sai
+## por cima do polegar) e a guarda alinhada aos nós dos dedos. Tudo no espaço do osso da mão, que é
+## onde o BoneAttachment3D fica; assim a arma acompanha o giro do pulso em todas as animações.
+func _no_punho(sk: Skeleton3D, i_mao: int, ap: AnimationPlayer, it: Dictionary) -> Transform3D:
+	var pose: String = it.pose
+	ap.play(pose); ap.seek(ap.get_animation(pose).length * float(it.get("pose_t", 0.3)), true); ap.advance(0)
+	var mao := sk.get_bone_global_pose(i_mao)
+	var lado := "Right" if (it.osso as String).contains("Right") else "Left"
+	var local := func(nome: String) -> Vector3:
+		return mao.affine_inverse() * sk.get_bone_global_pose(sk.find_bone("mixamorig_%sHand%s" % [lado, nome])).origin
+	var centro := Vector3.ZERO
+	for dedo in ["Index", "Middle", "Ring", "Pinky"]:
+		for j in [1, 2, 3, 4]: centro += local.call("%s%d" % [dedo, j])
+	centro /= 16.0
+	var y: Vector3 = (local.call("Index1") - local.call("Pinky1")).normalized()        # cabo -> lâmina
+	var z: Vector3 = local.call("Middle1"); z = (z - y * z.dot(y)).normalized()          # guarda: pulso -> nós dos dedos
+	var x := y.cross(z).normalized()
+	var aj: Array = it.get("ajuste_punho", [0, 0, 0])   # deslocamento fino (m, no espaço da pega)
+	return Transform3D(Basis(x, y, z), centro + x * float(aj[0]) + y * float(aj[1]) + z * float(aj[2]))
 
 func _carregar(c: String) -> Node3D:
 	var fbx := c.ends_with(".fbx")
