@@ -38,7 +38,7 @@ const TESSA_ESCALA := 1.5   # o modelo heroico veio com ~1,03 m; no jogo ela tem
 const INICIO := Vector2i(7, 5)
 const TURNOS_POR_TOCHA := 6
 const SEM_CELULA := Vector2i(-999, -999)
-const VEL_ERRANTE := 1.6
+const VEL_ERRANTE := 1.0
 
 @onready var camera: Camera3D = $Camera
 var grade: RefCounted
