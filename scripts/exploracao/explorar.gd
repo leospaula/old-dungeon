@@ -126,7 +126,7 @@ func _ready() -> void:
 const HEROIS := {
 	"tessa": {"glb": "res://arte/final/3d/tessa-heroica-biblioteca.glb", "escala": 1.5, "passo": 1.0, "mao": "mixamorig_RightHand"},
 	"caco": {"glb": "res://arte/final/3d/caco-biblioteca.glb", "escala": 0.9, "passo": 1.08, "mao": "mixamorig_RightHand",
-		"papeis": {"golpe": "corte-dentro", "golpe2": "corte-fora", "golpe_critico": "estocada-cima", "parado_combate": "parado-luta"}},
+		"papeis": {"golpe": "corte-dentro", "golpe2": "corte-fora", "golpe_critico": "estocada-cima"}},
 	"lianne": {"glb": "res://arte/final/3d/lianne-biblioteca.glb", "escala": 0.86, "passo": 1.0, "mao": "mixamorig_LeftHand",
 		"distancia": "arco curto", "papeis": {"atirar": "sacar-flecha", "soltar": "soltar-flecha"}},
 }
