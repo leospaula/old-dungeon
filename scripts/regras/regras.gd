@@ -42,3 +42,17 @@ static func pv_monstro(dv: String) -> int:
 	if dv.contains("+"): base = dv.get_slice("+", 0); m = int(dv.get_slice("+", 1))
 	elif dv.contains("-"): base = dv.get_slice("-", 0); m = -int(dv.get_slice("-", 1))
 	return maxi(1, Dados.rolar("%sd8" % base) + m)
+
+## Chance (0–1) de um personagem passar despercebido andando devagar: tabela por armadura
+## (data/regras/movimento.json) e, para o ladrão, o maior entre ela e o Mover em Silêncio.
+static func furtividade(p: Dictionary, tabela: Dictionary) -> float:
+	var em6 := float(tabela.sem_armadura)
+	for it in p.get("equipamento", []):
+		var s := str(it).to_lower()
+		if s.contains("placas"): em6 = minf(em6, float(tabela.placas))
+		elif s.contains("cota de malha"): em6 = minf(em6, float(tabela.cota_de_malha))
+		elif s.contains("couro"): em6 = minf(em6, float(tabela.couro))
+	var chance := em6 / 6.0
+	if str(p.get("classe", "")) == "ladrao" and p.has("habilidades_ladrao"):
+		chance = maxf(chance, float(p.habilidades_ladrao.silencio) / 100.0)
+	return chance

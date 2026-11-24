@@ -52,6 +52,10 @@ var MONSTROS := {}
 var ENCONTROS := {}
 
 var mestre := false
+var MOV := {}               # data/regras/movimento.json
+var modo := "normal"       # devagar · normal · rapido
+var fichas: Array = []     # fichas (dicionários) do grupo em jogo
+var botoes_modo := {}
 var grade_forte := false
 var fim := false
 var porta_alvo := {}       # porta que a Tessa vai abrir quando chegar
@@ -76,6 +80,7 @@ func _ready() -> void:
 	grade = Grade.new(); grade.carregar(LAYOUT)
 	MONSTROS = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/monstros.json"))
 	ENCONTROS = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/encontros.json"))
+	MOV = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/movimento.json"))
 	heroi = _criar_tessa()
 	luz = Luz.new(); add_child(luz)
 	luz.configurar(self, $Masmorra, $Ambiente, heroi)
@@ -95,6 +100,7 @@ func _ready() -> void:
 	combate.registro.connect(_registrar)
 	combate.terminou.connect(_fim_do_combate)
 	_montar_hud()
+	_mudar_modo("normal", false)
 	camera.alvo = heroi.position; camera.distancia = 15.0; camera.inclinacao = 55.0; camera.guinada = -30.0
 	_atualizar_visao()
 	_registrar("A Tessa desce a escada para a [b]%s[/b]. Clique no chão para andar; clique numa porta para abri-la." % grade.nomes.get(grade.area_de(heroi.celula), ""))
@@ -107,6 +113,7 @@ func _criar_tessa() -> Node3D:
 	var p: Dictionary = {}
 	for x in G.personagens:
 		if x.id == "tessa": p = x
+	fichas.append(p)
 	var a: Node3D = Ator.new(); a.grade = grade; a.lado = "grupo"
 	a.nome = str(p.nome).get_slice(" ", 0)
 	a.pv = int(p.pv); a.pv_max = a.pv; a.ca = int(p.ca); a.thac0 = int(p.thac0)
@@ -156,6 +163,9 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_M: mestre = not mestre; luz.set_mestre(mestre); _atualizar_visao()
 			KEY_G: grade_forte = not grade_forte; luz.set_grade(grade_forte or combate.ativo)
 			KEY_K: if not combate.ativo and not fim: _surgir_errantes(true)
+			KEY_1: _mudar_modo("devagar")
+			KEY_2: _mudar_modo("normal")
+			KEY_3: _mudar_modo("rapido")
 			KEY_SPACE, KEY_ENTER: combate.encerrar_turno()
 	if fim: return
 	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
@@ -355,8 +365,8 @@ func _ao_chegar(_c: Vector2i, metros: float) -> void:
 	_atualizar_visao()
 	if combate.ativo: return
 	metros_no_turno += metros
-	while metros_no_turno >= taxa_m:
-		metros_no_turno -= taxa_m
+	while metros_no_turno >= _taxa_turno():
+		metros_no_turno -= _taxa_turno()
 		_passar_turno()
 	_checar_avistamento()
 
@@ -386,12 +396,48 @@ func _passar_turno() -> void:
 			_atualizar_visao()
 	_registrar(txt)
 	if turno % 2 == 0:
+		var m: Dictionary = MOV.modos[modo]
+		var chance := int(m.errantes_em_6)
 		var r := Dados.d(6)
-		if r == 1:
-			_registrar("Monstros errantes: d6 = [b]1[/b] → [color=#ff9a6a]passos ao longe…[/color]")
-			_surgir_errantes(false)
-		else:
-			_registrar("Monstros errantes: d6 = %d → nada." % r)
+		var faixa := "1" if chance == 1 else "1–%d" % chance
+		if r > chance:
+			_registrar("Monstros errantes (%s, %s em d6): %d → nada." % [str(m.nome).to_lower(), faixa, r])
+			return
+		_registrar("Monstros errantes (%s, %s em d6): [b]%d[/b] → [color=#ff9a6a]passos ao longe…[/color]" % [str(m.nome).to_lower(), faixa, r])
+		var ciente := true
+		if bool(m.furtivo):
+			var f := _rolar_furtividade()
+			ciente = not f
+		_surgir_errantes(false, ciente)
+
+# ---------- modos de movimento ----------
+
+## Metros andados que fazem passar 1 turno de 10 min no modo atual.
+func _taxa_turno() -> float:
+	return taxa_m * float(MOV.modos[modo].velocidade)
+
+func _mudar_modo(novo: String, avisar := true) -> void:
+	modo = novo
+	var m: Dictionary = MOV.modos[modo]
+	if not combate.ativo: heroi.velocidade = 3.2 * float(m.velocidade)
+	for k in botoes_modo: botoes_modo[k].button_pressed = (k == modo)
+	if avisar: _registrar("Movimento: [b]%s[/b] (%s)." % [m.nome, m.dica])
+	# Correndo, os errantes que ainda não tinham notado o grupo passam a ouvir.
+	if modo == "rapido":
+		for e in errantes: e.set_meta("ciente", true)
+
+## Cada um do grupo rola; basta um falhar para o grupo ser ouvido.
+func _rolar_furtividade() -> bool:
+	var partes: Array[String] = []
+	var ok := true
+	for p in fichas:
+		var chance := Regras.furtividade(p, MOV.furtividade)
+		var r := randf()
+		var passou := r < chance
+		ok = ok and passou
+		partes.append("%s %d%%: %s" % [str(p.nome).get_slice(" ", 0), roundi(chance * 100), "passou" if passou else "falhou"])
+	_registrar("Furtividade do grupo (%s) → %s" % [", ".join(partes), "[color=#9ad0ff]ninguém os ouviu[/color]" if ok else "[color=#ff9a6a]vocês foram ouvidos[/color]"])
+	return ok
 
 func _hora() -> String:
 	var minutos := turno * 10
@@ -414,7 +460,7 @@ func _atualizar_monstros_visiveis() -> void:
 # ---------- encontros ----------
 
 ## Monstros errantes surgem fora da vista, a 2d6 × 3 m pelo caminho, e vêm na direção do grupo.
-func _surgir_errantes(forcado: bool) -> void:
+func _surgir_errantes(forcado: bool, ciente := true) -> void:
 	if not errantes.is_empty(): return
 	if forcado: _registrar("[i](K: monstros errantes por perto)[/i]")
 	var tab: Array = ENCONTROS.nivel_1
@@ -435,6 +481,7 @@ func _surgir_errantes(forcado: bool) -> void:
 		var nome: String = dm.nome if n == 1 else "%s %d" % [dm.nome, i + 1]
 		var m := _criar_monstro(str(e.monstro), nome, lugares[i])
 		m.velocidade = VEL_ERRANTE
+		m.set_meta("ciente", ciente or modo == "rapido"); m.set_meta("turno", turno)
 		monstros.append(m); errantes.append(m)
 		_errante_rumo(m)
 	print("(errantes: %d %s a %d m)" % [errantes.size(), dm.nome, int(dist)])
@@ -446,10 +493,24 @@ func _errante_rumo(m: Node3D) -> void:
 	var ocup := {}
 	for o in errantes:
 		if o != m: ocup[o.proxima_celula()] = true
+	if not bool(m.get_meta("ciente", true)):
+		_errante_rondar(m, ocup)
+		return
 	var cam: Array[Vector2i] = grade.caminho(m.celula, heroi.proxima_celula(), ocup, true)
 	if cam.size() > 1:
 		cam.resize(cam.size() - 1)   # para ao lado, não em cima
 		m.seguir(cam)
+
+## Errante que não ouviu o grupo: anda à toa e, passados 3 turnos sem ser visto, vai embora.
+func _errante_rondar(m: Node3D, ocup: Dictionary) -> void:
+	if m.andando(): return
+	if turno - int(m.get_meta("turno", turno)) >= 3 and not visao.visiveis.has(m.celula):
+		errantes.erase(m); monstros.erase(m); m.queue_free()
+		return
+	var alc: Dictionary = grade.alcance(m.celula, 15.0, ocup, true)
+	var opcoes: Array = alc.keys().filter(func(c): return float(alc[c][0]) >= 6.0)
+	if opcoes.is_empty(): return
+	m.seguir(grade.refazer(alc, opcoes[randi() % opcoes.size()]))
 
 func _ao_monstro_chegar(_c: Vector2i, _metros: float, m: Node3D) -> void:
 	_atualizar_monstros_visiveis()
@@ -470,14 +531,21 @@ func _checar_avistamento() -> void:
 
 func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
 	var lista := errantes.duplicate(); errantes.clear()
+	var furtivos := lista.any(func(x): return not bool(x.get_meta("ciente", true)))
+	heroi.velocidade = 3.2
 	porta_alvo = {}
 	heroi.parar()
 	for m in lista:
 		m.parar(); m.velocidade = 3.2
 	for a in [heroi] + lista:
 		if a.andando(): await a.parou
-	var sg := (not grupo_ve) or Dados.d(6) <= 2
-	var sm := (not monstros_veem) or Dados.d(6) <= 2
+	var mm: Dictionary = MOV.modos[modo]
+	# Surpresa (normal 1–2 em d6). Devagar e sem ter sido ouvido: +1 para surpreender.
+	# Correndo: impossível surpreender os monstros, e +1 na chance de ser surpreendido.
+	var sg := (not grupo_ve) or Dados.d(6) <= 2 + int(mm.ser_surpreendido)
+	var sm := false
+	if mm.surpreender != null:
+		sm = (not monstros_veem) or Dados.d(6) <= 2 + (int(mm.surpreender) if furtivos else 0)
 	if grupo_ve and not monstros_veem: _registrar("A Tessa avista os monstros antes de ser vista.")
 	elif monstros_veem and not grupo_ve: _registrar("[color=#ff9a6a]Algo a viu primeiro, do escuro.[/color]")
 	_registrar("Surpresa: grupo %s · monstros %s" % ["surpreendido" if sg else "atento", "surpreendidos" if sm else "atentos"])
@@ -498,6 +566,7 @@ func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 		if not combate.ativo:
 			heroi.empunhar(false)
 			heroi.rotulo.visible = false
+			_mudar_modo(modo, false)
 	else:
 		fim = true
 		_registrar("[color=#ff7a5a][b]A Tessa caiu.[/b][/color]")
@@ -507,10 +576,27 @@ func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 
 func _montar_hud() -> void:
 	var hud: CanvasLayer = $HUD
-	$HUD/Legenda.text = "Botão esquerdo: andar / atacar / abrir porta · Espaço: encerrar a vez · botão direito, Q/E: girar · roda: zoom · WASD: mover · F: focar · M: mestre · G: grade · K: encontro · R: recomeçar"
+	$HUD/Legenda.text = "Botão esquerdo: andar / atacar / abrir porta · 1/2/3: devagar, normal, rápido · Espaço: encerrar a vez · botão direito, Q/E: girar · roda: zoom · WASD: mover · F: focar · M: mestre · G: grade · K: encontro · R: recomeçar"
 	$HUD/Legenda.label_settings = $HUD/Legenda.label_settings.duplicate()
 	$HUD/Legenda.label_settings.font_size = 13
+	var leg: Label = $HUD/Legenda
+	leg.text = leg.text.replace(" · botão direito", "\nbotão direito")
+	leg.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	leg.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	leg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	leg.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	leg.offset_left = -600; leg.offset_right = -16; leg.offset_top = -90; leg.offset_bottom = -12
 	var estilo := LabelSettings.new(); estilo.font_size = 16; estilo.outline_size = 5; estilo.outline_color = Color.BLACK
+	var barra := HBoxContainer.new(); barra.position = Vector2(16, 12); barra.add_theme_constant_override("separation", 6)
+	hud.add_child(barra)
+	for k in ["devagar", "normal", "rapido"]:
+		var b := Button.new(); b.toggle_mode = true; b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_color_override("font_pressed_color", Color(1, 0.8, 0.35))
+		b.add_theme_color_override("font_hover_pressed_color", Color(1, 0.85, 0.45))
+		b.text = "%d · %s" % [["devagar", "normal", "rapido"].find(k) + 1, MOV.modos[k].nome]
+		b.tooltip_text = str(MOV.modos[k].dica)
+		b.pressed.connect(_mudar_modo.bind(k))
+		barra.add_child(b); botoes_modo[k] = b
 	hud_relogio = Label.new(); hud_relogio.label_settings = estilo
 	hud_relogio.set_anchors_preset(Control.PRESET_TOP_RIGHT); hud_relogio.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hud_relogio.offset_left = -520; hud_relogio.offset_right = -16; hud_relogio.offset_top = 12
@@ -567,7 +653,7 @@ func _atualizar_hud() -> void:
 	var tocha := "tocha: %d de %d turnos (+%d de reserva)" % [tocha_turnos, TURNOS_POR_TOCHA, tochas_reserva] if tocha_turnos > 0 else "sem luz"
 	var prox := turno + (2 - turno % 2)
 	hud_relogio.text = "%s\nTurno %d · %s · andado no turno: %.1f de %d m\n%s · teste de errantes no turno %d\nTessa: PV %d/%d · CA %d · XP %d" % [
-		area, turno, _hora(), metros_no_turno, int(taxa_m), tocha, prox, maxi(heroi.pv, 0), heroi.pv_max, heroi.ca, xp_total]
+		area, turno, _hora(), metros_no_turno, int(_taxa_turno()), tocha, prox, maxi(heroi.pv, 0), heroi.pv_max, heroi.ca, xp_total]
 	if combate.ativo and combate.vez and is_instance_valid(combate.vez):
 		var v: Node = combate.vez
 		if v.lado == "grupo":
@@ -592,6 +678,20 @@ func _linha_de_comando() -> void:
 		heroi.olhar_para(heroi.position + Vector3(0, 0, -5))
 		if not OS.get_cmdline_user_args().has("--parado"): heroi.tocar("andar")
 		for _f in 40: await get_tree().process_frame
+	elif teste == "modos":
+		for k in ["devagar", "rapido"]:
+			_mudar_modo(k)
+			for i in 8:
+				_passar_turno()
+				if not errantes.is_empty():
+					print("   errantes cientes: ", errantes.map(func(x): return x.get_meta("ciente")))
+					for e in errantes.duplicate(): errantes.erase(e); monstros.erase(e); e.queue_free()
+		_mudar_modo("devagar")
+		for i in 3: _rolar_furtividade()
+		_surgir_errantes(false, false)
+		print("   errantes: ", errantes.size(), " cientes: ", errantes.map(func(x): return x.get_meta("ciente")))
+		await get_tree().create_timer(3.0).timeout
+		print("   andando à toa: ", errantes.map(func(x): return x.andando()))
 	elif teste == "inicio":
 		camera.alvo = Vector3(15, 0, 7); camera.distancia = 11.0; camera.inclinacao = 50.0; camera.guinada = -20.0
 		_acender_porta("P03"); _desenhar_portas()
