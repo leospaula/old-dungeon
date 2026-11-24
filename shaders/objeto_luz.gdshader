@@ -6,6 +6,8 @@ uniform float metalico = 0.0;
 uniform float rugosidade = 0.85;
 uniform vec3 emissao = vec3(0.0);
 uniform float emissao_forca = 0.0;
+uniform float fechada = 0.0;    // porta fechada: contorno quente leve, para ler no escuro
+uniform float destaque = 0.0;   // mouse em cima: a porta acende
 varying vec3 w;
 varying vec3 n_mundo;
 void vertex() {
@@ -17,5 +19,9 @@ void fragment() {
 	METALLIC = metalico;
 	ROUGHNESS = rugosidade;
 	EMISSION = emissao * emissao_forca * step(0.9, v);
+	if (v > 0.2) {
+		float borda = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.0);
+		EMISSION += vec3(1.0, 0.62, 0.25) * (borda * 0.35 * fechada + destaque * (0.25 + borda * 0.6));
+	}
 	if (v < 0.2) { SPECULAR = 0.0; }
 }

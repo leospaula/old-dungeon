@@ -35,6 +35,8 @@ var frente := 0.0         # giro extra do nó (radianos) para o modelo olhar par
 ## Correção por animação (graus): a importação deixou cada animação virada num ângulo diferente
 ## (ex.: "andar" de lado, 90°). O modelo gira o contrário para o corpo apontar para a frente do nó.
 var giro_anim := {}
+var em_combate := false   # parado em guarda e arma na mão só em combate
+var armas_na_mao: Array[Node3D] = []
 var rotulo: Label3D
 var _caminho: Array[Vector2i] = []
 var _de := Vector2i.ZERO
@@ -78,7 +80,14 @@ func atualizar_rotulo() -> void:
 		rotulo.text = "%s · %s" % [nome, "ileso" if f >= 1.0 else ("ferido" if f > 0.5 else "muito ferido")]
 	rotulo.modulate = Color(1, 0.95, 0.85) if f > 0.5 else (Color(1, 0.75, 0.3) if f > 0.25 else Color(1, 0.4, 0.3))
 
+## Saca (combate) ou guarda a arma (exploração).
+func empunhar(sim: bool) -> void:
+	em_combate = sim
+	for a in armas_na_mao: a.visible = sim
+	if not andando() and vivo(): tocar("parado")
+
 func tocar(papel: String, misturar := 0.2) -> void:
+	if papel == "parado" and em_combate and anim.has("parado_combate"): papel = "parado_combate"
 	if player and anim.has(papel) and player.has_animation(anim[papel]):
 		player.play(anim[papel], misturar)
 		var giro := -deg_to_rad(float(giro_anim.get(anim[papel], 0.0)))

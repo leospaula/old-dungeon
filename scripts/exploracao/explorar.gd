@@ -25,9 +25,9 @@ const Dados = preload("res://scripts/regras/dados.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-biblioteca.glb"
-const TESSA_ANIM := {"parado": "parado-espada-escudo", "andar": "andar", "golpe": "golpe", "dano": "levar-golpe", "morrer": "morrer", "vitoria": "vitoria"}
+const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo", "andar": "andar", "golpe": "golpe", "dano": "levar-golpe", "morrer": "morrer", "vitoria": "vitoria"}
 ## Para onde o corpo aponta em cada animação (medido com tools/medir_frente.gd); o modelo gira o contrário.
-const TESSA_GIRO := {"parado-espada-escudo": 30.0, "parado": 55.0, "andar": 90.0, "comecar-a-andar": 90.0, "golpe": 70.0,
+const TESSA_GIRO := {"parado-espada-escudo": 30.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "golpe": 70.0,
 	"levar-golpe": 30.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 30.0}
 const INICIO := Vector2i(7, 5)
 const TURNOS_POR_TOCHA := 6
@@ -45,6 +45,9 @@ var errantes: Array = []   # monstros vindo na direção do grupo, ainda sem com
 var marca_alcance: Node
 var marca_caminho: Node
 var marca_vez: Node
+var marca_portas: Node
+var porta_mat := {}        # id da porta -> material (para acender no mouse)
+var _porta_acesa := ""
 var MONSTROS := {}
 var ENCONTROS := {}
 
@@ -80,8 +83,9 @@ func _ready() -> void:
 	visao = Visao.new(grade)
 	visao.tochas_parede = luz.tochas_cel.duplicate()
 	visao.recalcular_luz_fixa()
+	_materiais_das_portas()
 	luz.set_nevoa(visao.textura(), Vector2(grade.W, grade.H))
-	for n in ["marca_alcance", "marca_caminho", "marca_vez"]:
+	for n in ["marca_alcance", "marca_caminho", "marca_vez", "marca_portas"]:
 		var m := MeshInstance3D.new(); m.set_script(Marcas); add_child(m); set(n, m)
 	combate = Combate.new(); add_child(combate)
 	combate.grade = grade; combate.marca_alcance = marca_alcance; combate.marca_caminho = marca_caminho; combate.marca_vez = marca_vez
@@ -116,7 +120,11 @@ func _criar_tessa() -> Node3D:
 		if s.begins_with("tocha x"): tochas_reserva = int(s.get_slice("x", 1)) - 1
 	add_child(a); a.colocar(INICIO)
 	a.giro_anim = TESSA_GIRO
-	a.montar_modelo(load(TESSA_GLB).instantiate(), TESSA_ANIM, 0.0)
+	var modelo: Node3D = load(TESSA_GLB).instantiate()
+	var mao := modelo.find_child("mixamorig_RightHand", true, false)
+	a.montar_modelo(modelo, TESSA_ANIM, 0.0)
+	if mao: a.armas_na_mao.assign(mao.get_children())
+	a.empunhar(false)   # fora do combate a espada fica na bainha
 	a.rotulo.visible = false
 	a.passo_iniciado.connect(_ao_iniciar_passo)
 	a.chegou.connect(_ao_chegar)
@@ -159,6 +167,9 @@ func _unhandled_input(e: InputEvent) -> void:
 		else: _andar_para(mira[0])
 	elif e is InputEventMouseMotion:
 		var mira := _mira(e.position)
+		var id_porta: String = str(mira[2].id) if not mira[2].is_empty() else ""
+		if id_porta != _porta_acesa:
+			_acender_porta(id_porta); _desenhar_portas()
 		if combate.ativo: combate.pairar(mira[0], mira[1])
 		else: _previa(mira[0], mira[2])
 
@@ -177,6 +188,9 @@ func _mira(tela: Vector2) -> Array:
 		t_chao = -o.y / d.y
 		cel = grade.celula(o + d * t_chao)
 	var porta := _porta_no_raio(o, d, minf(t_chao, perto))
+	if porta.is_empty() and grade.chao(cel):
+		# Perto da borda de uma célula com porta fechada também conta como clicar na porta.
+		porta = _porta_perto(o + d * t_chao)
 	return [cel, alvo, porta]
 
 ## Porta fechada (e já vista) atingida pelo raio do mouse antes de `limite`.
@@ -200,6 +214,55 @@ func _porta_no_raio(o: Vector3, d: Vector3, limite: float) -> Dictionary:
 		var t := _raio_caixa(o, d, a, b)
 		if t >= 0.0 and t < tmin: tmin = t; melhor = pt
 	return melhor
+
+func _porta_perto(p: Vector3) -> Dictionary:
+	var c: Vector2i = grade.celula(p)
+	var fx: float = p.x / 1.5 - c.x; var fz: float = p.z / 1.5 - c.y
+	for viz in [[Vector2i(-1, 0), fx], [Vector2i(1, 0), 1.0 - fx], [Vector2i(0, -1), fz], [Vector2i(0, 1), 1.0 - fz]]:
+		if float(viz[1]) > 0.22: continue
+		var pt: Dictionary = grade.porta_entre(c, c + viz[0])
+		if not pt.is_empty() and not grade.porta_aberta.has(pt.id) and pt.tipo in ["porta", "dupla"]: return pt
+	return {}
+
+## Cada porta ganha o próprio material (contorno quente enquanto fechada, acende com o mouse).
+func _materiais_das_portas() -> void:
+	for no in $Masmorra.get_node("Portas").get_children():
+		var folhas := no.find_children("*", "MeshInstance3D", true, false)
+		if folhas.is_empty(): continue
+		var m: ShaderMaterial = folhas[0].material_override.duplicate()
+		m.set_shader_parameter("fechada", 1.0)
+		for f in folhas: f.material_override = m
+		porta_mat[str(no.name)] = m
+		luz.materiais.append(m)
+
+func _acender_porta(id: String) -> void:
+	if id == _porta_acesa: return
+	if porta_mat.has(_porta_acesa): porta_mat[_porta_acesa].set_shader_parameter("destaque", 0.0)
+	_porta_acesa = id
+	if porta_mat.has(id): porta_mat[id].set_shader_parameter("destaque", 1.0)
+
+## Soleiras âmbar no chão dos dois lados de cada porta fechada já vista (o símbolo de porta do mapa).
+func _desenhar_portas() -> void:
+	marca_portas.limpar()
+	var feitas := {}
+	for ch in grade.portas:
+		var pt: Dictionary = grade.portas[ch]
+		if feitas.has(pt.id) or grade.porta_aberta.has(pt.id) or not (pt.tipo in ["porta", "dupla"]): continue
+		feitas[pt.id] = true
+		var conhecida := mestre
+		for par in grade.lados_da_porta(pt):
+			if visao.exploradas.has(par[0]) or visao.exploradas.has(par[1]): conhecida = true
+		if not conhecida: continue
+		var cor := Color(1.0, 0.72, 0.3, 0.75) if str(pt.id) == _porta_acesa else Color(1.0, 0.72, 0.3, 0.38)
+		var comp: float = float(pt.largura) * 1.5
+		var x: float = pt.x * 1.5; var z: float = pt.y * 1.5
+		for lado: float in [-1.0, 1.0]:
+			if pt.orient == "v":
+				var x0: float = x + lado * 0.14; var x1: float = x + lado * 0.42
+				marca_portas.retangulo(Vector2(minf(x0, x1), z + 0.1), Vector2(maxf(x0, x1), z + comp - 0.1), cor)
+			else:
+				var z0: float = z + lado * 0.14; var z1: float = z + lado * 0.42
+				marca_portas.retangulo(Vector2(x + 0.1, minf(z0, z1)), Vector2(x + comp - 0.1, maxf(z0, z1)), cor)
 
 func _raio_caixa(o: Vector3, d: Vector3, a: Vector3, b: Vector3) -> float:
 	var t0 := -INF; var t1 := INF
@@ -256,6 +319,8 @@ func _abrir_porta(pt: Dictionary, de: Vector2i) -> void:
 		if par[0] == de: outro = par[1]
 		elif par[1] == de: outro = par[0]
 	grade.abrir_porta(pt)
+	if porta_mat.has(str(pt.id)):
+		porta_mat[str(pt.id)].set_shader_parameter("fechada", 0.0); porta_mat[str(pt.id)].set_shader_parameter("destaque", 0.0)
 	var no := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
 	if no:
 		var sentido: Vector3 = grade.centro(outro) - grade.centro(de)
@@ -274,13 +339,7 @@ func _abrir_porta(pt: Dictionary, de: Vector2i) -> void:
 func _previa(c: Vector2i, porta: Dictionary) -> void:
 	if heroi.andando(): return
 	marca_caminho.limpar()
-	if not porta.is_empty():
-		var cels: Array = []
-		for par in grade.lados_da_porta(porta):
-			for x in par:
-				if visao.exploradas.has(x): cels.append(x)
-		marca_caminho.por(cels, Color(1, 0.8, 0.3, 0.4), 0.1)
-		return
+	if not porta.is_empty(): return
 	if not grade.chao(c) or c == heroi.celula or not visao.exploradas.has(c): return
 	var cam: Array[Vector2i] = grade.caminho(heroi.celula, c)
 	if cam.is_empty(): return
@@ -345,6 +404,7 @@ func _atualizar_visao() -> void:
 	visao.atualizar_textura(mestre)
 	luz.atualizar_tochas(visao.exploradas, mestre)
 	_atualizar_monstros_visiveis()
+	_desenhar_portas()
 
 func _atualizar_monstros_visiveis() -> void:
 	for m in monstros:
@@ -421,7 +481,7 @@ func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
 	if grupo_ve and not monstros_veem: _registrar("A Tessa avista os monstros antes de ser vista.")
 	elif monstros_veem and not grupo_ve: _registrar("[color=#ff9a6a]Algo a viu primeiro, do escuro.[/color]")
 	_registrar("Surpresa: grupo %s · monstros %s" % ["surpreendido" if sg else "atento", "surpreendidos" if sm else "atentos"])
-	camera.distancia = clampf(camera.distancia, 12.0, 18.0)
+	heroi.empunhar(true)
 	heroi.rotulo.visible = true
 	luz.set_grade(true)
 	_atualizar_visao()
@@ -435,8 +495,9 @@ func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 		heroi.tocar("vitoria")
 		monstros = monstros.filter(func(m): return is_instance_valid(m) and m.vivo())
 		await get_tree().create_timer(2.5).timeout
-		if not combate.ativo and not heroi.andando(): heroi.tocar("parado")
-		heroi.rotulo.visible = false
+		if not combate.ativo:
+			heroi.empunhar(false)
+			heroi.rotulo.visible = false
 	else:
 		fim = true
 		_registrar("[color=#ff7a5a][b]A Tessa caiu.[/b][/color]")
@@ -490,9 +551,16 @@ func _process(dt: float) -> void:
 	var quem: Node3D = null
 	if combate.ativo and combate.vez and is_instance_valid(combate.vez) and combate.vez.visible: quem = combate.vez
 	elif not combate.ativo and heroi.andando(): quem = heroi
-	if quem: camera.alvo = camera.alvo.lerp(quem.global_position, 1.0 - exp(-2.5 * dt))
+	# A câmera não muda sozinha: só se quem está agindo sair da tela é que ela desliza até ele.
+	if quem and _fora_da_tela(quem.global_position + Vector3(0, 1, 0)):
+		camera.alvo = camera.alvo.lerp(quem.global_position, 1.0 - exp(-2.0 * dt))
 	_atualizar_monstros_visiveis()
 	_atualizar_hud()
+
+func _fora_da_tela(p: Vector3) -> bool:
+	if camera.is_position_behind(p): return true
+	var t := camera.unproject_position(p); var r := get_viewport().get_visible_rect().size
+	return t.x < r.x * 0.08 or t.x > r.x * 0.92 or t.y < r.y * 0.1 or t.y > r.y * 0.72
 
 func _atualizar_hud() -> void:
 	var area: String = grade.nomes.get(grade.area_de(heroi.celula), "")
@@ -522,7 +590,11 @@ func _linha_de_comando() -> void:
 	if teste == "frente":
 		camera.alvo = heroi.position + Vector3(0, 1, 0); camera.distancia = 4.0; camera.inclinacao = 15.0; camera.guinada = 180.0
 		heroi.olhar_para(heroi.position + Vector3(0, 0, -5))
-		heroi.tocar("andar")
+		if not OS.get_cmdline_user_args().has("--parado"): heroi.tocar("andar")
+		for _f in 40: await get_tree().process_frame
+	elif teste == "inicio":
+		camera.alvo = Vector3(15, 0, 7); camera.distancia = 11.0; camera.inclinacao = 50.0; camera.guinada = -20.0
+		_acender_porta("P03"); _desenhar_portas()
 		for _f in 40: await get_tree().process_frame
 	elif teste == "golpe":
 		camera.alvo = heroi.position + Vector3(0, 1, 0); camera.distancia = 4.0; camera.inclinacao = 15.0; camera.guinada = 90.0
