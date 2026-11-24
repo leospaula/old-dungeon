@@ -26,9 +26,9 @@
       "atributos": { "for": 10, "int": 13, "sab": 8, "des": 17, "con": 11, "car": 13 },
       "pv": 4, "ca": 5, "thac0": 19,
       "protecao": { "morte": 13, "varinhas": 14, "paralisia": 13, "sopro": 16, "magias": 15 },
-      "armas": [{ "nome": "espada curta", "dano": "1d6" }, { "nome": "funda", "dano": "1d4", "distancia": true }],
+      "armas": [{ "nome": "adaga", "dano": "1d4", "arremesso": true }, { "nome": "funda", "dano": "1d4", "distancia": true }],
       "habilidades_ladrao": { "abrir_fechaduras": 15, "armadilhas": 10, "bater_carteira": 20, "escalar": 87, "silencio": 20, "esconder": 10, "ouvir": "1-2" },
-      "equipamento": ["armadura de couro", "pedras de funda x20", "ferramentas de ladrão", "mochila", "corda 10 m", "tocha x3", "rações x7"],
+      "equipamento": ["armadura de couro", "adaga", "pedras de funda x20", "ferramentas de ladrão", "mochila", "corda 10 m", "tocha x3", "rações x7"],
       "po": 22
     },
     {

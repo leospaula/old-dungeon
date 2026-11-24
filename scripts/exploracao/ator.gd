@@ -20,6 +20,11 @@ var dano := "1d6"
 var arma := "arma"
 var mod_acerto := 0
 var mod_dano := 0
+var dist_faixas: Array = []   # arma à distância: [curta, média, longa] em metros (vazio = não tem)
+var dist_dano := "1d6"
+var dist_arma := ""
+var dist_mod := 0           # DES nos disparos
+var municao := 0
 var tem_escudo := false   # quem tem escudo bloqueia os golpes que erram; quem não tem, esquiva
 var mov_combate_m := 12.0
 var moral := 12
@@ -190,6 +195,15 @@ func animar_golpe(alvo: Node3D) -> void:
 		t.tween_property(modelo, "position", ida, 0.18).set_trans(Tween.TRANS_QUAD)
 		t.tween_property(modelo, "position", Vector3.ZERO, 0.25)
 		await get_tree().create_timer(0.2).timeout
+
+func tempo_tiro() -> float:
+	return player.get_animation(anim["atirar"]).length * 0.95 if player and _tem("atirar") else 0.3
+
+## Disparo: puxa a corda e devolve no instante em que a flecha sai (fim da animação "atirar").
+func animar_tiro(alvo: Node3D) -> void:
+	olhar_para(alvo.global_position)
+	if player and _tem("atirar"): tocar("atirar", 0.12)
+	await get_tree().create_timer(tempo_tiro()).timeout
 
 ## Defesa (bloquear/esquivar) cronometrada para o auge cair no instante em que a lâmina chega.
 ## Auge medido com tools/curva_quadril.gd: escudo firme ~0,35 s; maior inclinação da esquiva ~0,55 s.

@@ -91,6 +91,10 @@ func encerrar_turno() -> void:
 func clicar(c: Vector2i, alvo: Node) -> void:
 	if not ativo or ocupado or vez == null or vez.lado != "grupo": return
 	if alvo == null: alvo = _monstro_em(c)
+	if alvo and _faixa(vez, alvo) >= 0:
+		ocupado = true; await _atacar(vez, alvo, true); ocupado = false
+		_fim_de_turno.emit()
+		return
 	if alvo:
 		if grade.adjacentes(vez.celula, alvo.celula):
 			ocupado = true; await _atacar(vez, alvo); ocupado = false
@@ -130,6 +134,12 @@ func pairar(c: Vector2i, alvo: Node) -> void:
 	if not ativo or ocupado or vez == null or vez.lado != "grupo": return
 	marca_caminho.limpar(); previa_m = -1.0
 	if alvo == null: alvo = _monstro_em(c)
+	if alvo and _faixa(vez, alvo) >= 0:
+		# Disparo: sem caminho; a cor diz a faixa (curta +1 · média · longa −1).
+		var fx := _faixa(vez, alvo)
+		marca_caminho.por([alvo.celula], [Color(0.95, 0.3, 0.1, 0.6), Color(0.95, 0.55, 0.1, 0.55), Color(0.95, 0.8, 0.2, 0.5)][fx], 0.05)
+		mudou.emit()
+		return
 	if alvo:
 		if not grade.adjacentes(vez.celula, alvo.celula):
 			var lado := _melhor_vizinha(alvo)
@@ -152,7 +162,7 @@ func _mostrar_alcance() -> void:
 	marca_alcance.por(cels, Color(0.35, 0.65, 1.0, 0.28))
 	var alvos: Array = []
 	for m in monstros:
-		if is_instance_valid(m) and m.vivo() and _ve(m) and (grade.adjacentes(vez.celula, m.celula) or _melhor_vizinha(m) != Vector2i(-999, -999)):
+		if is_instance_valid(m) and m.vivo() and _ve(m) and (_faixa(vez, m) >= 0 or grade.adjacentes(vez.celula, m.celula) or _melhor_vizinha(m) != Vector2i(-999, -999)):
 			alvos.append(m.celula)
 	marca_alcance.por(alvos, Color(0.95, 0.25, 0.15, 0.3))
 	marca_vez.limpar(); marca_vez.por([vez.celula], Color(1.0, 0.8, 0.3, 0.45), 0.02)
@@ -197,25 +207,48 @@ func _turno_monstro(m: Node) -> void:
 
 # ---------- ataque, baixas e moral ----------
 
-func _atacar(a: Node, alvo: Node) -> void:
+## Faixa de distância do disparo de `a` em `alvo`: 0 curta (+1), 1 média, 2 longa (−1); −1 = não dá
+## (sem arma à distância, sem munição, longe demais ou sem linha de visada).
+func _faixa(a: Node, alvo: Node) -> int:
+	if a.dist_faixas.is_empty() or a.municao <= 0 or not _ve(alvo): return -1
+	if not grade.linha(a.celula, alvo.celula): return -1
+	var d: float = Vector2(alvo.celula - a.celula).length() * 1.5
+	for i in 3:
+		if d <= float(a.dist_faixas[i]): return i
+	return -1
+
+func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 	marca_caminho.limpar()
 	# Rola antes: o d20 aparece girando sobre o atacante enquanto ele arma o golpe.
 	var r := Dados.d(20)
 	var precisa: int = a.thac0 - alvo.ca
-	var total: int = r + a.mod_acerto
+	var faixa := _faixa(a, alvo) if distancia else -1
+	var mod: int = (a.dist_mod + [1, 0, -1][faixa]) if distancia else a.mod_acerto
+	var total: int = r + mod
 	var acerta: bool = r == 20 or (r != 1 and total >= precisa)
 	Efeitos.dado(a, r, acerta, 0.6)
 	# Erro com motivo: quem tem escudo bloqueia, quem não tem esquiva; 1 natural = golpe em falso.
 	var defesa := "" if acerta or r == 1 else ("bloquear" if alvo.tem_escudo else "esquivar")
-	if defesa != "": alvo.defender(defesa, a.global_position, a.GOLPE_IMPACTO)
-	await a.animar_golpe(alvo)
+	if distancia:
+		a.municao -= 1
+		var de: Vector3 = a.global_position + Vector3(0, a.altura_texto() * 0.95, 0)
+		var para: Vector3 = alvo.global_position + Vector3(0, alvo.altura_texto() * 0.8, 0)
+		var voo := maxf(de.distance_to(para) / 24.0, 0.12)
+		if defesa != "": alvo.defender(defesa, a.global_position, a.tempo_tiro() + voo)
+		await a.animar_tiro(alvo)
+		if not is_instance_valid(alvo): return
+		await Efeitos.flecha(a.get_parent(), de, para)
+	else:
+		if defesa != "": alvo.defender(defesa, a.global_position, a.GOLPE_IMPACTO)
+		await a.animar_golpe(alvo)
 	if not is_instance_valid(alvo): return
-	var mod_txt := (" %+d = %d" % [a.mod_acerto, total]) if a.mod_acerto != 0 else ""
-	var txt := "%s ataca %s: d20 [b]%d[/b]%s (precisa %d) → " % [_nome(a), _nome(alvo), r, mod_txt, precisa]
+	var mod_txt := (" %+d = %d" % [mod, total]) if mod != 0 else ""
+	var acao := ("atira (%s, %s) em" % [a.dist_arma, ["curta", "média", "longa"][faixa]]) if distancia else "ataca"
+	var txt := "%s %s %s: d20 [b]%d[/b]%s (precisa %d) → " % [_nome(a), acao, _nome(alvo), r, mod_txt, precisa]
 	var topo: Vector3 = alvo.global_position + Vector3(0, alvo.altura_texto(), 0)
 	var no_grupo: bool = alvo.lado == "grupo"
 	if acerta:
-		var expr: String = a.dano + (("%+d" % a.mod_dano) if a.mod_dano != 0 else "")
+		var expr: String = a.dist_dano if distancia else a.dano + (("%+d" % a.mod_dano) if a.mod_dano != 0 else "")
 		var dd := Dados.detalhar(expr)
 		var dano := maxi(1, int(dd.total))
 		alvo.pv -= dano
