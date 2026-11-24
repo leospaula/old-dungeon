@@ -8,6 +8,11 @@ extends Camera3D
 @export var inclinacao := 55.0 # graus acima do chão
 var _girando := false
 var _movendo := false
+var _tremor := 0.0   # intensidade do tremor (m), decai sozinha
+
+## Tremor curto de impacto (m de deslocamento máximo).
+func tremer(forca: float) -> void:
+	_tremor = maxf(_tremor, forca)
 
 func _ready() -> void:
 	_aplicar()
@@ -27,6 +32,9 @@ func _unhandled_input(e: InputEvent) -> void:
 	_aplicar()
 
 func _process(dt: float) -> void:
+	if _tremor > 0.0:
+		var real := dt / maxf(Engine.time_scale, 0.001)   # decai em tempo real, mesmo no hit-stop
+		_tremor = maxf(0.0, _tremor - real * maxf(_tremor * 7.0, 0.05))
 	var v := Vector2(Input.get_axis("ui_left", "ui_right"), Input.get_axis("ui_up", "ui_down"))
 	if Input.is_key_pressed(KEY_A): v.x -= 1
 	if Input.is_key_pressed(KEY_D): v.x += 1
@@ -47,3 +55,5 @@ func _aplicar() -> void:
 	var r := deg_to_rad(guinada); var i := deg_to_rad(inclinacao)
 	position = alvo + Vector3(sin(r) * cos(i), sin(i), cos(r) * cos(i)) * distancia
 	look_at(alvo)
+	if _tremor > 0.0:
+		position += (global_basis.x * randf_range(-1, 1) + global_basis.y * randf_range(-1, 1)) * _tremor

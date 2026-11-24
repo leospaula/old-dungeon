@@ -104,6 +104,7 @@ func _ready() -> void:
 	combate = Combate.new(); add_child(combate)
 	combate.grade = grade; combate.marca_alcance = marca_alcance; combate.marca_caminho = marca_caminho; combate.marca_vez = marca_vez
 	combate.exploradas = visao.exploradas
+	combate.camera = camera
 	combate.visivel = func(a): return mestre or visao.visiveis.has(a.celula)
 	combate.abrir_porta = _abrir_porta
 	combate.registro.connect(_registrar)
@@ -816,6 +817,22 @@ func _linha_de_comando() -> void:
 					await get_tree().create_timer(0.2).timeout
 					if combate.vez == heroi and not combate.ocupado: combate.encerrar_turno()
 				await get_tree().create_timer(0.3).timeout
+	elif teste == "impacto":
+		# Quadros do golpe da Tessa e do goblin (acerto ou erro, conforme o dado), para conferir os efeitos.
+		_brotar_goblin()
+		await get_tree().create_timer(1.5).timeout
+		var g: Node3D = monstros[0]
+		camera.alvo = (heroi.position + g.position) / 2.0; camera.distancia = 5.0; camera.inclinacao = 32.0; camera.guinada = 200.0
+		var k := 0
+		for par in [[heroi, g], [g, heroi], [heroi, g]]:
+			if not (par[0].vivo() and par[1].vivo()): continue
+			combate._atacar(par[0], par[1])
+			for ms in [300, 560, 620, 700, 900, 1200]:
+				var t0 := Time.get_ticks_msec()
+				while Time.get_ticks_msec() - t0 < (ms - (0 if ms == 300 else [300, 560, 620, 700, 900, 1200][[300, 560, 620, 700, 900, 1200].find(ms) - 1])):
+					await get_tree().process_frame
+				get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
+			await get_tree().create_timer(1.5).timeout
 	elif teste == "combate":
 		_surgir_errantes(true)
 		await get_tree().create_timer(3.0).timeout

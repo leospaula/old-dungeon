@@ -6,6 +6,7 @@ extends Node
 ## Moral dos monstros: 2d6 > moral = fogem (testa na primeira baixa e quando metade cai).
 
 const Dados = preload("res://scripts/regras/dados.gd")
+const Efeitos = preload("res://scripts/visual/efeitos.gd")
 
 signal registro(texto: String)
 signal mudou
@@ -13,6 +14,7 @@ signal terminou(resultado: String, xp: int, rodadas: int)
 signal _fim_de_turno
 
 var grade: RefCounted
+var camera: Camera3D        # para o tremor de impacto
 var marca_alcance: Node    # marcas.gd
 var marca_caminho: Node
 var marca_vez: Node
@@ -197,13 +199,18 @@ func _turno_monstro(m: Node) -> void:
 
 func _atacar(a: Node, alvo: Node) -> void:
 	marca_caminho.limpar()
-	await a.animar_golpe(alvo)
+	# Rola antes: o d20 aparece girando sobre o atacante enquanto ele arma o golpe.
 	var r := Dados.d(20)
 	var precisa: int = a.thac0 - alvo.ca
 	var total: int = r + a.mod_acerto
 	var acerta: bool = r == 20 or (r != 1 and total >= precisa)
+	Efeitos.dado(a, r, acerta, 0.45)
+	await a.animar_golpe(alvo)
+	if not is_instance_valid(alvo): return
 	var mod_txt := (" %+d = %d" % [a.mod_acerto, total]) if a.mod_acerto != 0 else ""
 	var txt := "%s ataca %s: d20 [b]%d[/b]%s (precisa %d) → " % [_nome(a), _nome(alvo), r, mod_txt, precisa]
+	var topo: Vector3 = alvo.global_position + Vector3(0, alvo.altura_texto(), 0)
+	var no_grupo: bool = alvo.lado == "grupo"
 	if acerta:
 		var expr: String = a.dano + (("%+d" % a.mod_dano) if a.mod_dano != 0 else "")
 		var dd := Dados.detalhar(expr)
@@ -211,14 +218,37 @@ func _atacar(a: Node, alvo: Node) -> void:
 		alvo.pv -= dano
 		txt += "[color=#ffcf6a]acerta[/color]! %s: %s = [b]%d[/b] de dano." % [expr, dd.texto, dano]
 		registro.emit(txt)
+		# Impacto: quanto maior o dano (e no 20 natural), mais forte. Mais forte quando a Tessa apanha.
+		var critico := r == 20
+		var forca := clampf(0.35 + dano * 0.1, 0.4, 1.0) * (1.5 if critico else 1.0)
+		alvo.piscar(Color(1, 0.25, 0.2, 0.6) if no_grupo else Color(1, 0.95, 0.85, 0.7))
+		alvo.recuar(a.global_position, 0.18 + 0.12 * forca)
+		if camera: camera.tremer((0.09 if no_grupo else 0.06) * forca)
+		Efeitos.texto(alvo.get_parent(), topo, ("CRÍTICO!  %d" % dano) if critico else str(dano),
+			Color(1, 0.35, 0.25) if no_grupo else Color(1, 0.85, 0.35), 0.9 + 0.12 * minf(dano, 6) + (0.4 if critico else 0.0))
 		if alvo.pv <= 0:
 			alvo.animar_morte()
 			registro.emit("[color=#ff7a5a]%s cai.[/color]" % _nome(alvo))
 			_baixa(alvo)
 		else:
 			alvo.animar_dano()
+		await Efeitos.congelar(self, 0.06 + 0.05 * forca)
 	else:
-		registro.emit(txt + "[color=#9aa4b0]erra.[/color]")
+		# Erro com motivo: passou perto = bloqueou (escudo/arma); longe = esquivou; 1 natural = golpe em falso.
+		var quase := total >= precisa - 3
+		var tem_escudo: bool = alvo.lado == "grupo"
+		var o_que := "Golpe em falso!" if r == 1 else ("Bloqueou!" if quase else "Esquivou!")
+		if r == 1:
+			a.recuar(alvo.global_position, 0.25)
+		elif quase:
+			alvo.recuar(a.global_position, 0.12)
+			alvo.piscar(Color(0.75, 0.85, 1.0, 0.45), 0.1)
+			if camera: camera.tremer(0.025)
+			if not tem_escudo: o_que = "Aparou!"
+		else:
+			alvo.recuar(a.global_position, 0.35, true)
+		Efeitos.texto(alvo.get_parent(), topo, o_que, Color(0.78, 0.8, 0.85), 0.75, 0.6, 0.85)
+		registro.emit(txt + "[color=#9aa4b0]erra (%s).[/color]" % o_que.trim_suffix("!").to_lower())
 	await get_tree().create_timer(0.55).timeout
 	if is_instance_valid(a) and a.vivo(): a.tocar("parado")
 	mudou.emit()

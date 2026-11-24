@@ -1,0 +1,49 @@
+extends RefCounted
+## Efeitos de impacto do combate: congelar o quadro, texto flutuante (dano, "Bloqueou!"…) e o d20
+## rolando sobre o atacante. Só visual; as regras ficam no combate.gd.
+
+const FONTE_TAM := 64
+
+## Congela o jogo por um instante (hit-stop). `dur` em segundos de tempo real.
+static func congelar(no: Node, dur: float) -> void:
+	Engine.time_scale = 0.02
+	await no.get_tree().create_timer(dur, true, false, true).timeout
+	Engine.time_scale = 1.0
+
+## Texto que sobe e some acima de `pos`.
+static func texto(pai: Node, pos: Vector3, txt: String, cor: Color, escala := 1.0, subir := 0.9, dur := 1.0) -> void:
+	var l := Label3D.new()
+	l.text = txt; l.modulate = cor; l.outline_modulate = Color(0.05, 0.02, 0.0, 0.9)
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED; l.no_depth_test = true; l.render_priority = 10
+	l.font_size = FONTE_TAM; l.outline_size = 14; l.pixel_size = 0.006
+	pai.add_child(l); l.global_position = pos
+	# Entra grande e assenta (pop), sobe e desaparece.
+	l.scale = Vector3.ONE * escala * 1.7
+	var t := l.create_tween()
+	t.tween_property(l, "scale", Vector3.ONE * escala, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(l, "global_position", pos + Vector3(0, subir, 0), dur).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(l, "modulate:a", 0.0, dur * 0.45).set_delay(dur * 0.55)
+	t.tween_callback(l.queue_free)
+
+## O d20 rola sobre o atacante e para no resultado (verde acerta, cinza erra; 20 dourado, 1 vermelho).
+static func dado(ator: Node3D, resultado: int, acerta: bool, dur := 0.5) -> void:
+	var l := Label3D.new()
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED; l.no_depth_test = true; l.render_priority = 9
+	l.font_size = FONTE_TAM; l.outline_size = 14; l.pixel_size = 0.005
+	l.outline_modulate = Color(0.05, 0.02, 0.0, 0.9); l.modulate = Color(1, 0.95, 0.85)
+	ator.get_parent().add_child(l)
+	var alto: float = ator.rotulo.position.y + 0.6 if ator.get("rotulo") else 2.6
+	l.global_position = ator.global_position + Vector3(0, alto, 0)
+	var t0 := Time.get_ticks_msec()
+	while (Time.get_ticks_msec() - t0) / 1000.0 < dur:
+		l.text = "d20 · %d" % randi_range(1, 20)
+		await ator.get_tree().create_timer(0.05).timeout
+		if not is_instance_valid(l): return
+	l.text = "d20 · %d" % resultado
+	l.modulate = Color(1.0, 0.82, 0.3) if resultado == 20 else (Color(1, 0.4, 0.3) if resultado == 1 else (Color(0.55, 1.0, 0.55) if acerta else Color(0.7, 0.72, 0.76)))
+	l.scale = Vector3.ONE * 1.4
+	var t := l.create_tween()
+	t.tween_property(l, "scale", Vector3.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_interval(0.9)
+	t.tween_property(l, "modulate:a", 0.0, 0.3)
+	t.tween_callback(l.queue_free)

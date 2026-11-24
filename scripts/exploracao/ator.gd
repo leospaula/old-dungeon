@@ -186,6 +186,37 @@ func animar_golpe(alvo: Node3D) -> void:
 		t.tween_property(modelo, "position", Vector3.ZERO, 0.25)
 		await get_tree().create_timer(0.2).timeout
 
+## Clarão no corpo (sobreposição sem luz que some rápido).
+var _clarao: StandardMaterial3D
+func piscar(cor: Color, dur := 0.14) -> void:
+	if modelo == null: return
+	if _clarao == null:
+		_clarao = StandardMaterial3D.new()
+		_clarao.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_clarao.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_clarao.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		for m in modelo.find_children("*", "GeometryInstance3D", true, false): m.material_overlay = _clarao
+	_clarao.albedo_color = cor
+	var t := create_tween()
+	t.tween_property(_clarao, "albedo_color:a", 0.0, dur).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+## Empurrão para trás (acerto) ou passo de lado (esquiva), saindo de `de` e voltando.
+func recuar(de: Vector3, dist := 0.3, lateral := false) -> void:
+	if modelo == null: return
+	var d := global_position - de; d.y = 0
+	if d.length() < 0.01: return
+	d = d.normalized()
+	if lateral: d = (d + Vector3(-d.z, 0, d.x) * (1.0 if randf() < 0.5 else -1.0)).normalized()
+	var off := global_basis.inverse() * d * dist   # o modelo é filho do ator (que gira)
+	var base := modelo.position
+	var t := create_tween()
+	t.tween_property(modelo, "position", base + off, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(modelo, "position", base, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+## Altura para textos acima da cabeça.
+func altura_texto() -> float:
+	return rotulo.position.y * 0.55 if rotulo else 1.0
+
 func animar_dano() -> void:
 	atualizar_rotulo()
 	if player:
