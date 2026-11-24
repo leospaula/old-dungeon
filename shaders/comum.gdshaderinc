@@ -6,6 +6,7 @@ uniform float luz_raio = 9.0;                  // B/X: tocha ilumina 9 m
 uniform float luz_min = 0.18;                  // brilho fora da luz (escuridão)
 uniform vec3 sol = vec3(0.45, 0.8, 0.35);      // direção "de desenho" para as faixas de sombra
 uniform vec3 papel = vec3(0.93, 0.86, 0.72);
+uniform float grade_forca = 0.12;               // 0.12 exploração · 0.6 combate
 
 float hash1(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 vec2 hash2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
@@ -49,4 +50,13 @@ vec3 tocha(vec3 c, vec3 w, vec2 frag) {
 	vec3 r = mix(c * luz_min, quente, max(l, luz_min));
 	if (l < 0.35 && fract((frag.x + frag.y) / 4.0) < 0.25) r *= 0.75;
 	return r;
+}
+
+// Luz da tocha numa superfície: atenuação por distância + ângulo da face em relação à chama
+float luz_face(vec3 w, vec3 n) {
+	vec3 l = luz_pos - w;
+	float dist = length(l);
+	float lamb = max(dot(normalize(n), l / max(dist, 0.001)), 0.0);
+	float atenua = smoothstep(luz_raio, luz_raio * 0.25, dist);
+	return atenua * (0.45 + 0.75 * lamb);
 }
