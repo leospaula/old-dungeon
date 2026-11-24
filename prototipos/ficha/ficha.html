@@ -264,9 +264,31 @@ function emJogo(sel) {
     <span class="cinto">${cinto.map(x => `<span>${x}</span>`).join("")}</span></button>`).join("");
   return `<div style="display:grid;gap:10px"><div class="cena">A masmorra em 3D aparece aqui. Embaixo, uma carta por personagem com o essencial para jogar: PV, CA, THAC0 e o cinto de acesso rápido. Clicar numa carta abre a ficha completa ao lado (proposta A ou B).</div>
     <div class="grupo">${cartas}</div>
-    ${sel === 0 ? `<div class="perg" style="padding:16px"><div class="folha" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)"><div class="col">${blocoTrio()}${blocoAtaque()}</div><div class="col">${blocoProtecoes()}</div><div class="col">${blocoEquipado()}</div></div></div>`
+    ${sel === 0 ? blocoRapido()
       : `<p style="color:#cbb994;margin:0">Nesta prévia, só a carta da Tessa abre a ficha.</p>`}</div>`;
 }
+function blocoRapido() {
+  const hab = [
+    ["Forçar portas", "1–4 em d6", "1–2, +2 pela FOR"],
+    ["Ouvir atrás de portas", "1 em d6", ""],
+    ["Procurar portas secretas", "1 em d6", "1 turno por área de 3 × 3 m"],
+    ["Procurar armadilhas", "1 em d6", "1 turno por área"],
+    ["Armas e armaduras", "todas", "guerreira"]
+  ];
+  return `<div class="perg" style="padding:16px"><div class="folha" style="grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1fr)">
+    <div class="col"><div class="trio" style="grid-template-columns:repeat(3,1fr)">
+      <div class="selo">${SVG.coracao(T.pv, T.pvMax)}<span class="rotulo">Pontos de vida</span></div>
+      <div class="selo">${SVG.escudo(T.ca)}<span class="rotulo">Classe de armadura</span></div>
+      <div class="selo"><svg viewBox="0 0 60 64" aria-hidden="true"><circle cx="30" cy="32" r="25" fill="#f4ead4" stroke="#2a1f15" stroke-width="2.5"/><text x="30" y="40" text-anchor="middle" font-family="IM Fell English, Georgia, serif" font-size="22" font-weight="700" fill="#2a1f15">${T.thac0}</text></svg><span class="rotulo">THAC0</span></div></div>
+      <div class="carga"><span class="pilula media">Carga ${T.carga}</span><span class="num">${T.mov}</span></div>
+      <div class="carga"><span class="pilula leve">Luz</span><span>Tocha acesa · <b class="num">4</b> de 6 turnos</span></div>
+      <div class="carga"><span class="pilula leve">Condições</span><span class="mut">nenhuma</span></div></div>
+    <div class="col"><section><h2 class="capitular">Habilidades</h2><div class="protecoes">${hab.map(([n, v, d]) =>
+      `<div class="slot" style="min-height:0"><span class="item">${n} <span class="num" style="float:right">${v}</span></span>${d ? `<span class="det">${d}</span>` : ""}</div>`).join("")}</div></section></div>
+    <div class="col">${blocoEquipado()}<button class="carta" style="text-align:center;cursor:pointer" data-abrir="1"><span class="n">Abrir ficha completa</span><span class="c">livro com abas (B)</span></button></div>
+  </div></div>`;
+}
+
 function mapeamento() {
   const L = [
     ["Nome do jogador, nome do personagem, alinhamento, classe, nível", "Cabeçalho", "igual", ""],
@@ -297,7 +319,8 @@ function render() {
   const p = $("#palco");
   p.innerHTML = VISTA === "livro" ? livro(PAGINA) : VISTA === "em-jogo" ? emJogo(SEL) : VISTA === "mapeamento" ? mapeamento() : folha();
   for (const b of p.querySelectorAll(".marcadores button")) b.addEventListener("click", () => { PAGINA = b.dataset.p; render(); });
-  for (const b of p.querySelectorAll(".carta")) b.addEventListener("click", () => { SEL = +b.dataset.i; render(); });
+  for (const b of p.querySelectorAll(".carta[data-i]")) b.addEventListener("click", () => { SEL = +b.dataset.i; render(); });
+  for (const b of p.querySelectorAll("[data-abrir]")) b.addEventListener("click", () => { VISTA = "livro"; PAGINA = "ficha"; try { history.replaceState(null, "", "#livro"); } catch (e) {} render(); });
 }
 for (const b of document.querySelectorAll("nav.abas button")) b.addEventListener("click", () => { VISTA = b.dataset.v; try { history.replaceState(null, "", "#" + VISTA); } catch (e) {} render(); });
 const h = (location.hash || "").slice(1); if (["folha", "livro", "em-jogo", "mapeamento"].includes(h)) VISTA = h;
