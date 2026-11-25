@@ -11,6 +11,8 @@ var frente := Vector3.ZERO   # frente da personagem em repouso (espaço do esque
 ## Para que lado do cabo vai a ponta: "esquerda" (além da mão esquerda: lança, besta), "direita" (além da
 ## mão direita, que fica junto da guarda: espada e machado de duas mãos) ou "olhar" (para onde a cabeça olha).
 var ponta := "esquerda"
+var ap: AnimationPlayer
+var erguer := {}   # {animação: fração} puxa a arma para a vertical nessa animação (guarda mais ereta)
 var _cab := -1
 var _olhar_local := Vector3.ZERO   # olhar da cabeça no espaço do osso: a ponta vai para onde ela olha
 
@@ -39,5 +41,8 @@ func _process(_dt: float) -> void:
 		var no_sk: Vector3 = sk.global_transform.basis.inverse() * (pai.global_transform.basis * alvo)
 		no_sk.y = 0
 		if no_sk.dot(olhar) < 0: alvo = -alvo
+	if ap and erguer.has(String(ap.assigned_animation)):
+		var cima: Vector3 = (pai.global_transform.basis.inverse() * Vector3.UP).normalized()
+		alvo = alvo.slerp(cima, float(erguer[String(ap.assigned_animation)])).normalized()
 	var giro := Quaternion(y0, alvo)
 	transform.basis = Basis(Quaternion.IDENTITY.slerp(giro, peso)) * base

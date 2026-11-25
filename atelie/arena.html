@@ -179,6 +179,7 @@ async function montar(id) {
   const item = g.scene.clone(true);
   resto.add(item); piv.add(resto); b.add(piv);
   const reg = { id, m, piv, resto, item, osso: b, base: piv.quaternion.clone(), peso: 0 };
+  if (m.alinhada) { reg.alinhadaQ = new THREE.Quaternion(); m4(m.alinhada).decompose(new THREE.Vector3(), reg.alinhadaQ, new THREE.Vector3()); }
   P.montados.push(reg);
   if (m.corda) criarCorda(reg);
 }
@@ -190,20 +191,20 @@ function desmontar() {
 
 // ---------- funda desenhada (mesma ideia de scripts/visual/funda.gd: pêndulo preso à mão) ----------
 function criarFunda(m) {
-  const corda = new THREE.MeshStandardMaterial({ color: 0x6b5438, roughness: 0.95 });
-  const couro = new THREE.MeshStandardMaterial({ color: 0x5c3820, roughness: 0.9 });
+  const corda = new THREE.MeshStandardMaterial({ color: 0x543823, roughness: 0.95 });
+  const couro = new THREE.MeshStandardMaterial({ color: 0x5c301c, roughness: 1.0 });
   const geo = new THREE.CylinderGeometry(0.004, 0.004, 1, 5, 1);
   const a = new THREE.Mesh(geo, corda), b = new THREE.Mesh(geo, corda);
-  const bolsa = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 6), couro); bolsa.scale.y = 0.7;
+  const bolsa = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 6), couro); bolsa.scale.y = 0.6;
   cena.add(a); cena.add(b); cena.add(bolsa);
-  P.funda = { objs: [a, b, bolsa], a, b, bolsa, mao: osso("mixamorig_RightHandIndex1"), l: m.comprimento, p: null, ant: null };
+  P.funda = { objs: [a, b, bolsa], a, b, bolsa, mao: osso("mixamorig_RightHandIndex1"), l: m.comprimento / (D.personagens[S.pers].escala || 1), p: null, ant: null };
 }
 function atualizarFunda(dt) {
   const f = P.funda; if (!f || !f.mao) return;
   const mao = f.mao.getWorldPosition(new THREE.Vector3());
   if (!f.p) { f.p = mao.clone().add(new THREE.Vector3(0, -f.l, 0)); f.ant = f.p.clone(); }
   if (!S.pausado) {
-    const v = f.p.clone().sub(f.ant).multiplyScalar(0.985); f.ant.copy(f.p);
+    const v = f.p.clone().sub(f.ant).multiplyScalar(0.88); f.ant.copy(f.p);
     f.p.add(v).add(new THREE.Vector3(0, -9.8 * dt * dt, 0));
     const d = f.p.clone().sub(mao); if (d.length() > 1e-4) f.p.copy(mao).add(d.normalize().multiplyScalar(f.l));
   }
@@ -247,6 +248,11 @@ const _v = new THREE.Vector3(), _q = new THREE.Quaternion();
 function ajustarDinamicos(dt) {
   const pers = D.personagens[S.pers];
   for (const r of P.montados) {
+    if (r.alinhadaQ) {   // azagaia: ponta para a frente só no arremesso
+      const alvo = P.atual === r.m.anim_alinhada ? 1 : 0;
+      r.peso = Math.max(0, Math.min(1, r.peso + Math.sign(alvo - r.peso) * dt * 6));
+      r.piv.quaternion.copy(r.base).slerp(r.alinhadaQ, r.peso); continue;
+    }
     if (r.m.duas_maos) {
       const esq = osso("mixamorig_LeftHandMiddle1"); if (!esq) continue;
       const pe = esq.getWorldPosition(new THREE.Vector3());
@@ -263,6 +269,10 @@ function ajustarDinamicos(dt) {
         const ossoQ = r.osso.getWorldQuaternion(new THREE.Quaternion());
         const noMundo = alvo.clone().applyQuaternion(ossoQ); noMundo.y = 0;
         if (noMundo.dot(olhar) < 0) alvo.negate();
+      }
+      if (r.m.erguer && r.m.erguer[P.atual] !== undefined) {
+        const cima = new THREE.Vector3(0, 1, 0).applyQuaternion(r.osso.getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
+        alvo = alvo.clone().lerp(cima, r.m.erguer[P.atual]).normalize();
       }
       const y0 = new THREE.Vector3(0, 1, 0).applyQuaternion(r.base).normalize();
       _q.setFromUnitVectors(y0, alvo);

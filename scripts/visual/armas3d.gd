@@ -14,6 +14,7 @@ const CordaArco = preload("res://scripts/visual/corda_arco.gd")
 const DuasMaos = preload("res://scripts/visual/duas_maos.gd")
 const PrumoArco = preload("res://scripts/visual/prumo_arco.gd")
 const Funda = preload("res://scripts/visual/funda.gd")
+const PoseAlinhada = preload("res://scripts/visual/pose_alinhada.gd")
 
 ## Prende o item ao esqueleto. `escala` = escala do modelo do personagem no jogo (para o comprimento real).
 ## Devolve o BoneAttachment3D (remova-o para tirar o item).
@@ -35,9 +36,9 @@ static func montar(sk: Skeleton3D, ap: AnimationPlayer, m: Dictionary, escala: f
 	# A pegada vai para o centro da própria malha na altura do cabo (curvas, cabos tortos, arcos).
 	if bool(m.get("pega_malha", true)): pega = _centro_na_altura(item, pega.y, caixa.size.y * 0.03, pega)
 	var ba := BoneAttachment3D.new(); ba.bone_name = osso; sk.add_child(ba)
-	var piv: Node3D = DuasMaos.new() if bool(m.get("duas_maos", false)) else (PrumoArco.new() if bool(m.get("prumo", false)) else Node3D.new())
+	var piv: Node3D = DuasMaos.new() if bool(m.get("duas_maos", false)) else (PrumoArco.new() if bool(m.get("prumo", false)) else (PoseAlinhada.new() if bool(m.get("so_na_animacao", false)) else Node3D.new()))
 	if piv is PrumoArco: piv.sk = sk; piv.ap = ap; piv.frente = _frente(sk)
-	if piv is DuasMaos: piv.sk = sk; piv.frente = _frente(sk); piv.ponta = str(m.get("ponta", "esquerda"))
+	if piv is DuasMaos: piv.sk = sk; piv.frente = _frente(sk); piv.ponta = str(m.get("ponta", "esquerda")); piv.ap = ap; piv.erguer = m.get("erguer", {})
 	ba.add_child(piv)
 	# A pose de referência mexe no esqueleto: guarda a animação atual e devolve depois.
 	var antes := ap.current_animation; var pos := ap.current_animation_position if antes != "" else 0.0
@@ -68,7 +69,16 @@ static func montar(sk: Skeleton3D, ap: AnimationPlayer, m: Dictionary, escala: f
 			alvo_glob = sk.get_bone_global_pose(cab).basis * (sk.get_bone_global_rest(cab).basis.inverse() * _frente(sk))
 		var eixo_l: Vector3 = (piv.transform.basis * rot_item).y.normalized()
 		var alvo_l: Vector3 = (og.basis.inverse() * alvo_glob).normalized()
+		var nat := piv.transform.basis
 		piv.transform.basis = Basis(Quaternion(eixo_l, alvo_l)) * piv.transform.basis
+		if piv is PoseAlinhada:   # só vale nessa animação; fora dela, pegada natural
+			piv.ap = ap; piv.anim = str(m.alinhar_em[0]); piv.natural = nat; piv.alinhada = piv.transform.basis
+			piv.transform.basis = nat
+	# subir: [anim, t, metros] desloca o item para cima (no mundo, nessa pose): besta apoiada na mão esquerda
+	if m.has("subir") and ap.has_animation(str(m.subir[0])):
+		ap.play(str(m.subir[0])); ap.seek(float(m.subir[1]), true); ap.advance(0); sk.force_update_all_bone_transforms()
+		var cima_l: Vector3 = (sk.get_bone_global_pose(i_osso).basis.inverse() * Vector3.UP).normalized()
+		piv.transform.origin += cima_l * float(m.subir[2]) / escala
 	if piv is DuasMaos: piv.base = piv.transform.basis
 	if piv is PrumoArco: piv.base = piv.transform.basis; piv.eixo_item = (rot_item * Vector3.UP).normalized()
 	if antes != "": ap.play(antes); ap.seek(pos, true)

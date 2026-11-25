@@ -54,6 +54,9 @@ func _run() -> void:
 			var d := {"osso": str(ba.bone_name), "piv": _m(piv.transform), "resto": _m(Armas3D.resto_de(ba)),
 				"duas_maos": bool(m.get("duas_maos", false)), "ponta": str(m.get("ponta", "olhar")), "prumo": bool(m.get("prumo", false))}
 			if piv.get("eixo_item") != null: d["eixo_item"] = _v(piv.eixo_item)
+			if piv.get("alinhada") != null:   # PoseAlinhada: natural fora da animação, alinhada dentro
+				d["alinhada"] = _m(Transform3D(piv.alinhada, piv.transform.origin)); d["anim_alinhada"] = str(piv.anim)
+			if m.has("erguer"): d["erguer"] = m.erguer
 			for c in item.get_children():
 				if c.get_script() != null and str(c.get_script().resource_path).contains("corda"):
 					d["corda"] = {"a": _v(c._ponta_a), "b": _v(c._ponta_b)}
