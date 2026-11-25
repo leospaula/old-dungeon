@@ -1217,6 +1217,20 @@ func _linha_de_comando() -> void:
 		if alvo:
 			combate.pairar(alvo.celula, alvo)
 			print("CURSOR sobre ", alvo.nome, ": ", combate._cursor)
+	elif teste == "corrida":
+		# No combate os monstros correm (velocidade do modo rápido, animação de corrida); fugindo também.
+		for k in 3: _brotar_goblin(); await get_tree().process_frame
+		var visto := {}
+		for k in 120:
+			for m in monstros:
+				if is_instance_valid(m) and m.andando() and not visto.has(m.nome):
+					visto[m.nome] = true
+					print("CORRIDA ", m.nome, " anim=", m.player.current_animation, " vel=", m.vel_atual(), " no_combate=", m.no_combate)
+			if visto.size() >= 2: break
+			await get_tree().create_timer(0.1).timeout
+		var g: Node3D = monstros.filter(func(m): return is_instance_valid(m) and m.vivo())[0]
+		combate._fugir(g); await get_tree().create_timer(0.3).timeout
+		print("FUGA ", g.nome, " anim=", g.player.current_animation, " vel=", g.vel_atual(), " andando=", g.andando())
 	elif teste == "arsenal":
 		# A Tessa passa por todas as armas (tecla T) e ataca um goblin com cada uma; quadro no impacto.
 		_brotar_goblin(true)

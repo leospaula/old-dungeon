@@ -32,6 +32,7 @@ var mov_combate_m := 12.0
 var moral := 12
 var xp := 0
 var fugindo := false
+var no_combate := false   # ligado pelo combate enquanto ele dura (monstros correm)
 var infravisao_m := 0.0
 const VEL_BASE := 2.0     # m/s andando na tela (ritmo normal)
 var velocidade := VEL_BASE
@@ -179,7 +180,13 @@ func _tem(papel: String) -> bool:
 
 ## Em combate, o andar em guarda é mais curto: cada um anda no ritmo dele (passada × RITMO_COMBATE).
 const RITMO_COMBATE := 1.8
+## Monstros correm no combate e quando fogem (velocidade do modo rápido, animação de corrida).
+const VEL_CORRIDA := 1.5
+func _correndo() -> bool:
+	return lado != "grupo" and (no_combate or fugindo) and _tem("correr")
+
 func vel_atual() -> float:
+	if _correndo(): return VEL_BASE * VEL_CORRIDA
 	var pc := float(passadas.get(anim.get("andar_combate", ""), passadas.get("andar_combate", 0.0)))
 	if em_combate and pc > 0.0 and _tem("andar_combate"):
 		return pc * RITMO_COMBATE
@@ -191,6 +198,7 @@ func _ritmo(papel: String) -> float:
 
 ## Papel de deslocamento: em combate, andar em guarda; fora dele, o do modo (cai para "andar").
 func _papel_desloc() -> String:
+	if _correndo(): return "correr"
 	if em_combate and _tem("andar_combate"): return "andar_combate"
 	return papel_andar if _tem(papel_andar) else "andar"
 

@@ -43,6 +43,7 @@ var _moral_metade := false
 func iniciar(g: Array, m: Array, surpreso_grupo: bool, surpreso_monstros: bool) -> void:
 	grupo = g; monstros = m; ativo = true; rodada = 0; _mortos = 0; _xp = 0
 	_moral_primeira = false; _moral_metade = false
+	for x in monstros: x.no_combate = true   # no combate os monstros correm
 	var vistos := monstros.filter(func(x): return _ve(x))
 	var nomes := ", ".join(vistos.map(func(x): return x.nome)) if not vistos.is_empty() else "algo no escuro"
 	registro.emit("[b]Combate![/b] %s." % nomes)
@@ -89,7 +90,7 @@ func _turno_personagem(h: Node) -> void:
 
 ## Monstro que entra no meio do combate (age a partir da próxima vez do lado dos monstros).
 func adicionar(m: Node) -> void:
-	monstros.append(m)
+	monstros.append(m); m.no_combate = true
 	mudou.emit()
 
 ## Botão "Atacar/Atirar": o inimigo à vista mais perto que dá para atingir nesta vez.
@@ -377,6 +378,8 @@ func _checar_fim() -> bool:
 	var m := monstros.any(func(x): return is_instance_valid(x) and x.vivo())
 	if g and m: return false
 	ativo = false; vez = null; _por_cursor("")
+	for x in monstros:
+		if is_instance_valid(x): x.no_combate = false
 	marca_alcance.limpar(); marca_caminho.limpar(); marca_vez.limpar()
 	terminou.emit("vitoria" if g else "derrota", _xp, rodada)
 	return true
