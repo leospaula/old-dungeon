@@ -38,9 +38,7 @@
     "besta":                 {"nome": "Besta", "tipo": "arma", "dano": "1d6", "distancia": [24.0, 48.0, 72.0], "municao": "virotes", "maos": 2, "espacos": 2, "icone": "besta", "preco": 30},
     "flechas de prata":      {"nome": "Flechas de prata", "tipo": "municao", "prata": true, "espacos": 1, "pilha": 20, "icone": "flechas-prata", "dica": "fere licantropos", "preco": 100},
     "virotes":               {"nome": "Virotes", "tipo": "municao", "espacos": 1, "pilha": 30, "icone": "virotes", "preco": 10},
-    "saco pequeno":          {"nome": "Saco pequeno", "tipo": "ferramenta", "espacos": 1, "icone": "saco-pequeno", "dica": "guarda moedas e miudezas", "preco": 1},
     "saco grande":           {"nome": "Saco grande", "tipo": "ferramenta", "espacos": 1, "icone": "saco-grande", "dica": "+4 espaços para carregar tesouro", "preco": 2},
-    "rações de viagem":      {"nome": "Rações de viagem", "tipo": "consumivel", "espacos": 1, "pilha": 7, "icone": "racao-viagem", "dica": "não estragam", "preco": 15},
     "mochila":               {"nome": "Mochila", "tipo": "ferramenta", "espacos": 0, "icone": "mochila", "dica": "dá os espaços da mochila", "preco": 5}
   }
 }
