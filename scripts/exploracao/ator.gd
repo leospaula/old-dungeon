@@ -71,8 +71,36 @@ func colocar(c: Vector2i) -> void:
 	celula = c; _de = c
 	position = grade.centro(c)
 
+## Estilos de luta (data/regras/estilos.json): a arma na mão escolhe guarda, golpes, disparo e defesa.
+static var _estilos := {}
+static func estilos() -> Dictionary:
+	if _estilos.is_empty():
+		_estilos = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/estilos.json"))
+	return _estilos
+
+var anim_base := {}
+var estilo := ""
+
+## Troca os papéis de combate pelos do estilo da arma (os papéis fora do estilo voltam ao padrão).
+func aplicar_estilo(nome: String) -> void:
+	var e: Dictionary = estilos().estilos.get(nome, {})
+	if nome == estilo and not anim.is_empty(): return
+	estilo = nome
+	anim = anim_base.duplicate()
+	for papel in ["golpe2", "golpe_critico", "atirar", "soltar", "arremessar", "aparar"]: anim.erase(papel)
+	anim.merge(e, true)
+	if player:
+		for papel in ["parado_combate", "andar_combate"]:
+			if _tem(papel): player.get_animation(anim[papel]).loop_mode = Animation.LOOP_LINEAR
+		if em_combate and not andando() and vivo(): tocar("parado")
+
+## Defesa contra um golpe: escudo bloqueia; quem tem "aparar" no estilo apara; o resto esquiva.
+func defesa() -> String:
+	if tem_escudo: return "bloquear"
+	return "aparar" if _tem("aparar") else "esquivar"
+
 func montar_modelo(m: Node3D, papeis: Dictionary, giro := 0.0) -> void:
-	modelo = m; anim = papeis; frente = giro
+	modelo = m; anim = papeis; frente = giro; anim_base = papeis.duplicate()
 	add_child(m)
 	player = _achar_player(m)
 	if player:
@@ -108,6 +136,7 @@ func tocar(papel: String, misturar := 0.2) -> void:
 	if player and anim.has(papel) and player.has_animation(anim[papel]):
 		player.play(anim[papel], misturar)
 		player.speed_scale = _ritmo(papel)
+		if estilos().velocidade.has(anim[papel]): player.speed_scale = float(estilos().velocidade[anim[papel]])
 		var giro := -deg_to_rad(float(giro_anim.get(anim[papel], 0.0)))
 		if absf(modelo.rotation.y - giro) > 0.01:
 			create_tween().tween_property(modelo, "rotation:y", giro, maxf(misturar, 0.05))
@@ -118,12 +147,13 @@ func _tem(papel: String) -> bool:
 ## Em combate, o andar em guarda é mais curto: cada um anda no ritmo dele (passada × RITMO_COMBATE).
 const RITMO_COMBATE := 1.8
 func vel_atual() -> float:
-	if em_combate and float(passadas.get("andar_combate", 0.0)) > 0.0 and _tem("andar_combate"):
-		return float(passadas.andar_combate) * RITMO_COMBATE
+	var pc := float(passadas.get(anim.get("andar_combate", ""), passadas.get("andar_combate", 0.0)))
+	if em_combate and pc > 0.0 and _tem("andar_combate"):
+		return pc * RITMO_COMBATE
 	return velocidade
 
 func _ritmo(papel: String) -> float:
-	var p := float(passadas.get(papel, 0.0))
+	var p := float(passadas.get(anim.get(papel, ""), passadas.get(papel, 0.0)))
 	return clampf(vel_atual() / p, 0.4, 2.8) if p > 0.0 else 1.0
 
 ## Papel de deslocamento: em combate, andar em guarda; fora dele, o do modo (cai para "andar").
@@ -198,7 +228,9 @@ func escolher_golpe(critico: bool) -> String:
 	return "golpe"
 
 func tempo_impacto(papel := "golpe") -> float:
-	return float(IMPACTOS.get(anim.get(papel, ""), GOLPE_IMPACTO))
+	var n: String = anim.get(papel, "")
+	var t := float(estilos().impactos.get(n, IMPACTOS.get(n, GOLPE_IMPACTO)))
+	return t / float(estilos().velocidade.get(n, 1.0))
 
 func animar_golpe(alvo: Node3D, papel := "golpe") -> void:
 	olhar_para(alvo.global_position)
@@ -217,7 +249,10 @@ func gastar_municao() -> void:
 	if ficha: ficha.gastar_municao(ficha.arma())
 
 func tempo_tiro() -> float:
-	return player.get_animation(anim["atirar"]).length * 0.95 if player and _tem("atirar") else 0.3
+	if not (player and _tem("atirar")): return 0.3
+	var n: String = anim.atirar
+	if estilos().solta.has(n): return float(estilos().solta[n]) / float(estilos().velocidade.get(n, 1.0))
+	return player.get_animation(n).length * 0.95
 
 ## Disparo: puxa a corda e devolve no instante em que a flecha sai (fim da animação "atirar").
 func animar_tiro(alvo: Node3D) -> void:
@@ -231,13 +266,13 @@ func animar_tiro(alvo: Node3D) -> void:
 const DEFESA_AUGE := {"bloquear": 0.35, "esquivar": 0.55}
 func defender(papel: String, de: Vector3, impacto_em: float) -> void:
 	if not _tem(papel): return
-	var espera := maxf(impacto_em - float(DEFESA_AUGE.get(papel, 0.3)), 0.0)
+	var espera := maxf(impacto_em - float(estilos().auge_defesa.get(papel, DEFESA_AUGE.get(papel, 0.3))), 0.0)
 	await get_tree().create_timer(espera).timeout
 	if not vivo(): return
 	olhar_para(de)
 	tocar(papel, 0.12)
 	var dur: float = player.get_animation(anim[papel]).length
-	await get_tree().create_timer(dur + 0.15).timeout
+	await get_tree().create_timer(dur / maxf(player.speed_scale, 0.1) + 0.15).timeout
 	if vivo() and player.current_animation == anim[papel]: tocar("parado", 0.25)
 
 ## Clarão no corpo (sobreposição sem luz que some rápido).

@@ -259,8 +259,8 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 	var total: int = r + mod
 	var acerta: bool = r == 20 or (r != 1 and total >= precisa)
 	Efeitos.dado(a, r, acerta, 0.6)
-	# Erro com motivo: quem tem escudo bloqueia, quem não tem esquiva; 1 natural = golpe em falso.
-	var defesa := "" if acerta or r == 1 else ("bloquear" if alvo.tem_escudo else "esquivar")
+	# Erro com motivo: escudo bloqueia, arma de duas mãos apara, o resto esquiva; 1 natural = golpe em falso.
+	var defesa: String = "" if acerta or r == 1 else alvo.defesa()
 	if distancia:
 		a.gastar_municao()
 		var de: Vector3 = a.global_position + Vector3(0, a.altura_texto() * 0.95, 0)
@@ -303,11 +303,11 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 			alvo.animar_dano()
 		await Efeitos.congelar(self, 0.06 + 0.05 * forca)
 	else:
-		var o_que := "Golpe em falso!" if r == 1 else ("Bloqueou!" if defesa == "bloquear" else "Esquivou!")
+		var o_que: String = "Golpe em falso!" if r == 1 else {"bloquear": "Bloqueou!", "aparar": "Aparou!"}.get(defesa, "Esquivou!")
 		if r == 1:
 			a.recuar(alvo.global_position, 0.25)
-		elif defesa == "bloquear":
-			alvo.recuar(a.global_position, 0.08 if alvo._tem("bloquear") else 0.12)
+		elif defesa == "bloquear" or defesa == "aparar":
+			alvo.recuar(a.global_position, 0.08 if alvo._tem(defesa) else 0.12)
 			alvo.piscar(Color(0.75, 0.85, 1.0, 0.45), 0.1)
 			if camera: camera.tremer(0.025)
 		elif not alvo._tem("esquivar"):

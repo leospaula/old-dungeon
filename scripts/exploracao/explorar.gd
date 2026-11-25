@@ -34,11 +34,16 @@ const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo
 ## de lado (guarda, dano, bloqueio, esquiva) vale para onde a cabeça olha (--teste=mirar), não o quadril.
 const TESSA_GIRO := {"parado-espada-escudo": 76.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "correr": 90.0, "andar-furtivo": 90.0, "parado-agachado": 75.0, "andar-combate": 90.0, "golpe": 70.0,
 	"levar-golpe": 85.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 81.0, "bloquear": 85.0, "esquivar": 130.0,
-	"parado-luta": 78.0, "corte-dentro": 63.0, "corte-fora": 118.0, "estocada-cima": 75.0, "soltar-flecha": 84.0}
+	"parado-luta": 78.0, "corte-dentro": 63.0, "corte-fora": 118.0, "estocada-cima": 75.0, "soltar-flecha": 84.0,
+	# Estilos de luta (25/11): guardas pelo olhar; golpes pela mão no impacto; arco pela linha da flecha (--teste=olhar).
+	"impacto-guarda": 91.0, "impacto-de-cima": 82.0, "impacto-horizontal": 112.0, "impacto-reves": 75.0,
+	"duas-maos-guarda": 89.0, "duas-maos-golpe": 85.0, "aparar": 99.0, "haste-estocada": 84.0, "cajado-golpe": 91.0,
+	"besta-mirar": 88.0, "arco-guarda": 89.0, "arco-andar": 88.0, "atirar-flecha": 80.0, "arremessar": 93.0,
+	"arremessar-faca": 101.0, "arremessar-frasco": 94.0, "chutar-porta": 73.0, "ajoelhar": 91.0, "beber": 96.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
 const GOBLIN_ESCALA := 0.95
 ## Velocidade natural de cada animação de deslocamento já na escala do jogo (tools/medir_passada.gd).
-const PASSADA_TESSA := {"andar": 1.25, "correr": 2.11, "andar_furtivo": 0.97, "andar_combate": 0.70}
+const PASSADA_TESSA := {"andar": 1.25, "correr": 2.11, "andar_furtivo": 0.97, "andar_combate": 0.70, "arco-andar": 0.79}
 const PASSADA_GOBLIN := {"andar": 0.88, "correr": 1.47, "andar_furtivo": 0.67, "andar_combate": 0.50}
 ## Animação de deslocamento de cada modo de movimento (em combate é sempre "andar").
 const PAPEL_DO_MODO := {"devagar": "andar_furtivo", "normal": "andar", "rapido": "correr"}
@@ -129,10 +134,9 @@ func _ready() -> void:
 ## (mesmo esqueleto Mixamo e o mesmo giro); `passo` ajusta a passada ao tamanho de cada um.
 const HEROIS := {
 	"tessa": {"glb": "res://arte/final/3d/tessa-heroica-biblioteca.glb", "escala": 1.5, "passo": 1.0, "mao": "mixamorig_RightHand"},
-	"caco": {"glb": "res://arte/final/3d/caco-biblioteca.glb", "escala": 0.9, "passo": 1.08, "mao": "mixamorig_RightHand",
-		"papeis": {"golpe": "corte-dentro", "golpe2": "corte-fora", "golpe_critico": "estocada-cima"}},
+	"caco": {"glb": "res://arte/final/3d/caco-biblioteca.glb", "escala": 0.9, "passo": 1.08, "mao": "mixamorig_RightHand"},
 	"lianne": {"glb": "res://arte/final/3d/lianne-biblioteca.glb", "escala": 0.86, "passo": 1.0, "mao": "mixamorig_LeftHand",
-		"distancia": "arco curto", "papeis": {"atirar": "sacar-flecha", "soltar": "soltar-flecha"}},
+		"distancia": "arco curto"},
 }
 const GRUPO_EM_JOGO := ["tessa", "caco", "lianne"]
 ## Arma que o modelo 3D de cada um segura (as outras armas ficam na mochila/cinto e a mão aparece vazia).
@@ -196,6 +200,8 @@ func _aplicar_ficha(a: Node3D) -> void:
 		a.dist_mod = f.mod("des"); a.municao = f.municao_de(w)
 	a.arma_visivel = w != null and str(w.id) == str(a.get_meta("arma_modelo", ""))
 	a.mov_combate_m = Regras.taxa_combate_m(f.movimento_m())
+	# O estilo de luta vem da arma na mão (data/regras/estilos.json).
+	a.aplicar_estilo(str(inf.get("estilo", "desarmado")) if w != null else "desarmado")
 	if a.em_combate: a.empunhar(true)
 	a.atualizar_rotulo()
 
@@ -1008,8 +1014,15 @@ func _linha_de_comando() -> void:
 		_brotar_goblin()
 		await get_tree().create_timer(1.5).timeout
 		var g: Node3D = monstros[0]
-		for caso in [[1, "parado-luta", 0.5], [1, "corte-dentro", 1.2], [1, "corte-fora", 0.92], [1, "estocada-cima", 0.78],
-				[2, "parado-espada-escudo", 0.5], [2, "sacar-flecha", 1.0], [2, "soltar-flecha", 0.05], [2, "soltar-flecha", 0.3]]:
+		var casos := [[0, "parado-espada-escudo", 0.5], [0, "parado-espada-escudo", 0.5, 0.0], [2, "sacar-flecha", 1.0], [2, "atirar-flecha", 2.6, 0.0], [2, "atirar-flecha", 3.0, 0.0]]
+		for x in [["impacto-guarda", 0.5], ["impacto-de-cima", 0.83], ["impacto-horizontal", 0.97], ["impacto-reves", 1.03],
+				["duas-maos-guarda", 0.5], ["duas-maos-golpe", 0.57], ["aparar", 0.3], ["haste-estocada", 0.93], ["cajado-golpe", 1.0],
+				["besta-mirar", 0.1], ["arco-guarda", 1.0], ["arco-andar", 0.5], ["atirar-flecha", 2.6], ["arremessar", 0.57],
+				["arremessar-faca", 1.3], ["arremessar-frasco", 0.85], ["chutar-porta", 0.55], ["ajoelhar", 2.5], ["beber", 1.5],
+				["impacto-de-cima", 0.3], ["impacto-de-cima", 0.6], ["impacto-de-cima", 1.0], ["impacto-reves", 0.4], ["impacto-reves", 0.8],
+				["impacto-reves", 1.3], ["impacto-horizontal", 0.5], ["impacto-horizontal", 1.2]]:
+			casos.append([0, x[0], x[1], 0.0])
+		for caso in casos:
 			var eu: Node3D = grupo[caso[0]]
 			var sk: Skeleton3D = eu.modelo.find_children("*", "Skeleton3D", true, false)[0]
 			var ic := sk.find_bone("mixamorig_Head")
@@ -1018,12 +1031,17 @@ func _linha_de_comando() -> void:
 			if fr0.dot(R.call("mixamorig_LeftToeBase") - R.call("mixamorig_LeftFoot")) < 0: fr0 = -fr0
 			var olhar_local: Vector3 = sk.get_bone_global_rest(ic).basis.inverse() * fr0.normalized()
 			eu.olhar_para(g.global_position)
-			eu.player.play(caso[1], 0.0); eu.modelo.rotation.y = -deg_to_rad(float(eu.giro_anim.get(caso[1], 0.0)))
+			var gi: float = float(caso[3]) if caso.size() > 3 else float(eu.giro_anim.get(caso[1], 0.0))
+			eu.player.play(caso[1], 0.0); eu.modelo.rotation.y = -deg_to_rad(gi)
 			eu.player.seek(caso[2], true)
 			await get_tree().process_frame
 			var alvo: Vector3 = g.global_position - eu.global_position; alvo.y = 0
 			var ol: Vector3 = sk.global_basis * (sk.get_bone_global_pose(ic).basis * olhar_local); ol.y = 0
-			print("OLHAR %s %-20s t=%.2f giro %4.0f  olhar %4.0f°" % [eu.nome, caso[1], caso[2], float(eu.giro_anim.get(caso[1], 0.0)), rad_to_deg(alvo.signed_angle_to(ol, Vector3.UP))])
+			var hm: Vector3 = sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_RightHand")).origin - sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_Hips")).origin
+			hm.y = 0
+			var corda: Vector3 = sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_LeftHand")).origin - sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_RightHand")).origin
+			corda.y = 0
+			print("OLHAR %s %-20s t=%.2f giro %4.0f  olhar %4.0f°  mão %4.0f°  mãoD→mãoE %4.0f°" % [eu.nome, caso[1], caso[2], gi, rad_to_deg(alvo.signed_angle_to(ol, Vector3.UP)), rad_to_deg(alvo.signed_angle_to(hm, Vector3.UP)), rad_to_deg(alvo.signed_angle_to(corda, Vector3.UP))])
 	elif teste == "livro":
 		var aba := "ficha"
 		for x in OS.get_cmdline_user_args():
@@ -1095,14 +1113,49 @@ func _linha_de_comando() -> void:
 			combate._atacar(lianne, g, true)
 			var t0 := Time.get_ticks_msec()
 			var imgs: Array[Image] = []
-			for ms in [300, 700, 1000, 1200, 1400, 1700]:
+			for ms in [500, 1200, 1700, 1900, 2100, 2500]:
 				while Time.get_ticks_msec() - t0 < ms: await get_tree().process_frame
 				imgs.append(get_viewport().get_texture().get_image())
 			for im in imgs:
 				im.save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
 			await get_tree().create_timer(1.5).timeout
+	elif teste == "estilo":
+		# Close de um herói usando o estilo da arma: --heroi=N --arma=<item> (opcional). Golpe (ou disparo) num goblin.
+		var quem := 0; var arma_id := ""
+		for x in OS.get_cmdline_user_args():
+			if x.begins_with("--heroi="): quem = int(x.get_slice("=", 1))
+			if x.begins_with("--arma="): arma_id = x.get_slice("=", 1)
+		var eu: Node3D = grupo[quem]
+		if arma_id != "":
+			eu.ficha.empunhar({"id": arma_id, "qtd": 1}); _aplicar_ficha(eu)
+		var alc: Dictionary = grade.alcance(eu.celula, 12.0, {}, true)
+		var dist: bool = not eu.dist_faixas.is_empty()
+		var lugar: Array = alc.keys().filter(func(c): return (float(alc[c][0]) >= 6.0 if dist else grade.adjacentes(c, eu.celula)) and grade.linha(eu.celula, c) and not grupo.any(func(h): return h.celula == c))
+		lugar.sort_custom(func(a, b): return float(alc[a][0]) < float(alc[b][0]))
+		var g := _criar_monstro("goblin", "Goblin 1", lugar[0])
+		g.visible = true; monstros.append(g)
+		await _grupo_em_guarda()
+		combate.grupo = vivos(); combate.monstros = [g]
+		g.olhar_para(eu.global_position); eu.olhar_para(g.global_position)
+		var dir: Vector3 = (g.position - eu.position); dir.y = 0; dir = dir.normalized()
+		camera.alvo = eu.position + Vector3(0, 0.9, 0); camera.distancia = 5.0; camera.inclinacao = 18.0
+		camera.guinada = rad_to_deg(atan2(dir.z, -dir.x)) + 35.0
+		mestre = true; _atualizar_visao()
+		await get_tree().create_timer(1.2).timeout
+		get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-guarda.png"))
+		var papel: String = "atirar" if dist else eu.escolher_golpe(false)
+		var t_imp: float = eu.tempo_tiro() if dist else eu.tempo_impacto(papel)
+		Dados.forcados.append(19)
+		combate._atacar(eu, g, dist)
+		var t0 := Time.get_ticks_msec(); var k := 0
+		for f in [0.3, 0.7, 1.0, 1.15]:
+			while Time.get_ticks_msec() - t0 < int(t_imp * f * 1000.0): await get_tree().process_frame
+			get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-%d.png" % k)); k += 1
+		await get_tree().create_timer(1.5).timeout
 	elif teste == "defesa":
-		# Erros forçados, vistos por trás de quem ataca: o defensor deve aparecer de frente.
+		# Erros forçados, vistos por trás de quem ataca: o defensor deve aparecer de frente. --arma=<item> troca a arma da Tessa.
+		for x in OS.get_cmdline_user_args():
+			if x.begins_with("--arma="): heroi.ficha.empunhar({"id": x.get_slice("=", 1).replace("_", " "), "qtd": 1}); _aplicar_ficha(heroi)
 		_brotar_goblin()
 		await get_tree().create_timer(1.5).timeout
 		var g: Node3D = monstros[0]

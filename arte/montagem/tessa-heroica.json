@@ -1,73 +1,127 @@
 {
-  "modelo": "arte/final/3d/tessa-heroica.glb",
-  "itens": [
-    {
-      "arquivo": "arte/final/3d/espada-longa-heroica.glb",
-      "osso": "mixamorig_RightHand",
-      "modo": "arma",
-      "comprimento": 0.633,
-      "pega": [
-        0.5,
-        0.16,
-        0.5
-      ],
-      "ao_longo": 0.45,
-      "afastar": 0.0,
-      "rotacao": [
-        0,
-        0,
-        0
-      ],
-      "pose": "parado-espada-escudo"
-    },
-    {
-      "arquivo": "arte/final/3d/escudo-heroico.glb",
-      "osso": "mixamorig_LeftForeArm",
-      "modo": "escudo",
-      "comprimento": 0.413,
-      "pega": [
-        0.5,
-        0.5,
-        0.5
-      ],
-      "ao_longo": 0.55,
-      "afastar": 0.047,
-      "rotacao": [
-        0,
-        0,
-        0
-      ],
-      "pose": "bloquear",
-      "pose_t": 0.35
-    }
-  ],
-  "animacoes": {
-    "parado": "arte/animacoes/mixamo/parado.fbx",
-    "parado-espada-escudo": "arte/animacoes/mixamo/parado-espada-escudo.fbx",
-    "comecar-a-andar": "arte/animacoes/mixamo/comecar-a-andar.fbx",
-    "andar": "arte/animacoes/mixamo/andar.fbx",
-    "golpe": "arte/animacoes/mixamo/golpe-descendente.fbx",
-    "levar-golpe": "arte/animacoes/mixamo/levar-golpe.fbx",
-    "morrer": "arte/animacoes/mixamo/morrer.fbx",
-    "vitoria": "arte/animacoes/mixamo/vitoria.fbx",
-    "sacar-flecha": "arte/animacoes/mixamo/sacar-flecha.fbx",
-    "magia": "arte/animacoes/mixamo/magia-uma-mao.fbx",
-    "correr": "arte/animacoes/mixamo/correr.fbx",
-    "andar-furtivo": "arte/animacoes/mixamo/andar-furtivo.fbx",
-    "parado-agachado": "arte/animacoes/mixamo/parado-agachado.fbx",
-    "andar-combate": "arte/animacoes/mixamo/andar-combate.fbx",
-    "bloquear": "arte/animacoes/mixamo/bloquear.fbx",
-    "esquivar": "arte/animacoes/mixamo/esquivar.fbx"
+ "modelo": "arte/final/3d/tessa-heroica.glb",
+ "itens": [
+  {
+   "arquivo": "arte/final/3d/espada-longa-heroica.glb",
+   "osso": "mixamorig_RightHand",
+   "modo": "arma",
+   "comprimento": 0.633,
+   "pega": [
+    0.5,
+    0.16,
+    0.5
+   ],
+   "ao_longo": 0.45,
+   "afastar": 0.0,
+   "rotacao": [
+    0,
+    0,
+    0
+   ],
+   "pose": "parado-espada-escudo"
   },
-  "angulo": 35,
-  "no_lugar": [
-    "andar",
-    "comecar-a-andar",
-    "correr",
-    "andar-furtivo",
-    "andar-combate",
-    "bloquear",
-    "esquivar"
+  {
+   "arquivo": "arte/final/3d/escudo-heroico.glb",
+   "osso": "mixamorig_LeftForeArm",
+   "modo": "escudo",
+   "comprimento": 0.413,
+   "pega": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "ao_longo": 0.55,
+   "afastar": 0.047,
+   "rotacao": [
+    0,
+    0,
+    0
+   ],
+   "pose": "bloquear",
+   "pose_t": 0.35
+  }
+ ],
+ "animacoes": {
+  "parado": "arte/animacoes/mixamo/parado.fbx",
+  "parado-espada-escudo": "arte/animacoes/mixamo/parado-espada-escudo.fbx",
+  "comecar-a-andar": "arte/animacoes/mixamo/comecar-a-andar.fbx",
+  "andar": "arte/animacoes/mixamo/andar.fbx",
+  "golpe": "arte/animacoes/mixamo/golpe-descendente.fbx",
+  "levar-golpe": "arte/animacoes/mixamo/levar-golpe.fbx",
+  "morrer": "arte/animacoes/mixamo/morrer.fbx",
+  "vitoria": "arte/animacoes/mixamo/vitoria.fbx",
+  "sacar-flecha": "arte/animacoes/mixamo/sacar-flecha.fbx",
+  "magia": "arte/animacoes/mixamo/magia-uma-mao.fbx",
+  "correr": "arte/animacoes/mixamo/correr.fbx",
+  "andar-furtivo": "arte/animacoes/mixamo/andar-furtivo.fbx",
+  "parado-agachado": "arte/animacoes/mixamo/parado-agachado.fbx",
+  "andar-combate": "arte/animacoes/mixamo/andar-combate.fbx",
+  "bloquear": "arte/animacoes/mixamo/bloquear.fbx",
+  "esquivar": "arte/animacoes/mixamo/esquivar.fbx",
+  "impacto-guarda": "arte/animacoes/mixamo/impacto-guarda.fbx",
+  "impacto-de-cima": "arte/animacoes/mixamo/impacto-de-cima.fbx",
+  "impacto-horizontal": "arte/animacoes/mixamo/impacto-horizontal.fbx",
+  "impacto-reves": "arte/animacoes/mixamo/impacto-reves.fbx",
+  "duas-maos-guarda": "arte/animacoes/mixamo/duas-maos-guarda.fbx",
+  "aparar": "arte/animacoes/mixamo/aparar.fbx",
+  "duas-maos-golpe": "arte/animacoes/mixamo/duas-maos-golpe.fbx",
+  "haste-estocada": "arte/animacoes/mixamo/haste-estocada.fbx",
+  "cajado-golpe": "arte/animacoes/mixamo/cajado-golpe.fbx",
+  "besta-mirar": "arte/animacoes/mixamo/besta-mirar.fbx",
+  "arco-guarda": "arte/animacoes/mixamo/arco-guarda.fbx",
+  "arco-andar": "arte/animacoes/mixamo/arco-andar.fbx",
+  "atirar-flecha": "arte/animacoes/mixamo/atirar-flecha.fbx",
+  "arremessar": "arte/animacoes/mixamo/arremessar.fbx",
+  "arremessar-faca": "arte/animacoes/mixamo/arremessar-faca.fbx",
+  "arremessar-frasco": "arte/animacoes/mixamo/arremessar-frasco.fbx",
+  "ajoelhar": "arte/animacoes/mixamo/ajoelhar.fbx",
+  "chutar-porta": "arte/animacoes/mixamo/chutar-porta.fbx",
+  "beber": "arte/animacoes/mixamo/beber.fbx"
+ },
+ "angulo": 35,
+ "no_lugar": [
+  "andar",
+  "andar-combate",
+  "andar-furtivo",
+  "aparar",
+  "arco-andar",
+  "arremessar",
+  "arremessar-faca",
+  "arremessar-frasco",
+  "atirar-flecha",
+  "bloquear",
+  "cajado-golpe",
+  "chutar-porta",
+  "comecar-a-andar",
+  "correr",
+  "duas-maos-golpe",
+  "esquivar",
+  "haste-estocada",
+  "impacto-de-cima",
+  "impacto-horizontal",
+  "impacto-reves"
+ ],
+ "_escala_no_jogo": 1.5,
+ "cortes": {
+  "arremessar": [
+   1.8,
+   4.4
   ],
-  "_escala_no_jogo": 1.5
+  "beber": [
+   2.0,
+   6.0
+  ],
+  "cajado-golpe": [
+   0.0,
+   2.2
+  ],
+  "haste-estocada": [
+   0.0,
+   2.0
+  ],
+  "impacto-reves": [
+   0.0,
+   2.2
+  ]
+ }
 }

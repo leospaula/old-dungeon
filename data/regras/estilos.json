@@ -1,0 +1,21 @@
+{
+  "_doc": "Estilos de luta: a arma na mão escolhe as animações (Handoff 0.3). papéis: parado_combate (guarda), andar_combate, golpe, golpe2 (alterna com golpe), golpe_critico (20 natural), atirar (ataque à distância), arremessar, aparar (defesa de quem não tem escudo e usa arma de duas mãos). Defesa: escudo bloqueia; com 'aparar' apara; senão esquiva. impactos: instante (s) em que a arma chega, medido no pico de velocidade da mão. solta: instante em que o projétil sai. velocidade: ritmo da animação no jogo. auge_defesa: instante de maior proteção da defesa.",
+  "estilos": {
+    "espada":    {"parado_combate": "parado-espada-escudo", "golpe": "golpe"},
+    "faca":      {"parado_combate": "parado-espada-escudo", "golpe": "corte-dentro", "golpe2": "corte-fora", "golpe_critico": "estocada-cima", "arremessar": "arremessar-faca"},
+    "impacto":   {"parado_combate": "impacto-guarda", "golpe": "impacto-de-cima", "golpe2": "impacto-horizontal", "golpe_critico": "impacto-reves", "arremessar": "arremessar"},
+    "duas_maos": {"parado_combate": "duas-maos-guarda", "golpe": "duas-maos-golpe", "aparar": "aparar"},
+    "haste":     {"parado_combate": "parado-luta", "golpe": "haste-estocada", "arremessar": "arremessar"},
+    "cajado":    {"parado_combate": "parado-luta", "golpe": "cajado-golpe", "aparar": "aparar"},
+    "arco":      {"parado_combate": "arco-guarda", "andar_combate": "arco-andar", "atirar": "atirar-flecha"},
+    "besta":     {"parado_combate": "besta-mirar", "atirar": "besta-mirar"},
+    "funda":     {"parado_combate": "parado-luta", "atirar": "arremessar"},
+    "desarmado": {"parado_combate": "parado-luta", "golpe": "golpe"}
+  },
+  "impactos": {"golpe": 0.86, "corte-dentro": 1.2, "corte-fora": 0.92, "estocada-cima": 0.78,
+    "impacto-de-cima": 0.83, "impacto-horizontal": 0.97, "impacto-reves": 1.03, "duas-maos-golpe": 0.57,
+    "haste-estocada": 0.93, "cajado-golpe": 1.0, "chutar-porta": 0.55},
+  "solta": {"atirar-flecha": 3.1, "arremessar": 0.57, "arremessar-faca": 1.3, "arremessar-frasco": 0.85, "besta-mirar": 0.15},
+  "velocidade": {"atirar-flecha": 1.7, "arremessar": 1.2, "beber": 1.2},
+  "auge_defesa": {"bloquear": 0.35, "esquivar": 0.55, "aparar": 0.15}
+}

@@ -11,6 +11,7 @@ extends SceneTree
 ##                 ao_longo (fração do osso), afastar (m), rotacao [graus]}]
 ##   animacoes   {"nome": "arquivo.fbx", ...}
 ##   no_lugar    [nomes] animações cujo avanço horizontal é removido (andar, correr…)
+##   cortes      {"nome": [início, fim]} trecho da animação que fica (s); o resto é descartado
 ##   angulo      ângulo da câmera nos quadros (graus, opcional)
 
 const Retarget = preload("res://tools/retarget.gd")
@@ -41,7 +42,10 @@ func _run() -> void:
 		var anim_f: Animation = ap_f.get_animation(ap_f.get_animation_list()[0])
 		var sk_f := _achar(fonte, "Skeleton3D") as Skeleton3D
 		var anim: Animation = Retarget.converter(anim_f, sk_f, sk, caminho_sk, nome in cfg.get("no_lugar", []))
-		anim.loop_mode = Animation.LOOP_LINEAR if (nome as String).begins_with("parado") or nome in ["andar", "correr", "andar-furtivo", "andar-combate"] else Animation.LOOP_NONE
+		if cfg.get("cortes", {}).has(nome):
+			var c: Array = cfg.cortes[nome]
+			anim = _cortar(anim, float(c[0]), float(c[1]))
+		anim.loop_mode = Animation.LOOP_LINEAR if (nome as String).begins_with("parado") or (nome as String).ends_with("-guarda") or nome in ["andar", "correr", "andar-furtivo", "andar-combate", "arco-andar"] else Animation.LOOP_NONE
 		lib.add_animation(nome, anim)
 		fonte.free()
 
@@ -82,6 +86,27 @@ func _run() -> void:
 		tira.save_png(pasta.path_join(nome + ".png"))
 		print("ok %s duração=%.2f" % [nome, anim.length])
 	quit()
+
+## Recorta [ini, fim] da animação e desloca para começar em 0 (chaves nas pontas interpoladas).
+func _cortar(src: Animation, ini: float, fim: float) -> Animation:
+	fim = minf(fim, src.length)
+	var out := Animation.new(); out.length = fim - ini
+	for i in src.get_track_count():
+		var tipo := src.track_get_type(i)
+		var j := out.add_track(tipo); out.track_set_path(j, src.track_get_path(i))
+		out.track_set_interpolation_type(j, src.track_get_interpolation_type(i))
+		var amostra := func(t: float):
+			match tipo:
+				Animation.TYPE_POSITION_3D: return src.position_track_interpolate(i, t)
+				Animation.TYPE_ROTATION_3D: return src.rotation_track_interpolate(i, t)
+				Animation.TYPE_SCALE_3D: return src.scale_track_interpolate(i, t)
+			return src.value_track_interpolate(i, t)
+		out.track_insert_key(j, 0.0, amostra.call(ini))
+		for k in src.track_get_key_count(i):
+			var t := src.track_get_key_time(i, k)
+			if t > ini + 0.0001 and t < fim - 0.0001: out.track_insert_key(j, t - ini, src.track_get_key_value(i, k))
+		out.track_insert_key(j, fim - ini, amostra.call(fim))
+	return out
 
 func _montar_itens(sk: Skeleton3D, itens: Array, ap: AnimationPlayer) -> void:
 	var base := Retarget.base_personagem(sk)   # X = esquerda, Y = cima, Z = frente
