@@ -45,7 +45,7 @@ func _run() -> void:
 		if cfg.get("cortes", {}).has(nome):
 			var c: Array = cfg.cortes[nome]
 			anim = _cortar(anim, float(c[0]), float(c[1]))
-		anim.loop_mode = Animation.LOOP_LINEAR if (nome as String).begins_with("parado") or (nome as String).ends_with("-guarda") or nome in ["andar", "correr", "andar-furtivo", "andar-combate", "arco-andar"] else Animation.LOOP_NONE
+		anim.loop_mode = Animation.LOOP_LINEAR if (nome as String).begins_with("parado") or (nome as String).ends_with("-guarda") or (nome as String).ends_with("-espera") or nome in ["andar", "correr", "andar-furtivo", "andar-combate", "arco-andar"] else Animation.LOOP_NONE
 		lib.add_animation(nome, anim)
 		fonte.free()
 

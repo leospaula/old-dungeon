@@ -38,7 +38,7 @@ const TESSA_GIRO := {"parado-espada-escudo": 76.0, "parado": 45.0, "andar": 90.0
 	# Estilos de luta (25/11): guardas pelo olhar; golpes pela mão no impacto; arco pela linha da flecha (--teste=olhar).
 	"impacto-guarda": 91.0, "impacto-de-cima": 82.0, "impacto-horizontal": 112.0, "impacto-reves": 75.0,
 	"duas-maos-guarda": 89.0, "duas-maos-golpe": 85.0, "aparar": 99.0, "haste-estocada": 84.0, "haste-guarda": 84.0, "cajado-golpe": 91.0,
-	"besta-mirar": 88.0, "arco-guarda": 89.0, "arco-andar": 88.0, "atirar-flecha": 80.0, "arremessar": 93.0,
+	"besta-mirar": 88.0, "arco-guarda": 89.0, "arco-espera": 85.0, "arco-andar": 88.0, "atirar-flecha": 80.0, "arremessar": 93.0,
 	"arremessar-faca": 101.0, "arremessar-frasco": 94.0, "chutar-porta": 73.0, "ajoelhar": 91.0, "beber": 96.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
 const GOBLIN_ESCALA := 0.95
@@ -1170,6 +1170,17 @@ func _linha_de_comando() -> void:
 			while Time.get_ticks_msec() - t0 < int(t_imp * f * 1000.0): await get_tree().process_frame
 			get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-%d.png" % k)); k += 1
 		await get_tree().create_timer(1.5).timeout
+	elif teste == "besta":
+		for x in OS.get_cmdline_user_args():
+			if x.begins_with("--heroi="): heroi = grupo[int(x.get_slice("=", 1))]
+		_brotar_goblin()
+		await get_tree().create_timer(1.5).timeout
+		for k in 18:
+			_arsenal_teste()
+			if str(heroi.ficha.mao_d.id) == "besta": break
+		for i in 6:
+			await get_tree().create_timer(0.5).timeout
+			print("BESTA anim=", heroi.player.current_animation, " em_combate=", heroi.em_combate, " estilo=", heroi.estilo, " parado_combate=", heroi.anim.get("parado_combate"))
 	elif teste == "arsenal":
 		# A Tessa passa por todas as armas (tecla T) e ataca um goblin com cada uma; quadro no impacto.
 		_brotar_goblin()

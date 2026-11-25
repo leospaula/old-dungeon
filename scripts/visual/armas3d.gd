@@ -11,6 +11,7 @@ extends RefCounted
 
 const CordaArco = preload("res://scripts/visual/corda_arco.gd")
 const DuasMaos = preload("res://scripts/visual/duas_maos.gd")
+const PrumoArco = preload("res://scripts/visual/prumo_arco.gd")
 
 ## Prende o item ao esqueleto. `escala` = escala do modelo do personagem no jogo (para o comprimento real).
 ## Devolve o BoneAttachment3D (remova-o para tirar o item).
@@ -25,14 +26,26 @@ static func montar(sk: Skeleton3D, ap: AnimationPlayer, m: Dictionary, escala: f
 	var pg: Array = m.get("pega", [0.5, 0.15, 0.5])
 	var pega: Vector3 = caixa.position + caixa.size * Vector3(pg[0], pg[1], pg[2])
 	var ba := BoneAttachment3D.new(); ba.bone_name = osso; sk.add_child(ba)
-	var piv: Node3D = DuasMaos.new() if bool(m.get("duas_maos", false)) else Node3D.new()
-	if piv is DuasMaos: piv.sk = sk; piv.frente = _frente(sk)
+	var piv: Node3D = DuasMaos.new() if bool(m.get("duas_maos", false)) else (PrumoArco.new() if bool(m.get("prumo", false)) else Node3D.new())
+	if piv is PrumoArco: piv.sk = sk; piv.ap = ap; piv.frente = _frente(sk)
+	if piv is DuasMaos: piv.sk = sk; piv.frente = _frente(sk); piv.ponta = str(m.get("ponta", "olhar"))
 	ba.add_child(piv)
 	# A pose de referência mexe no esqueleto: guarda a animação atual e devolve depois.
 	var antes := ap.current_animation; var pos := ap.current_animation_position if antes != "" else 0.0
 	if mao == "antebraco": piv.transform = _no_antebraco(sk, i_osso, ap, m, caixa, escala)
 	else: piv.transform = _no_punho(sk, i_osso, ap, m, mao)
+	# vertical_em: endireita o item (eixo do comprimento) na vertical nesta pose/instante (arco na puxada).
+	var r0: Array = m.get("rotacao", [0, 0, 0])
+	var rot_item := Basis.from_euler(Vector3(deg_to_rad(r0[0]), deg_to_rad(r0[1]), deg_to_rad(r0[2])))
+	if m.has("vertical_em") and ap.has_animation(str(m.vertical_em[0])):
+		ap.play(str(m.vertical_em[0])); ap.seek(float(m.vertical_em[1]), true); ap.advance(0); sk.force_update_all_bone_transforms()
+		var osso_glob: Basis = sk.get_bone_global_pose(i_osso).basis
+		var eixo_local: Vector3 = (piv.transform.basis * rot_item).y.normalized()
+		var cima_local: Vector3 = (osso_glob.inverse() * Vector3.UP).normalized()
+		if eixo_local.dot(cima_local) < 0: cima_local = -cima_local
+		piv.transform.basis = Basis(Quaternion(eixo_local, cima_local)) * piv.transform.basis
 	if piv is DuasMaos: piv.base = piv.transform.basis
+	if piv is PrumoArco: piv.base = piv.transform.basis; piv.eixo_item = (rot_item * Vector3.UP).normalized()
 	if antes != "": ap.play(antes); ap.seek(pos, true)
 	var giro := Node3D.new(); piv.add_child(giro)
 	var r: Array = m.get("rotacao", [0, 0, 0])

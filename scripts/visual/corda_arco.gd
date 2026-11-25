@@ -4,7 +4,7 @@ extends Node3D
 ## corda acompanha a mão direita; fora disso, fica reta.
 
 const PUXA := {"atirar-flecha": [1.45, 3.1]}   # trecho (s) da animação em que a corda está puxada
-const RAIO := 0.008                             # m (espessura da corda; mais fina some na câmera do jogo)
+const RAIO := 0.005                             # m (espessura da corda; mais fina some na câmera do jogo)
 
 var _ponta_a := Vector3.ZERO   # no espaço do arco
 var _ponta_b := Vector3.ZERO
@@ -22,8 +22,7 @@ static func prender(arco: Node3D, sk: Skeleton3D, ap: AnimationPlayer) -> Node3D
 	return c
 
 func _ready() -> void:
-	var mat := StandardMaterial3D.new(); mat.albedo_color = Color(0.62, 0.55, 0.42)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var mat := StandardMaterial3D.new(); mat.albedo_color = Color(0.32, 0.27, 0.2); mat.roughness = 0.9
 	for i in 2:
 		var m := MeshInstance3D.new(); var cil := CylinderMesh.new()
 		cil.top_radius = RAIO; cil.bottom_radius = RAIO; cil.height = 1.0; cil.radial_segments = 4; cil.rings = 1
@@ -64,7 +63,7 @@ func _process(_dt: float) -> void:
 	var a := arco.global_transform * _ponta_a
 	var b := arco.global_transform * _ponta_b
 	var meio := (a + b) * 0.5
-	var nome := String(_ap.current_animation) if _ap else ""
+	var nome := String(_ap.assigned_animation) if _ap else ""   # current_animation some quando pausa
 	if PUXA.has(nome) and _mao >= 0:
 		var t := _ap.current_animation_position
 		if t >= PUXA[nome][0] and t <= PUXA[nome][1]:

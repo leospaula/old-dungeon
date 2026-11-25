@@ -6,11 +6,11 @@
     "impacto":   {"parado_combate": "impacto-guarda", "golpe": "impacto-de-cima", "golpe2": "impacto-horizontal", "golpe_critico": "impacto-reves", "arremessar": "arremessar"},
     "duas_maos": {"parado_combate": "duas-maos-guarda", "golpe": "duas-maos-golpe", "aparar": "aparar"},
     "haste":     {"parado_combate": "haste-guarda", "golpe": "haste-estocada", "arremessar": "arremessar"},
-    "cajado":    {"parado_combate": "parado-luta", "golpe": "cajado-golpe", "aparar": "aparar"},
-    "arco":      {"parado_combate": "arco-guarda", "andar_combate": "arco-andar", "atirar": "atirar-flecha"},
+    "cajado":    {"parado_combate": "haste-guarda", "golpe": "cajado-golpe", "aparar": "aparar"},
+    "arco":      {"parado_combate": "arco-espera", "andar_combate": "arco-andar", "atirar": "atirar-flecha"},
     "besta":     {"parado_combate": "besta-mirar", "atirar": "besta-mirar"},
-    "funda":     {"parado_combate": "parado-luta", "atirar": "arremessar"},
-    "desarmado": {"parado_combate": "parado-luta", "golpe": "golpe"}
+    "funda":     {"parado_combate": "impacto-guarda", "atirar": "arremessar"},
+    "desarmado": {"parado_combate": "impacto-guarda", "golpe": "golpe"}
   },
   "impactos": {"golpe": 0.86, "corte-dentro": 1.2, "corte-fora": 0.92, "estocada-cima": 0.78,
     "impacto-de-cima": 0.83, "impacto-horizontal": 0.97, "impacto-reves": 1.03, "duas-maos-golpe": 0.57,

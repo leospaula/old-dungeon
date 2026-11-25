@@ -37,7 +37,6 @@
   "ajoelhar": "arte/animacoes/mixamo/ajoelhar.fbx",
   "chutar-porta": "arte/animacoes/mixamo/chutar-porta.fbx",
   "beber": "arte/animacoes/mixamo/beber.fbx",
-  "parado-luta": "arte/animacoes/mixamo/parado-luta.fbx",
   "corte-dentro": "arte/animacoes/mixamo/corte-dentro.fbx",
   "corte-fora": "arte/animacoes/mixamo/corte-fora.fbx",
   "estocada": "arte/animacoes/mixamo/estocada.fbx",
@@ -45,7 +44,8 @@
   "mirar-arco": "arte/animacoes/mixamo/mirar-arco.fbx",
   "soltar-flecha": "arte/animacoes/mixamo/soltar-flecha.fbx",
   "magia-area": "arte/animacoes/mixamo/magia-area.fbx",
-  "haste-guarda": "arte/animacoes/mixamo/haste-estocada.fbx"
+  "haste-guarda": "arte/animacoes/mixamo/haste-estocada.fbx",
+  "arco-espera": "arte/animacoes/mixamo/atirar-flecha.fbx"
  },
  "angulo": 35,
  "no_lugar": [
@@ -97,6 +97,10 @@
    2.2
   ],
   "haste-guarda": [
+   0.0,
+   0.3
+  ],
+  "arco-espera": [
    0.0,
    0.3
   ]

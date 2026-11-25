@@ -8,6 +8,9 @@ var base := Basis()          # orientação vinda do punho direito (no espaço d
 var alcance := 0.4          # distância entre as mãos (no espaço do esqueleto) até onde ainda alinha
 var _esq := -1
 var frente := Vector3.ZERO   # frente da personagem em repouso (espaço do esqueleto)
+## Para que lado do cabo vai a ponta: "esquerda" (além da mão esquerda: lança, besta), "direita" (além da
+## mão direita, que fica junto da guarda: espada e machado de duas mãos) ou "olhar" (para onde a cabeça olha).
+var ponta := "olhar"
 var _cab := -1
 var _olhar_local := Vector3.ZERO   # olhar da cabeça no espaço do osso: a ponta vai para onde ela olha
 
@@ -29,7 +32,8 @@ func _process(_dt: float) -> void:
 		transform.basis = base; return
 	var y0 := base.y.normalized()
 	var alvo := local.normalized()
-	if _cab >= 0:
+	if ponta == "direita": alvo = -alvo
+	elif ponta == "olhar" and _cab >= 0:
 		var olhar: Vector3 = sk.get_bone_global_pose(_cab).basis * _olhar_local; olhar.y = 0
 		var no_sk: Vector3 = sk.global_transform.basis.inverse() * (pai.global_transform.basis * alvo)
 		no_sk.y = 0

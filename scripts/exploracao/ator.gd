@@ -92,7 +92,7 @@ func aplicar_estilo(nome: String) -> void:
 	if player:
 		for papel in ["parado_combate", "andar_combate"]:
 			if _tem(papel): player.get_animation(anim[papel]).loop_mode = Animation.LOOP_LINEAR
-		if em_combate and not andando() and vivo(): tocar("parado")
+		if not andando() and vivo(): tocar("parado", 0.1)   # a guarda nova entra na hora
 
 ## Defesa contra um golpe: escudo bloqueia; quem tem "aparar" no estilo apara; o resto esquiva.
 func defesa() -> String:
