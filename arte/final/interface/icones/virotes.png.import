@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvym1a0hhag0g"
-path="res://.godot/imported/odre.png-f2d808a0166548b89a1b558f3773b7ef.ctex"
+uid="uid://cr4bmfhp26qc4"
+path="res://.godot/imported/virotes.png-cbb76a689dcaf6641ae2af7a8f1e16dd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://arte/final/interface/icones/odre.png"
-dest_files=["res://.godot/imported/odre.png-f2d808a0166548b89a1b558f3773b7ef.ctex"]
+source_file="res://arte/final/interface/icones/virotes.png"
+dest_files=["res://.godot/imported/virotes.png-cbb76a689dcaf6641ae2af7a8f1e16dd.ctex"]
 
 [params]
 
