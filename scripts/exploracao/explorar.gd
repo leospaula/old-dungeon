@@ -1117,6 +1117,9 @@ func _linha_de_comando() -> void:
 		_surgir_errantes(true)
 		await get_tree().create_timer(3.0).timeout
 	for _f in 30: await get_tree().process_frame
+	if OS.get_cmdline_user_args().has("--sem-hud"):
+		$HUD.visible = false
+		for _f in 3: await get_tree().process_frame
 	if OS.get_cmdline_user_args().has("--depurar-hud"):
 		print("HUD ", hud_ui.size, " vis=", hud_ui.visible, " filhos=", hud_ui.get_child_count(), " layer_vis=", $HUD.visible)
 		for c in hud_ui.get_children(): print("  ", c.get_class(), " ", c.position, " ", c.size, " vis=", c.visible, " mod=", c.modulate)
