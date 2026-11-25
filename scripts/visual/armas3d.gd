@@ -25,10 +25,12 @@ static func montar(sk: Skeleton3D, ap: AnimationPlayer, m: Dictionary, escala: f
 	var esc: float = float(m.comprimento) / escala / maxf(caixa.size.y, maxf(caixa.size.x, caixa.size.z))
 	var pg: Array = m.get("pega", [0.5, 0.15, 0.5])
 	var pega: Vector3 = caixa.position + caixa.size * Vector3(pg[0], pg[1], pg[2])
+	# A pegada vai para o centro da própria malha na altura do cabo (curvas, cabos tortos, arcos).
+	if bool(m.get("pega_malha", true)): pega = _centro_na_altura(item, pega.y, caixa.size.y * 0.03, pega)
 	var ba := BoneAttachment3D.new(); ba.bone_name = osso; sk.add_child(ba)
 	var piv: Node3D = DuasMaos.new() if bool(m.get("duas_maos", false)) else (PrumoArco.new() if bool(m.get("prumo", false)) else Node3D.new())
 	if piv is PrumoArco: piv.sk = sk; piv.ap = ap; piv.frente = _frente(sk)
-	if piv is DuasMaos: piv.sk = sk; piv.frente = _frente(sk); piv.ponta = str(m.get("ponta", "olhar"))
+	if piv is DuasMaos: piv.sk = sk; piv.frente = _frente(sk); piv.ponta = str(m.get("ponta", "esquerda"))
 	ba.add_child(piv)
 	# A pose de referência mexe no esqueleto: guarda a animação atual e devolve depois.
 	var antes := ap.current_animation; var pos := ap.current_animation_position if antes != "" else 0.0
@@ -113,6 +115,22 @@ static func _frente(sk: Skeleton3D) -> Vector3:
 	var t := sk.get_bone_global_rest(sk.find_bone("mixamorig_LeftToeBase")).origin
 	var pe := t - p; pe.y = 0
 	return f if f.dot(pe) >= 0 else -f
+
+## Centro (x, z) dos vértices numa faixa de altura y ± faixa, no espaço do item.
+static func _centro_na_altura(n: Node3D, y: float, faixa: float, padrao: Vector3) -> Vector3:
+	var soma := Vector3.ZERO; var k := 0
+	var pilha := [[n, Transform3D.IDENTITY]]
+	while pilha:
+		var par = pilha.pop_back(); var no: Node = par[0]; var t: Transform3D = par[1]
+		if no is Node3D and no != n: t = t * (no as Node3D).transform
+		if no is MeshInstance3D and no.mesh:
+			for si in no.mesh.get_surface_count():
+				for v in no.mesh.surface_get_arrays(si)[Mesh.ARRAY_VERTEX]:
+					var p: Vector3 = t * v
+					if absf(p.y - y) <= faixa: soma += p; k += 1
+		for c in no.get_children(): pilha.append([c, t])
+	if k < 3: return padrao
+	return Vector3(soma.x / k, y, soma.z / k)
 
 static func _aabb(n: Node) -> AABB:
 	var caixa := AABB(); var primeiro := true

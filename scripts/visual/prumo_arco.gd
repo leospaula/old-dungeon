@@ -15,7 +15,9 @@ var _peso := 0.0
 
 func _process(dt: float) -> void:
 	if sk == null or not is_visible_in_tree(): return
-	var atirando := ap != null and String(ap.assigned_animation) in DISPARO and ap.is_playing()
+	# Só na puxada (encaixe da flecha até a soltura) vale a montagem; antes e depois o arco fica em pé.
+	var t := ap.current_animation_position if ap and ap.is_playing() else 0.0
+	var atirando := ap != null and String(ap.assigned_animation) in DISPARO and t >= 1.3 and t <= 3.3
 	_peso = move_toward(_peso, 0.0 if atirando else 1.0, dt * 5.0)
 	if _peso <= 0.001:
 		transform.basis = base; return

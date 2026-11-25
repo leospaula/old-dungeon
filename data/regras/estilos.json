@@ -2,12 +2,13 @@
   "_doc": "Estilos de luta: a arma na mão escolhe as animações (Handoff 0.3). papéis: parado_combate (guarda), andar_combate, golpe, golpe2 (alterna com golpe), golpe_critico (20 natural), atirar (ataque à distância), arremessar, aparar (defesa de quem não tem escudo e usa arma de duas mãos). Defesa: escudo bloqueia; com 'aparar' apara; senão esquiva. impactos: instante (s) em que a arma chega, medido no pico de velocidade da mão. solta: instante em que o projétil sai. velocidade: ritmo da animação no jogo. auge_defesa: instante de maior proteção da defesa.",
   "estilos": {
     "espada":    {"parado_combate": "parado-espada-escudo", "golpe": "golpe"},
-    "faca":      {"parado_combate": "parado-espada-escudo", "golpe": "corte-dentro", "golpe2": "corte-fora", "golpe_critico": "estocada-cima", "arremessar": "arremessar-faca"},
-    "impacto":   {"parado_combate": "impacto-guarda", "golpe": "impacto-de-cima", "golpe2": "impacto-horizontal", "golpe_critico": "impacto-reves", "arremessar": "arremessar"},
+    "faca":      {"parado_combate": "parado-espada-escudo", "golpe": "corte-dentro", "golpe_critico": "estocada-cima", "arremessar": "arremessar-faca"},
+    "impacto":   {"parado_combate": "impacto-guarda", "golpe": "impacto-de-cima", "golpe_critico": "impacto-horizontal", "arremessar": "arremessar"},
     "duas_maos": {"parado_combate": "duas-maos-guarda", "golpe": "duas-maos-golpe", "aparar": "aparar"},
-    "haste":     {"parado_combate": "haste-guarda", "golpe": "haste-estocada", "arremessar": "arremessar"},
+    "haste":     {"parado_combate": "haste-guarda", "golpe": "haste-estocada", "aparar": "aparar"},
+    "arremesso": {"parado_combate": "parado-espada-escudo", "atirar": "arremessar"},
     "cajado":    {"parado_combate": "haste-guarda", "golpe": "cajado-golpe", "aparar": "aparar"},
-    "arco":      {"parado_combate": "arco-espera", "andar_combate": "arco-andar", "atirar": "atirar-flecha"},
+    "arco":      {"parado_combate": "arco-guarda", "andar_combate": "arco-andar", "atirar": "atirar-flecha"},
     "besta":     {"parado_combate": "besta-mirar", "atirar": "besta-mirar"},
     "funda":     {"parado_combate": "impacto-guarda", "atirar": "arremessar"},
     "desarmado": {"parado_combate": "impacto-guarda", "golpe": "golpe"}

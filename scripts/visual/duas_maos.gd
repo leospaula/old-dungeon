@@ -10,7 +10,7 @@ var _esq := -1
 var frente := Vector3.ZERO   # frente da personagem em repouso (espaço do esqueleto)
 ## Para que lado do cabo vai a ponta: "esquerda" (além da mão esquerda: lança, besta), "direita" (além da
 ## mão direita, que fica junto da guarda: espada e machado de duas mãos) ou "olhar" (para onde a cabeça olha).
-var ponta := "olhar"
+var ponta := "esquerda"
 var _cab := -1
 var _olhar_local := Vector3.ZERO   # olhar da cabeça no espaço do osso: a ponta vai para onde ela olha
 
@@ -27,7 +27,8 @@ func _process(_dt: float) -> void:
 	var esq_glob: Vector3 = sk.global_transform * sk.get_bone_global_pose(_esq).origin
 	var local: Vector3 = pai.global_transform.affine_inverse() * esq_glob - position
 	var d_esq := (sk.global_transform.affine_inverse() * esq_glob).distance_to(sk.global_transform.affine_inverse() * pai.global_transform * position)
-	var peso := 1.0 - smoothstep(alcance * 0.7, alcance, d_esq)
+	# Folga larga: só solta o alinhamento quando a mão esquerda sai mesmo do cabo (sem tremer).
+	var peso := 1.0 - smoothstep(0.45, 0.65, d_esq)
 	if peso <= 0.001 or local.length() < 0.001:
 		transform.basis = base; return
 	var y0 := base.y.normalized()
