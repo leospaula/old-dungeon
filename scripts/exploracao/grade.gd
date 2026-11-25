@@ -17,6 +17,7 @@ var abertas := {}     # "a|b" -> "hv"
 var portas := {}      # "v:x:y" / "h:x:y" -> porta (Dictionary)
 var bloqueadas := {}  # células com obstáculo fixo (esteiras)
 var porta_aberta := {} # id da porta -> true
+var porta_barrada := {} # id -> true: trancada ou pregada (monstros também não passam)
 var astar := AStar2D.new()        # jogador: só portas abertas e só células já exploradas
 var astar_livre := AStar2D.new()  # monstros: atravessam portas de madeira (abrindo)
 
@@ -64,7 +65,8 @@ func passa_reto(a: Vector2i, b: Vector2i, abre_portas := false) -> bool:
 	var ch := _borda(a, b)
 	if portas.has(ch):
 		var pt: Dictionary = portas[ch]
-		return pt.tipo in ["porta", "dupla"] and (abre_portas or porta_aberta.has(pt.id))
+		if porta_aberta.has(pt.id): return pt.tipo in ["porta", "dupla"]
+		return pt.tipo in ["porta", "dupla"] and abre_portas and not porta_barrada.has(pt.id)
 	if ia == ib: return true
 	var par := _par(ia, ib)
 	return abertas.has(par) and (abertas[par] as String).contains(ch.left(1))
@@ -133,6 +135,16 @@ func abrir_porta(pt: Dictionary) -> void:
 	for par in lados_da_porta(pt):
 		if astar.has_point(_id(par[0])) and astar.has_point(_id(par[1])):
 			astar.connect_points(_id(par[0]), _id(par[1]))
+
+## Trancada ou pregada: monstros não abrem ao passar. Liga/desliga a passagem no grafo deles.
+func barrar_porta(pt: Dictionary, sim: bool) -> void:
+	if sim: porta_barrada[pt.id] = true
+	else: porta_barrada.erase(pt.id)
+	for par in lados_da_porta(pt):
+		var a := _id(par[0]); var b := _id(par[1])
+		if not (astar_livre.has_point(a) and astar_livre.has_point(b)): continue
+		if sim and not porta_aberta.has(pt.id): astar_livre.disconnect_points(a, b)
+		elif not sim: astar_livre.connect_points(a, b)
 
 ## O jogador só planeja caminho por onde já esteve (ou já viu).
 func marcar_explorada(c: Vector2i) -> void:

@@ -1,0 +1,17 @@
+{
+  "_doc": "Estado das portas para testar as ações de exploração (scripts/exploracao/portas.gd), até a aventura carregar o dela (mesmo formato de 'portas' em data/esquemas/aventura.schema.json, mais 'armadilha.achada': o que se vê ao encontrar). Porta que não aparece aqui está só fechada. P03 (sala inicial → 23) emperrada; P01 (sala inicial → 24p) trancada e com agulha na fechadura.",
+  "portas": {
+    "P03": {
+      "estado": "emperrada"
+    },
+    "P01": {
+      "estado": "trancada",
+      "armadilha": {
+        "tipo": "agulha",
+        "dano": "1d4",
+        "efeito": "Uma agulha salta da fechadura.",
+        "achada": "uma agulha escondida na fechadura."
+      }
+    }
+  }
+}

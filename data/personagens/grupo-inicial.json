@@ -9,7 +9,7 @@
       "pv": 9, "ca": 3, "thac0": 19,
       "protecao": { "morte": 12, "varinhas": 13, "paralisia": 14, "sopro": 15, "magias": 16 },
       "armas": [{ "nome": "espada", "dano": "1d8" }, { "nome": "lança", "dano": "1d6", "arremesso": true }],
-      "equipamento": ["cota de malha", "escudo pintado", "mochila", "tocha x6", "rações x7"],
+      "equipamento": ["cota de malha", "escudo pintado", "mochila", "martelo e pregos", "tocha x6", "rações x7"],
       "po": 8
     },
     {

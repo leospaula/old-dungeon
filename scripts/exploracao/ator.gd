@@ -175,6 +175,14 @@ func tocar(papel: String, misturar := 0.2) -> void:
 		if absf(modelo.rotation.y - giro) > 0.01:
 			create_tween().tween_property(modelo, "rotation:y", giro, maxf(misturar, 0.05))
 
+## Toca uma animação da biblioteca pelo nome (ajoelhar, chutar-porta...). Devolve a duração (s).
+func tocar_anim(nome: String, misturar := 0.2) -> float:
+	if player == null or not player.has_animation(nome): return 0.6
+	player.play(nome, misturar); player.speed_scale = 1.0
+	var giro := -deg_to_rad(float(giro_anim.get(nome, 0.0)))
+	create_tween().tween_property(modelo, "rotation:y", giro, maxf(misturar, 0.05))
+	return player.get_animation(nome).length
+
 func _tem(papel: String) -> bool:
 	return anim.has(papel) and player != null and player.has_animation(anim[papel])
 

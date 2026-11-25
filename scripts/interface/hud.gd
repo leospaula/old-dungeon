@@ -8,6 +8,12 @@ signal acao_pedida(acao: String)          # "atacar", "encerrar", "brotar", "fic
 signal trocar_arma(heroi: Node, item)     # item da ficha
 signal usar_item(heroi: Node, item)
 signal ficha_pedida(heroi: Node)
+signal carta_escolhida(heroi: Node)      # clique na carta: quem age nas ações de exploração
+signal acao_escolhida(id: String)        # opção do balão de ações (porta...)
+
+var selecionado: Node = null
+var _acoes: PopupMenu
+var _acoes_ids: Array = []
 
 const Ficha = preload("res://scripts/regras/ficha.gd")
 const E = preload("res://scripts/interface/estilo.gd")
@@ -76,7 +82,7 @@ func _carta(h: Node) -> Dictionary:
 	_cartas_caixa.add_child(margem)
 	var painel := PanelContainer.new(); painel.add_theme_stylebox_override("panel", E.painel())
 	painel.mouse_filter = Control.MOUSE_FILTER_STOP; painel.custom_minimum_size.x = 252
-	painel.tooltip_text = "Clique para ver mais · duplo clique abre a ficha"
+	painel.tooltip_text = "Clique: escolhe quem age (portas, procurar…) · de novo: mais detalhes · duplo clique: ficha · Esc: volta a quem lidera"
 	margem.add_child(painel)
 	var v := VBoxContainer.new(); v.add_theme_constant_override("separation", 6); v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	painel.add_child(v)
@@ -102,6 +108,7 @@ func _carta(h: Node) -> Dictionary:
 	painel.gui_input.connect(func(e):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			if e.double_click: ficha_pedida.emit(h)
+			elif h != selecionado and h.vivo(): carta_escolhida.emit(h)   # 1º clique: escolhe quem age
 			else:
 				extra.visible = not extra.visible
 				if extra.visible: _preencher_extra(h, extra))
@@ -142,9 +149,10 @@ func _atualizar_cartas(vez: Node, lider: Node, luz_txt: String, estados: Diction
 		if h == lider and vez == null: txt += " · " + luz_txt
 		if not h.vivo(): txt = "caído"
 		d.linha.text = txt
-		var ativo: bool = h == vez
+		var ativo: bool = h == vez or (vez == null and h == selecionado)
 		var estado: String = estados.get(h, "%s %d" % [f.classe(), int(f.p.nivel)])
 		if not h.vivo(): estado = "caído"
+		elif vez == null and h == selecionado: estado = "age"
 		d.estado.text = estado
 		d.estado.add_theme_color_override("font_color", E.OURO_CLARO if ativo else E.TEXTO)
 		d.nome.add_theme_color_override("font_color", E.OURO_VEZ if ativo else E.OURO)
@@ -207,10 +215,11 @@ func _barra_exploracao(modos: Dictionary, modo: String, lider: Node) -> void:
 		i += 1
 	_filete()
 	var hab := {}
-	if lider and lider.get("ficha"):
-		for x in lider.ficha.habilidades_exploracao(): hab[x[0]] = x[1]
-	var ou := _med("Ouvir", "Ou", "", "", str(hab.get("Ouvir", "")), "Ouvir atrás da porta",
-		"Chance de %s: %s.\nChega com as habilidades." % [lider.nome if lider else "quem lidera", hab.get("Ouvir", "?")])
+	var quem: Node = selecionado if is_instance_valid(selecionado) and selecionado.vivo() else lider   # quem age
+	if quem and quem.get("ficha"):
+		for x in quem.ficha.habilidades_exploracao(): hab[x[0]] = x[1]
+	var ou := _med("Ouvir", "Ou", "", "", str(hab.get("Ouvir", "")), "Portas: ouvir, forçar, fechadura…",
+		"Clique numa porta para escolher a ação de %s.\nOuvir %s · Forçar %s." % [quem.nome if quem else "quem lidera", hab.get("Ouvir", "?"), hab.get("Forçar porta", "?")])
 	ou.disabled = true
 	var pr := _med("Procurar", "Pr", "", "", str(hab.get("Achar porta secreta", "")), "Procurar portas e armadilhas",
 		"1 turno por área. Porta secreta %s, armadilha %s.\nChega com as habilidades." % [hab.get("Achar porta secreta", "?"), hab.get("Achar armadilha", "?")])
@@ -282,6 +291,25 @@ func _ao_escolher_menu(i: int) -> void:
 	var x: Array = _menu_itens[i]
 	if x[2] == "trocar": trocar_arma.emit(x[0], x[1])
 	else: usar_item.emit(x[0], x[1])
+
+# ---------- balão de ações (porta e outras ações de exploração) ----------
+
+## opcoes: [{id, texto, dica, ativo}]. O jogador escolhe; sai em acao_escolhida(id).
+func menu_acoes(titulo: String, opcoes: Array, onde: Vector2) -> void:
+	if _acoes == null:
+		_acoes = PopupMenu.new(); add_child(_acoes)
+		_acoes.id_pressed.connect(func(i): acao_escolhida.emit(str(_acoes_ids[i])))
+	_acoes.clear(); _acoes_ids.clear()
+	_acoes.add_separator(titulo)
+	for o in opcoes:
+		_acoes.add_item(str(o.texto), _acoes_ids.size())
+		var k := _acoes.item_count - 1
+		_acoes.set_item_tooltip(k, str(o.get("dica", "")))
+		_acoes.set_item_disabled(k, not bool(o.get("ativo", true)))
+		_acoes_ids.append(o.id)
+	_acoes.reset_size()
+	_acoes.position = Vector2i(onde) + Vector2i(14, -_acoes.size.y / 2)
+	_acoes.popup()
 
 # ---------- balão de ação ----------
 

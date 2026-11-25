@@ -26,6 +26,7 @@ const Ficha = preload("res://scripts/regras/ficha.gd")
 const Hud = preload("res://scripts/interface/hud.gd")
 const Livro = preload("res://scripts/interface/livro.gd")
 const Estilo = preload("res://scripts/interface/estilo.gd")
+const Portas = preload("res://scripts/exploracao/portas.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
@@ -62,6 +63,9 @@ var luz: Node
 var combate: Node
 var heroi: Node3D          # quem lidera a fila (leva a tocha)
 var grupo: Array = []      # personagens em jogo, na ordem da fila
+var selecionado: Node3D = null   # quem age nas ações de exploração (carta clicada); sem seleção, quem lidera
+var portas: RefCounted     # ações e estado das portas (scripts/exploracao/portas.gd)
+var _porta_menu := {}      # porta do balão aberto
 var monstros: Array = []   # todos os monstros vivos em cena
 var errantes: Array = []   # monstros vindo na direção do grupo, ainda sem combate
 var marca_alcance: Node
@@ -111,6 +115,7 @@ func _ready() -> void:
 	visao.tochas_parede = luz.tochas_cel.duplicate()
 	visao.recalcular_luz_fixa()
 	_materiais_das_portas()
+	portas = Portas.new(self)
 	luz.set_nevoa(visao.textura(), Vector2(grade.W, grade.H))
 	for n in ["marca_alcance", "marca_caminho", "marca_vez", "marca_portas"]:
 		var m := MeshInstance3D.new(); m.set_script(Marcas); add_child(m); set(n, m)
@@ -119,14 +124,14 @@ func _ready() -> void:
 	combate.exploradas = visao.exploradas
 	combate.camera = camera
 	combate.visivel = func(a): return mestre or visao.visiveis.has(a.celula)
-	combate.abrir_porta = _abrir_porta
+	combate.abrir_porta = func(pt, _de): portas.tentar_abrir(pt, combate.vez)
 	combate.registro.connect(_registrar)
 	combate.terminou.connect(_fim_do_combate)
 	_montar_hud()
 	_mudar_modo("normal", false)
 	camera.alvo = heroi.position; camera.distancia = 15.0; camera.inclinacao = 55.0; camera.guinada = -30.0
 	_atualizar_visao()
-	_registrar("A Tessa desce a escada para a [b]%s[/b]. Clique no chão para andar; clique numa porta para abri-la." % grade.nomes.get(grade.area_de(heroi.celula), ""))
+	_registrar("A Tessa desce a escada para a [b]%s[/b]. Clique no chão para andar; clique numa porta para ver as ações; clique numa carta para escolher quem age." % grade.nomes.get(grade.area_de(heroi.celula), ""))
 	_anotar_area()
 	_linha_de_comando()
 
@@ -288,6 +293,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_B: if not fim: _brotar_goblin()
 			KEY_T: if not fim: _arsenal_teste()
 			KEY_I: _acao_hud("ficha")
+			KEY_ESCAPE: _selecionar(null)
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
 				# Atalhos dos medalhões (a tecla aparece no canto de cada um).
 				if hud_ui and not livro.visible: hud_ui.atalho(str(e.keycode - KEY_0))
@@ -297,7 +303,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		var mira := _mira(e.position)
 		if not mira[2].is_empty():
 			if combate.ativo: combate.clicar_porta(mira[2])
-			else: _ir_abrir_porta(mira[2])
+			else: _menu_da_porta(mira[2], e.position)
 		elif combate.ativo: combate.clicar(mira[0], mira[1])
 		else: _andar_para(mira[0])
 	elif e is InputEventMouseMotion:
@@ -447,7 +453,7 @@ func _ir_abrir_porta(pt: Dictionary) -> void:
 	heroi.seguir(melhor)
 
 ## Abre a porta para o lado oposto de quem abre; a luz e a visão passam a atravessar.
-func _abrir_porta(pt: Dictionary, de: Vector2i) -> void:
+func _abrir_porta(pt: Dictionary, de: Vector2i, quem := "") -> void:
 	if grade.porta_aberta.has(pt.id): return
 	var outro := de
 	for par in grade.lados_da_porta(pt):
@@ -468,7 +474,7 @@ func _abrir_porta(pt: Dictionary, de: Vector2i) -> void:
 	visao.recalcular_luz_fixa()
 	_atualizar_visao()
 	if visao.visiveis.has(de) or de == heroi.celula:
-		_registrar("A Tessa abre a porta %s." % pt.id if de == heroi.celula else "[color=#ff9a6a]Uma porta se abre (%s).[/color]" % pt.id)
+		_registrar("%s abre a porta %s." % [quem, pt.id] if quem != "" else "[color=#ff9a6a]Uma porta se abre (%s).[/color]" % pt.id)
 	_checar_avistamento()
 
 func _previa(c: Vector2i, porta: Dictionary) -> void:
@@ -505,8 +511,54 @@ func _ao_parar(quem: Node3D) -> void:
 		for par in grade.lados_da_porta(pt):
 			if heroi.celula in par:
 				heroi.olhar_para(grade.centro(par[1] if par[0] == heroi.celula else par[0]))
-				_abrir_porta(pt, heroi.celula)
+				_abrir_porta(pt, heroi.celula, heroi.nome)
 				return
+
+## Ações que gastam tempo (ouvir, procurar, pregar...): frações de turno somam como metros andados.
+func _gastar_tempo(turnos: float) -> void:
+	metros_no_turno += turnos * _taxa_turno()
+	while metros_no_turno >= _taxa_turno() - 0.001:
+		metros_no_turno = maxf(0.0, metros_no_turno - _taxa_turno())
+		_passar_turno()
+	hud_ui.refazer()
+
+# ---------- ações de exploração ----------
+
+## Quem age: o personagem da carta selecionada; sem seleção (ou se caiu), quem lidera.
+func agente() -> Node3D:
+	return selecionado if is_instance_valid(selecionado) and selecionado.vivo() else heroi
+
+func _selecionar(h) -> void:
+	selecionado = h if h != selecionado else null
+	hud_ui.selecionado = selecionado; hud_ui.refazer()
+	if selecionado: _registrar("[i]%s vai agir nas ações de exploração.[/i]" % selecionado.nome)
+
+## Clique numa porta fechada fora do combate: balão com as ações de quem age.
+func _menu_da_porta(pt: Dictionary, onde: Vector2) -> void:
+	if portas.ocupado: return
+	var q := agente()
+	_porta_menu = pt
+	hud_ui.menu_acoes("Porta %s · %s" % [pt.id, q.nome], portas.opcoes(pt, q), onde)
+
+func _acao_porta(id: String) -> void:
+	if _porta_menu.is_empty(): return
+	var pt := _porta_menu; _porta_menu = {}
+	porta_alvo = {}
+	await portas.agir(pt, agente(), id)
+
+## Alguém caiu fora do combate (armadilha): sai da fila; se era quem liderava, o próximo pega a tocha.
+func _heroi_caiu_fora(h: Node3D) -> void:
+	_diario("evento", "%s caiu." % h.nome)
+	if vivos().is_empty():
+		fim = true
+		_registrar("[color=#ff7a5a][b]O grupo caiu.[/b][/color]")
+		hud_centro.text = "O grupo caiu na masmorra.\nR para recomeçar"
+		return
+	grupo = vivos()
+	if heroi != grupo[0]:
+		heroi = grupo[0]; luz.alvo = heroi
+		_registrar("%s passa a liderar o grupo e pega a tocha." % heroi.nome)
+	hud_ui.refazer()
 
 func _passar_turno() -> void:
 	turno += 1
@@ -768,6 +820,8 @@ func _montar_hud() -> void:
 	hud_ui.definir_grupo(grupo)
 	hud_ui.modo_pedido.connect(func(k): _mudar_modo(k))
 	hud_ui.acao_pedida.connect(_acao_hud)
+	hud_ui.acao_escolhida.connect(_acao_porta)
+	hud_ui.carta_escolhida.connect(_selecionar)
 	hud_ui.trocar_arma.connect(_trocar_arma)
 	hud_ui.usar_item.connect(_usar_item)
 	hud_ui.ficha_pedida.connect(_abrir_ficha)
@@ -1217,6 +1271,34 @@ func _linha_de_comando() -> void:
 		if alvo:
 			combate.pairar(alvo.celula, alvo)
 			print("CURSOR sobre ", alvo.nome, ": ", combate._cursor)
+	elif teste == "portas":
+		# Ações de porta: Caco (selecionado) na P01 trancada com agulha; Tessa força a P03 e prega.
+		var caco: Node3D = grupo.filter(func(h): return h.nome == "Caco")[0]
+		var p1: Dictionary = portas.por_id["P01"]; var p3: Dictionary = portas.por_id["P03"]
+		_selecionar(caco)
+		for a in ["abrir", "ouvir", "armadilha", "desarmar", "desarmar", "fechadura", "abrir"]:
+			var ops: Array = portas.opcoes(p1, agente()).map(func(o): return "%s%s" % [o.id, "" if o.ativo else "(x)"])
+			print("PORTA P01 opções=", ops, " → ", a)
+			await portas.agir(p1, agente(), a)
+			print("   estado=", portas.de(p1).estado, " aberta=", grade.porta_aberta.has("P01"), " barrada=", grade.porta_barrada.has("P01"), " Caco PV=", caco.pv, " turno=", turno, " celula=", caco.celula)
+		_selecionar(caco)   # volta para quem lidera
+		await portas.agir(p3, agente(), "abrir")
+		for k in 8:
+			if grade.porta_aberta.has("P03"): break
+			await portas.agir(p3, agente(), "forcar")
+		print("PORTA P03 aberta=", grade.porta_aberta.has("P03"), " turno=", turno)
+		var outra: Dictionary = portas.por_id["P02"]
+		await portas.agir(outra, agente(), "pregar")
+		print("PORTA P02 estado=", portas.de(outra).estado, " barrada=", grade.porta_barrada.has("P02"),
+			" monstro passa=", grade.passa_reto(grade.lados_da_porta(outra)[0][0], grade.lados_da_porta(outra)[0][1], true), " turno=", turno)
+	elif teste == "balao":
+		# Balão da porta P01 com o Caco selecionado (para a captura de tela).
+		_selecionar(grupo.filter(func(h): return h.nome == "Caco")[0])
+		var pt: Dictionary = portas.por_id["P01"]; portas.de(pt).sabe = "trancada"
+		var lado: Vector2i = grade.lados_da_porta(pt)[0][0]
+		camera.alvo = grade.centro(lado); await get_tree().create_timer(0.6).timeout
+		_menu_da_porta(pt, get_viewport().get_camera_3d().unproject_position(grade.centro(lado)))
+		await get_tree().create_timer(0.5).timeout
 	elif teste == "corrida":
 		# No combate os monstros correm (velocidade do modo rápido, animação de corrida); fugindo também.
 		for k in 3: _brotar_goblin(); await get_tree().process_frame
