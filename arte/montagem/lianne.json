@@ -1,27 +1,6 @@
 {
  "modelo": "arte/final/3d/lianne.glb",
- "itens": [
-  {
-   "arquivo": "arte/final/3d/arco-curto.glb",
-   "osso": "mixamorig_LeftHand",
-   "modo": "arma",
-   "comprimento": 1.16,
-   "pega": [
-    0.754,
-    0.5,
-    0.237
-   ],
-   "ao_longo": 0.45,
-   "afastar": 0.0,
-   "rotacao": [
-    0,
-    -135,
-    0
-   ],
-   "pose": "mirar-arco",
-   "pose_t": 0.5
-  }
- ],
+ "itens": [],
  "animacoes": {
   "parado": "arte/animacoes/mixamo/parado.fbx",
   "parado-espada-escudo": "arte/animacoes/mixamo/parado-espada-escudo.fbx",
@@ -65,7 +44,8 @@
   "arremessar-frasco": "arte/animacoes/mixamo/arremessar-frasco.fbx",
   "ajoelhar": "arte/animacoes/mixamo/ajoelhar.fbx",
   "chutar-porta": "arte/animacoes/mixamo/chutar-porta.fbx",
-  "beber": "arte/animacoes/mixamo/beber.fbx"
+  "beber": "arte/animacoes/mixamo/beber.fbx",
+  "haste-guarda": "arte/animacoes/mixamo/haste-estocada.fbx"
  },
  "angulo": 35,
  "no_lugar": [
@@ -115,6 +95,33 @@
   "impacto-reves": [
    0.0,
    2.2
+  ],
+  "haste-guarda": [
+   0.0,
+   0.3
   ]
- }
+ },
+ "_itens_antigos": [
+  {
+   "arquivo": "arte/final/3d/arco-curto.glb",
+   "osso": "mixamorig_LeftHand",
+   "modo": "arma",
+   "comprimento": 1.16,
+   "pega": [
+    0.754,
+    0.5,
+    0.237
+   ],
+   "ao_longo": 0.45,
+   "afastar": 0.0,
+   "rotacao": [
+    0,
+    -135,
+    0
+   ],
+   "pose": "mirar-arco",
+   "pose_t": 0.5
+  }
+ ],
+ "_doc_itens": "Armas e escudos são presos em tempo de jogo pelo modelo3d do catálogo (scripts/visual/armas3d.gd); _itens_antigos guarda a montagem anterior."
 }

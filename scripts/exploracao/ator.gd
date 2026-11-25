@@ -123,10 +123,40 @@ func atualizar_rotulo() -> void:
 		rotulo.text = "%s · %s" % [nome, "ileso" if f >= 1.0 else ("ferido" if f > 0.5 else "muito ferido")]
 	rotulo.modulate = Color(1, 0.95, 0.85) if f > 0.5 else (Color(1, 0.75, 0.3) if f > 0.25 else Color(1, 0.4, 0.3))
 
+## Modelos 3D dos itens nas mãos (scripts/visual/armas3d.gd): lugar da ficha -> [id do item, nó preso ao osso].
+const Armas3D = preload("res://scripts/visual/armas3d.gd")
+var _vestidos := {}
+
+## Põe nas mãos os modelos dos itens que a ficha tem em mao_d e mao_e (troca só o que mudou).
+func vestir(f, catalogo: Callable) -> void:
+	if modelo == null or player == null: return
+	var sk: Skeleton3D = modelo.find_children("*", "Skeleton3D", true, false)[0]
+	for lugar in ["mao_d", "mao_e"]:
+		var it = f.pegar(lugar)
+		var id := str(it.id) if it != null else ""
+		if _vestidos.has(lugar) and _vestidos[lugar][0] == id: continue
+		if _vestidos.has(lugar) and is_instance_valid(_vestidos[lugar][1]): _vestidos[lugar][1].queue_free()
+		_vestidos.erase(lugar)
+		var m: Dictionary = catalogo.call(it).get("modelo3d", {}) if it != null else {}
+		if m.is_empty(): continue
+		var no := Armas3D.montar(sk, player, m, modelo.scale.x)
+		if no == null: continue
+		no.set_meta("escudo", str(m.get("mao", "")) == "antebraco")
+		_vestidos[lugar] = [id, no]
+	_mostrar_armas()
+	if not andando() and vivo(): tocar("parado", 0.0)
+
+## Armas só aparecem no combate; o escudo fica sempre no braço.
+func _mostrar_armas() -> void:
+	for lugar in _vestidos:
+		var no: Node3D = _vestidos[lugar][1]
+		if is_instance_valid(no): no.visible = em_combate or bool(no.get_meta("escudo", false))
+
 ## Saca (combate) ou guarda a arma (exploração).
 func empunhar(sim: bool) -> void:
 	em_combate = sim
 	for a in armas_na_mao: a.visible = sim and arma_visivel
+	_mostrar_armas()
 	if not andando() and vivo(): tocar("parado")
 
 func tocar(papel: String, misturar := 0.2) -> void:

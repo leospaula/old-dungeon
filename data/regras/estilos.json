@@ -5,7 +5,7 @@
     "faca":      {"parado_combate": "parado-espada-escudo", "golpe": "corte-dentro", "golpe2": "corte-fora", "golpe_critico": "estocada-cima", "arremessar": "arremessar-faca"},
     "impacto":   {"parado_combate": "impacto-guarda", "golpe": "impacto-de-cima", "golpe2": "impacto-horizontal", "golpe_critico": "impacto-reves", "arremessar": "arremessar"},
     "duas_maos": {"parado_combate": "duas-maos-guarda", "golpe": "duas-maos-golpe", "aparar": "aparar"},
-    "haste":     {"parado_combate": "parado-luta", "golpe": "haste-estocada", "arremessar": "arremessar"},
+    "haste":     {"parado_combate": "haste-guarda", "golpe": "haste-estocada", "arremessar": "arremessar"},
     "cajado":    {"parado_combate": "parado-luta", "golpe": "cajado-golpe", "aparar": "aparar"},
     "arco":      {"parado_combate": "arco-guarda", "andar_combate": "arco-andar", "atirar": "atirar-flecha"},
     "besta":     {"parado_combate": "besta-mirar", "atirar": "besta-mirar"},

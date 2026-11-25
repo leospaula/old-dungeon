@@ -37,7 +37,7 @@ const TESSA_GIRO := {"parado-espada-escudo": 76.0, "parado": 45.0, "andar": 90.0
 	"parado-luta": 78.0, "corte-dentro": 63.0, "corte-fora": 118.0, "estocada-cima": 75.0, "soltar-flecha": 84.0,
 	# Estilos de luta (25/11): guardas pelo olhar; golpes pela mão no impacto; arco pela linha da flecha (--teste=olhar).
 	"impacto-guarda": 91.0, "impacto-de-cima": 82.0, "impacto-horizontal": 112.0, "impacto-reves": 75.0,
-	"duas-maos-guarda": 89.0, "duas-maos-golpe": 85.0, "aparar": 99.0, "haste-estocada": 84.0, "cajado-golpe": 91.0,
+	"duas-maos-guarda": 89.0, "duas-maos-golpe": 85.0, "aparar": 99.0, "haste-estocada": 84.0, "haste-guarda": 84.0, "cajado-golpe": 91.0,
 	"besta-mirar": 88.0, "arco-guarda": 89.0, "arco-andar": 88.0, "atirar-flecha": 80.0, "arremessar": 93.0,
 	"arremessar-faca": 101.0, "arremessar-frasco": 94.0, "chutar-porta": 73.0, "ajoelhar": 91.0, "beber": 96.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
@@ -139,8 +139,6 @@ const HEROIS := {
 		"distancia": "arco curto"},
 }
 const GRUPO_EM_JOGO := ["tessa", "caco", "lianne"]
-## Arma que o modelo 3D de cada um segura (as outras armas ficam na mochila/cinto e a mão aparece vazia).
-const ARMA_MODELO := {"tessa": "espada", "caco": "adaga", "lianne": "arco curto"}
 
 func _criar_grupo() -> void:
 	var G: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/personagens/grupo-inicial.json"))
@@ -164,7 +162,6 @@ func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	a.ficha = Ficha.new(p, str(cfg.get("distancia", "")))
 	a.pv = int(p.pv); a.thac0 = int(p.thac0)
 	a.infravisao_m = float(p.get("infravisao_m", 0.0))
-	a.set_meta("arma_modelo", ARMA_MODELO.get(str(p.id), ""))
 	add_child(a); a.colocar(onde)
 	a.giro_anim = TESSA_GIRO
 	var modelo: Node3D = load(cfg.glb).instantiate()
@@ -174,9 +171,7 @@ func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	a.passadas = pas
 	var papeis := TESSA_ANIM.duplicate()
 	papeis.merge(cfg.get("papeis", {}), true)
-	var mao := modelo.find_child(cfg.mao, true, false)
 	a.montar_modelo(modelo, papeis, 0.0)
-	if mao: a.armas_na_mao.assign(mao.get_children())
 	_aplicar_ficha(a)
 	a.empunhar(false)   # fora do combate a arma fica guardada
 	a.rotulo.visible = false
@@ -198,7 +193,7 @@ func _aplicar_ficha(a: Node3D) -> void:
 	if inf.has("distancia"):
 		a.dist_arma = str(w.id); a.dist_dano = str(inf.dano); a.dist_faixas = inf.distancia
 		a.dist_mod = f.mod("des"); a.municao = f.municao_de(w)
-	a.arma_visivel = w != null and str(w.id) == str(a.get_meta("arma_modelo", ""))
+	a.vestir(f, func(it): return Ficha.info(it))
 	a.mov_combate_m = Regras.taxa_combate_m(f.movimento_m())
 	# O estilo de luta vem da arma na mão (data/regras/estilos.json).
 	a.aplicar_estilo(str(inf.get("estilo", "desarmado")) if w != null else "desarmado")
@@ -272,6 +267,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_G: grade_forte = not grade_forte; luz.set_grade(grade_forte or combate.ativo)
 			KEY_K: if not combate.ativo and not fim: _surgir_errantes(true)
 			KEY_B: if not fim: _brotar_goblin()
+			KEY_T: if not fim: _arsenal_teste()
 			KEY_I: _acao_hud("ficha")
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
 				# Atalhos dos medalhões (a tecla aparece no canto de cada um).
@@ -795,7 +791,29 @@ func _acao_hud(acao: String) -> void:
 		"atacar": combate.atacar_mais_proximo()
 		"encerrar": combate.encerrar_turno()
 		"brotar": if not fim: _brotar_goblin()
+		"arsenal": if not fim: _arsenal_teste()
 		"ficha": _abrir_ficha(combate.vez if combate.ativo and combate.vez and combate.vez.lado == "grupo" else heroi)
+
+## Teste (tecla T): quem lidera passa para a próxima arma do catálogo, para ver todos os estilos de luta.
+## Arma de duas mãos guarda o escudo na mochila; a de uma mão o devolve. Dá munição se faltar.
+var _arsenal_i := -1
+func _arsenal_teste() -> void:
+	var lista: Array = Ficha.catalogo().keys().filter(func(k): return Ficha.catalogo()[k].has("estilo"))
+	_arsenal_i = (_arsenal_i + 1) % lista.size()
+	var id: String = lista[_arsenal_i]
+	var inf: Dictionary = Ficha.catalogo()[id]
+	var f = heroi.ficha
+	if f.mao_d != null and str(f.mao_d.id) != id: f.tirar(f.mao_d)
+	f.mao_d = {"id": id, "qtd": 1}
+	var escudo = f.mao_e
+	if int(inf.get("maos", 1)) >= 2:
+		if escudo != null: f.mao_e = null; f.mochila.append(escudo)
+	elif f.mao_e == null:
+		for x in f.mochila:
+			if Ficha.info(x).get("tipo") == "escudo": f.mochila.erase(x); f.mao_e = x; break
+	if inf.has("municao") and f.contar(str(inf.municao)) < 10: f.mochila.append({"id": str(inf.municao), "qtd": 20})
+	_aplicar_ficha(heroi); hud_ui.refazer()
+	_registrar("[i](teste T)[/i] %s empunha [b]%s[/b] · estilo %s · %d de %d." % [heroi.nome, inf.nome, str(inf.estilo).replace("_", " "), _arsenal_i + 1, lista.size()])
 
 ## Trocar de arma no combate: uma vez por vez, sem gastar o ataque.
 func _trocar_arma(h: Node3D, item) -> void:
@@ -1152,6 +1170,30 @@ func _linha_de_comando() -> void:
 			while Time.get_ticks_msec() - t0 < int(t_imp * f * 1000.0): await get_tree().process_frame
 			get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-%d.png" % k)); k += 1
 		await get_tree().create_timer(1.5).timeout
+	elif teste == "arsenal":
+		# A Tessa passa por todas as armas (tecla T) e ataca um goblin com cada uma; quadro no impacto.
+		_brotar_goblin()
+		await get_tree().create_timer(1.5).timeout
+		var g: Node3D = monstros[0]
+		g.pv = 999; g.pv_max = 999
+		var cam := Camera3D.new(); add_child(cam); cam.fov = 45
+		var n: int = Ficha.catalogo().keys().filter(func(k): return Ficha.catalogo()[k].has("estilo")).size()
+		for k in n:
+			_arsenal_teste()
+			await get_tree().create_timer(0.8).timeout
+			var dist: bool = not heroi.dist_faixas.is_empty()
+			var lado: Vector3 = (g.global_position - heroi.global_position); lado.y = 0; lado = lado.normalized()
+			cam.global_position = heroi.global_position + lado.cross(Vector3.UP) * 3.2 + lado * 0.6 + Vector3(0, 1.6, 0)
+			cam.look_at(heroi.global_position + lado * 0.6 + Vector3(0, 0.9, 0)); cam.current = true
+			get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-%02d-a.png" % k))
+			var papel: String = "atirar" if dist else heroi.escolher_golpe(false)
+			var t_imp: float = heroi.tempo_tiro() if dist else heroi.tempo_impacto(papel)
+			Dados.forcados.append(19)
+			combate._atacar(heroi, g, dist)
+			var t0 := Time.get_ticks_msec()
+			while Time.get_ticks_msec() - t0 < int(t_imp * 1000.0) - 40: await get_tree().process_frame
+			get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-%02d-b.png" % k))
+			await get_tree().create_timer(1.6).timeout
 	elif teste == "defesa":
 		# Erros forçados, vistos por trás de quem ataca: o defensor deve aparecer de frente. --arma=<item> troca a arma da Tessa.
 		for x in OS.get_cmdline_user_args():

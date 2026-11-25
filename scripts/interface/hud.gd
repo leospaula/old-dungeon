@@ -220,6 +220,8 @@ func _barra_exploracao(modos: Dictionary, modo: String, lider: Node) -> void:
 	_filete()
 	var br := _med("Brotar\ngoblin", "Gb", "", "B", "teste", "Brotar goblin (teste)", "Põe 1 goblin ao lado do grupo.")
 	br.pressed.connect(func(): acao_pedida.emit("brotar"))
+	var ar := _med("Próxima\narma", "Ar", "", "T", "teste", "Próxima arma (teste)", "Quem lidera passa para a próxima arma do catálogo, para ver cada estilo de luta.")
+	ar.pressed.connect(func(): acao_pedida.emit("arsenal"))
 
 ## Ações do personagem da vez. As de classe que ainda não funcionam aparecem apagadas, com o motivo.
 func _barra_combate(h: Node, alvo: Dictionary) -> void:
