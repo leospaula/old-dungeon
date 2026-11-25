@@ -1326,9 +1326,13 @@ func _linha_de_comando() -> void:
 			for m in monstros:
 				if is_instance_valid(m) and m.andando() and not visto.has(m.nome):
 					visto[m.nome] = true
-					print("CORRIDA ", m.nome, " anim=", m.player.current_animation, " vel=", m.vel_atual(), " no_combate=", m.no_combate)
+					print("CORRIDA ", m.nome, " anim=", m.player.current_animation, " vel=", m.vel_atual(), " perto=", combate._perto_de_inimigo(m))
 			if visto.size() >= 2: break
 			await get_tree().create_timer(0.1).timeout
+		var heroi_longe: Node3D = grupo[2]; heroi_longe.no_combate = true; heroi_longe.perto_de_inimigo = func(_a): return false
+		print("CORRIDA herói longe: vel=", heroi_longe.vel_atual(), " papel=", heroi_longe._papel_desloc())
+		heroi_longe.perto_de_inimigo = func(_a): return true
+		print("CORRIDA herói perto: vel=", heroi_longe.vel_atual(), " papel=", heroi_longe._papel_desloc())
 		var g: Node3D = monstros.filter(func(m): return is_instance_valid(m) and m.vivo())[0]
 		combate._fugir(g); await get_tree().create_timer(0.3).timeout
 		print("FUGA ", g.nome, " anim=", g.player.current_animation, " vel=", g.vel_atual(), " andando=", g.andando())

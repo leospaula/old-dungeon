@@ -32,7 +32,8 @@ var mov_combate_m := 12.0
 var moral := 12
 var xp := 0
 var fugindo := false
-var no_combate := false   # ligado pelo combate enquanto ele dura (monstros correm)
+var no_combate := false   # ligado pelo combate enquanto ele dura
+var perto_de_inimigo: Callable   # (ator) -> bool, dado pelo combate: até 3 casas de um inimigo vivo
 var infravisao_m := 0.0
 const VEL_BASE := 2.0     # m/s andando na tela (ritmo normal)
 var velocidade := VEL_BASE
@@ -188,10 +189,13 @@ func _tem(papel: String) -> bool:
 
 ## Em combate, o andar em guarda é mais curto: cada um anda no ritmo dele (passada × RITMO_COMBATE).
 const RITMO_COMBATE := 1.8
-## Monstros correm no combate e quando fogem (velocidade do modo rápido, animação de corrida).
+## No combate, longe dos inimigos (mais de 3 casas) todos correm; perto, andam em guarda. Quem foge
+## sempre corre. Velocidade do modo rápido, animação de corrida.
 const VEL_CORRIDA := 1.5
 func _correndo() -> bool:
-	return lado != "grupo" and (no_combate or fugindo) and _tem("correr")
+	if not _tem("correr"): return false
+	if fugindo: return true
+	return no_combate and not (perto_de_inimigo.is_valid() and perto_de_inimigo.call(self))
 
 func vel_atual() -> float:
 	if _correndo(): return VEL_BASE * VEL_CORRIDA

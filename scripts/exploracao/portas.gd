@@ -150,7 +150,7 @@ func _forcar(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt); var f = q.ficha
 	var n := _chance_forcar(e, f); var r := Dados.d(6)
 	var ok := r <= n
-	await _animar(q, "chutar-porta" if ok else "levar-golpe")
+	await _animar(q, "chutar-porta")   # chuta, abrindo ou não
 	ex._gastar_tempo(RODADA)
 	var faixa := "1" if n == 1 else "1–%d" % n
 	if ok:
@@ -165,7 +165,7 @@ func _forcar(pt: Dictionary, q: Node3D) -> void:
 
 func _fechadura(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt); var f = q.ficha
-	await _animar(q, "ajoelhar", 1.6)
+	await _animar(q, "ajoelhar", 0.0, 0.7)
 	ex._gastar_tempo(1.0)
 	var pct: int = f.pct_fechadura(); var r := Dados.d(100)
 	_disparar(pt, q)   # mexer na fechadura dispara a agulha, se ninguém desarmou
@@ -180,7 +180,7 @@ func _fechadura(pt: Dictionary, q: Node3D) -> void:
 
 func _procurar(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt); var f = q.ficha
-	await _animar(q, "ajoelhar", 1.6)
+	await _animar(q, "ajoelhar", 0.0, 0.7)
 	ex._gastar_tempo(1.0)
 	if not e.has("procurou"): e.procurou = {}
 	e.procurou[q.nome] = true
@@ -198,7 +198,7 @@ func _procurar(pt: Dictionary, q: Node3D) -> void:
 
 func _desarmar(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt); var f = q.ficha
-	await _animar(q, "ajoelhar", 1.6)
+	await _animar(q, "ajoelhar", 0.0, 0.7)
 	ex._gastar_tempo(1.0)
 	var pct := int(f.p.habilidades_ladrao.armadilhas); var r := Dados.d(100)
 	if r <= pct:
@@ -211,7 +211,7 @@ func _desarmar(pt: Dictionary, q: Node3D) -> void:
 
 func _pregar(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt)
-	await _animar(q, "ajoelhar", 1.6)
+	await _animar(q, "ajoelhar", 0.0, 0.7)
 	ex._gastar_tempo(1.0)
 	e.estado = "pregada"; e.sabe = "pregada"; ex.grade.barrar_porta(pt, true)
 	ex._registrar("%s prega a porta %s: ninguém passa por ela sem forçar." % [q.nome, pt.id])
@@ -238,6 +238,8 @@ func _disparar(pt: Dictionary, q: Node3D) -> void:
 	if not q.vivo(): ex._heroi_caiu_fora(q)
 	ex._ficha_mudou(q)
 
-func _animar(q: Node3D, nome: String, ate := 0.0) -> void:
+## Toca a animação inteira (ritmo < 1 = mais lenta, para o trabalho demorado não ficar truncado).
+func _animar(q: Node3D, nome: String, ate := 0.0, ritmo := 1.0) -> void:
 	var t: float = q.tocar_anim(nome)
-	await q.get_tree().create_timer(ate if ate > 0.0 else t).timeout
+	if q.player: q.player.speed_scale = ritmo
+	await q.get_tree().create_timer(ate if ate > 0.0 else t / ritmo).timeout

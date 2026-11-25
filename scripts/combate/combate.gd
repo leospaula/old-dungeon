@@ -44,7 +44,7 @@ var _moral_metade := false
 func iniciar(g: Array, m: Array, surpreso_grupo: bool, surpreso_monstros: bool) -> void:
 	grupo = g; monstros = m; ativo = true; rodada = 0; _mortos = 0; _xp = 0
 	_moral_primeira = false; _moral_metade = false
-	for x in monstros: x.no_combate = true   # no combate os monstros correm
+	for x in grupo + monstros: _entrar(x)
 	var vistos := monstros.filter(func(x): return _ve(x))
 	var nomes := ", ".join(vistos.map(func(x): return x.nome)) if not vistos.is_empty() else "algo no escuro"
 	registro.emit("[b]Combate![/b] %s." % nomes)
@@ -91,7 +91,7 @@ func _turno_personagem(h: Node) -> void:
 
 ## Monstro que entra no meio do combate (age a partir da próxima vez do lado dos monstros).
 func adicionar(m: Node) -> void:
-	monstros.append(m); m.no_combate = true
+	monstros.append(m); _entrar(m)
 	mudou.emit()
 
 ## Botão "Atacar/Atirar": o inimigo à vista mais perto que dá para atingir nesta vez.
@@ -383,7 +383,7 @@ func _checar_fim() -> bool:
 	var m := monstros.any(func(x): return is_instance_valid(x) and x.vivo())
 	if g and m: return false
 	ativo = false; vez = null; _por_cursor("")
-	for x in monstros:
+	for x in grupo + monstros:
 		if is_instance_valid(x): x.no_combate = false
 	marca_alcance.limpar(); marca_caminho.limpar(); marca_vez.limpar()
 	terminou.emit("vitoria" if g else "derrota", _xp, rodada)
@@ -422,6 +422,19 @@ func _andar(a: Node, cam: Array[Vector2i]) -> void:
 	if cam.is_empty(): return
 	a.seguir(cam)
 	await a.parou
+
+## No combate: longe (mais de 3 casas) do inimigo vivo mais próximo corre; perto, anda em guarda.
+const PERTO_CASAS := 3
+func _entrar(x: Node) -> void:
+	x.no_combate = true; x.perto_de_inimigo = _perto_de_inimigo
+
+func _perto_de_inimigo(a: Node) -> bool:
+	var c: Vector2i = a.grade.celula(a.position)
+	for x in (monstros if a.lado == "grupo" else grupo):
+		if is_instance_valid(x) and x.vivo():
+			var d: Vector2i = (x.celula as Vector2i) - c
+			if maxi(absi(d.x), absi(d.y)) <= PERTO_CASAS: return true
+	return false
 
 ## Casas que barram o caminho de `quem`: para heróis, só os monstros; para monstros, todos.
 func _barram(quem: Node) -> Dictionary:
