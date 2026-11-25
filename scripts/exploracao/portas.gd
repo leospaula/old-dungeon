@@ -4,12 +4,12 @@ extends RefCounted
 ## a porta, anima, rola e gasta tempo do turno (a tocha queima e os errantes rolam junto).
 ## Rolagens escondidas: ouvir e procurar armadilha (o registro não diz se falhou ou se não havia nada).
 ## Forçar, fechadura e desarmar mostram o resultado.
-## Estado inicial das portas: data/masmorra/portas-teste.json (até a aventura trazer o dela).
+## Estado inicial das portas: data/masmorra/estado-teste.json (até a aventura trazer o dela).
 
 const Dados = preload("res://scripts/regras/dados.gd")
-const ARQ := "res://data/masmorra/portas-teste.json"
+const ARQ := "res://data/masmorra/estado-teste.json"
 const RODADA := 1.0 / 60.0   # turno de 10 min = 60 rodadas de 10 s
-const BARRAM := ["trancada", "pregada"]   # monstros não passam
+const BARRAM := ["trancada", "pregada", "secreta"]   # monstros não passam
 const LIMITE_OUVIR_M := 18.0              # no corredor, até onde se ouve
 ## O que se ouve de cada criatura (mortos-vivos e o cubo não fazem barulho).
 const SONS := {"goblin": "risadas agudas e metal batendo", "kobold": "latidos baixos e passos miúdos",
@@ -82,7 +82,7 @@ func _chance_forcar(e: Dictionary, f) -> int:
 # ---------- agir ----------
 
 func agir(pt: Dictionary, q: Node3D, acao: String) -> void:
-	if ocupado or not q.vivo(): return
+	if ocupado or not q.vivo() or str(de(pt).estado) == "secreta": return
 	if not opcoes(pt, q).any(func(o): return o.id == acao and o.ativo): return   # só o que o balão oferece
 	ocupado = true
 	if await _ir_ate(pt, q):

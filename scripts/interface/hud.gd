@@ -207,7 +207,7 @@ func atalho(tecla: String) -> bool:
 func _barra_exploracao(modos: Dictionary, modo: String, lider: Node) -> void:
 	_limpar_barra()
 	var i := 1
-	for k in ["devagar", "normal", "rapido"]:
+	for k in ["cauteloso", "devagar", "normal", "rapido"]:
 		var nome: String = modos[k].nome
 		var m := _med(nome, nome.substr(0, 2), "", str(i), "", nome, str(modos[k].dica))
 		m.ativo = k == modo
@@ -222,9 +222,9 @@ func _barra_exploracao(modos: Dictionary, modo: String, lider: Node) -> void:
 		"Aqui: %s e quem estiver perto param e escutam (1 rodada, até 18 m). Numa porta: clique nela.\nOuvir %s · Forçar %s. Correndo não dá." % [quem.nome if quem else "quem lidera", hab.get("Ouvir", "?"), hab.get("Forçar porta", "?")])
 	ou.disabled = modo == "rapido"
 	ou.pressed.connect(func(): acao_pedida.emit("ouvir"))
-	var pr := _med("Procurar", "Pr", "", "", str(hab.get("Achar porta secreta", "")), "Procurar portas e armadilhas",
-		"1 turno por área. Porta secreta %s, armadilha %s.\nChega com as habilidades." % [hab.get("Achar porta secreta", "?"), hab.get("Achar armadilha", "?")])
-	pr.disabled = true
+	var pr := _med("Procurar", "Pr", "", "P", str(hab.get("Achar porta secreta", "")), "Procurar nesta área",
+		"Todos desta área vasculham paredes e chão: portas secretas (%s) e armadilhas de sala (%s). 1 turno por trecho de 3 m de parede, repartido entre quem procura. Rolagens secretas; cada um, uma vez por área." % [hab.get("Achar porta secreta", "?"), "2 em 6" if quem and str(quem.ficha.p.classe) == "anao" else "1 em 6"])
+	pr.pressed.connect(func(): acao_pedida.emit("procurar"))
 	var fi := _med("Ficha", "", "bolsa-moedas", "I", "", "Livro da ficha", "Atributos, habilidades, magias, equipamento e diário.")
 	fi.pressed.connect(func(): acao_pedida.emit("ficha"))
 	_filete()

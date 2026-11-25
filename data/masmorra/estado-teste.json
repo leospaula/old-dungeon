@@ -1,0 +1,42 @@
+{
+  "_doc": "Estado de teste da masmorra para as ações de exploração (portas.gd e procurar.gd), até a aventura carregar o dela. 'portas': mesmo formato de 'portas' em data/esquemas/aventura.schema.json (+ 'armadilha.achada': o que se vê ao encontrar). Porta ausente = só fechada. P03 emperrada; P01 trancada com agulha (mecanismo); P02 secreta (vista do 23 parece parede). 'armadilhas': armadilhas de sala numa casa do chão (achar 1 em 6, anão 2 em 6; passar por cima dispara 2 em 6).",
+  "portas": {
+    "P03": {
+      "estado": "emperrada"
+    },
+    "P01": {
+      "estado": "trancada",
+      "armadilha": {
+        "tipo": "agulha",
+        "dano": "1d4",
+        "efeito": "Uma agulha salta da fechadura.",
+        "achada": "uma agulha escondida na fechadura."
+      }
+    },
+    "P02": {
+      "estado": "secreta"
+    }
+  },
+  "armadilhas": [
+    {
+      "cel": [
+        10,
+        1
+      ],
+      "tipo": "fosso",
+      "dano": "1d6",
+      "efeito": "O chão cede: um fosso de 3 m.",
+      "achada": "lajes soltas sobre um fosso"
+    },
+    {
+      "cel": [
+        17,
+        5
+      ],
+      "tipo": "fosso",
+      "dano": "1d6",
+      "efeito": "O chão cede: um fosso de 3 m.",
+      "achada": "lajes soltas sobre um fosso"
+    }
+  ]
+}

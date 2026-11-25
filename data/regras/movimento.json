@@ -1,9 +1,42 @@
 {
   "_doc": "Modos de movimento na exploração (regra da casa sobre o B/X). velocidade multiplica a distância por turno e a velocidade na tela. errantes_em_6: chance no teste de monstros errantes (a cada 2 turnos). furtivo: o grupo rola furtividade (ver furtividade). surpreender: +N na chance de surpreender monstros (normal 1–2 em d6); null = impossível. ser_surpreendido: +N na chance de o grupo ser surpreendido.",
   "modos": {
-    "devagar": {"nome": "Devagar", "dica": "furtivo: metade da velocidade; o grupo tenta passar despercebido", "velocidade": 0.5, "errantes_em_6": 1, "furtivo": true, "surpreender": 1, "ser_surpreendido": 0},
-    "normal":  {"nome": "Normal", "dica": "ritmo cauteloso do B/X", "velocidade": 1.0, "errantes_em_6": 1, "furtivo": false, "surpreender": 0, "ser_surpreendido": 0},
-    "rapido":  {"nome": "Rápido", "dica": "correndo: +50% de velocidade, muito barulho", "velocidade": 1.5, "errantes_em_6": 3, "furtivo": false, "surpreender": null, "ser_surpreendido": 1}
+    "cauteloso": {
+      "nome": "Cauteloso",
+      "dica": "quem lidera procura armadilhas nas casas à frente a cada passo: um terço da velocidade (bom em corredores)",
+      "velocidade": 0.34,
+      "errantes_em_6": 1,
+      "furtivo": false,
+      "surpreender": 0,
+      "ser_surpreendido": 0
+    },
+    "devagar": {
+      "nome": "Devagar",
+      "dica": "furtivo: metade da velocidade; o grupo tenta passar despercebido",
+      "velocidade": 0.5,
+      "errantes_em_6": 1,
+      "furtivo": true,
+      "surpreender": 1,
+      "ser_surpreendido": 0
+    },
+    "normal": {
+      "nome": "Normal",
+      "dica": "ritmo cauteloso do B/X",
+      "velocidade": 1.0,
+      "errantes_em_6": 1,
+      "furtivo": false,
+      "surpreender": 0,
+      "ser_surpreendido": 0
+    },
+    "rapido": {
+      "nome": "Rápido",
+      "dica": "correndo: +50% de velocidade, muito barulho",
+      "velocidade": 1.5,
+      "errantes_em_6": 3,
+      "furtivo": false,
+      "surpreender": null,
+      "ser_surpreendido": 1
+    }
   },
   "furtividade": {
     "_doc": "Chance, em 6, de cada personagem passar despercebido andando devagar, pela armadura. O grupo só passa se TODOS passarem (o mais barulhento entrega o grupo). O ladrão usa o maior entre a tabela e o seu Mover em Silêncio.",

@@ -10,6 +10,7 @@ var tochas: Array[OmniLight3D] = []
 var tochas_nos: Array[Node3D] = []
 var tochas_cel: Array[Vector2i] = []
 var materiais: Array[ShaderMaterial] = []
+var pedra_mat: ShaderMaterial   # material das paredes (portas secretas usam para se disfarçar)
 var luz_grupo: OmniLight3D
 var chao_mat: ShaderMaterial
 var env: Environment
@@ -29,7 +30,7 @@ func configurar(raiz: Node3D, masmorra: Node3D, ambiente: WorldEnvironment, carr
 	chao_mat = ShaderMaterial.new(); chao_mat.shader = load("res://shaders/chao_luz.gdshader")
 	chao_mat.set_shader_parameter("cor_tex", laje); chao_mat.set_shader_parameter("normal_tex", laje_n)
 	_aplicar(masmorra.get_node("Chao"), chao_mat, false)
-	var pedra := ShaderMaterial.new(); pedra.shader = load("res://shaders/pedra_luz.gdshader")
+	pedra_mat = ShaderMaterial.new(); var pedra := pedra_mat; pedra.shader = load("res://shaders/pedra_luz.gdshader")
 	pedra.set_shader_parameter("cor_tex", parede); pedra.set_shader_parameter("normal_tex", parede_n); pedra.set_shader_parameter("natural_tex", laje)
 	_aplicar(masmorra.get_node("Rocha"), pedra, true)
 	_aplicar(masmorra.get_node("Paredes"), pedra, true)

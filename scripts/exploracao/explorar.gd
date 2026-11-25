@@ -27,6 +27,7 @@ const Hud = preload("res://scripts/interface/hud.gd")
 const Livro = preload("res://scripts/interface/livro.gd")
 const Estilo = preload("res://scripts/interface/estilo.gd")
 const Portas = preload("res://scripts/exploracao/portas.gd")
+const Procurar = preload("res://scripts/exploracao/procurar.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
@@ -49,7 +50,7 @@ const GOBLIN_ESCALA := 0.95
 const PASSADA_TESSA := {"andar": 1.25, "correr": 2.11, "andar_furtivo": 0.97, "andar_combate": 0.70, "arco-andar": 0.79}
 const PASSADA_GOBLIN := {"andar": 0.88, "correr": 1.47, "andar_furtivo": 0.67, "andar_combate": 0.50}
 ## Animação de deslocamento de cada modo de movimento (em combate é sempre "andar").
-const PAPEL_DO_MODO := {"devagar": "andar_furtivo", "normal": "andar", "rapido": "correr"}
+const PAPEL_DO_MODO := {"cauteloso": "andar_furtivo", "devagar": "andar_furtivo", "normal": "andar", "rapido": "correr"}
 const TESSA_ESCALA := 1.5   # o modelo heroico veio com ~1,03 m; no jogo ela tem ~1,55 m
 const INICIO := Vector2i(7, 5)
 const TURNOS_POR_TOCHA := 6
@@ -65,6 +66,8 @@ var heroi: Node3D          # quem lidera a fila (leva a tocha)
 var grupo: Array = []      # personagens em jogo, na ordem da fila
 var selecionado: Node3D = null   # quem age nas ações de exploração (carta clicada); sem seleção, quem lidera
 var portas: RefCounted     # ações e estado das portas (scripts/exploracao/portas.gd)
+var procurar: RefCounted   # portas secretas e armadilhas de sala (scripts/exploracao/procurar.gd)
+var marca_armadilhas: Node
 var bonus_silencio_ate := -1   # até este turno o grupo se move em silêncio com bônus (ouviu monstros antes)
 var _porta_menu := {}      # porta do balão aberto
 var monstros: Array = []   # todos os monstros vivos em cena
@@ -118,8 +121,9 @@ func _ready() -> void:
 	_materiais_das_portas()
 	portas = Portas.new(self)
 	luz.set_nevoa(visao.textura(), Vector2(grade.W, grade.H))
-	for n in ["marca_alcance", "marca_caminho", "marca_vez", "marca_portas"]:
+	for n in ["marca_alcance", "marca_caminho", "marca_vez", "marca_portas", "marca_armadilhas"]:
 		var m := MeshInstance3D.new(); m.set_script(Marcas); add_child(m); set(n, m)
+	procurar = Procurar.new(self); procurar.desenhar()
 	combate = Combate.new(); add_child(combate)
 	combate.grade = grade; combate.marca_alcance = marca_alcance; combate.marca_caminho = marca_caminho; combate.marca_vez = marca_vez
 	combate.exploradas = visao.exploradas
@@ -250,7 +254,9 @@ func _ocupadas_por(exceto: Array = []) -> Dictionary:
 func _caminho_lider(de: Vector2i, para: Vector2i) -> Array[Vector2i]:
 	var todos := _ocupadas_por([heroi])
 	if todos.has(para): return []
-	var cam: Array[Vector2i] = grade.caminho(de, para, todos)
+	var desvio := todos.duplicate(); desvio.merge(procurar.vistas())   # desvia de armadilha já vista
+	var cam: Array[Vector2i] = grade.caminho(de, para, desvio)
+	if cam.is_empty(): cam = grade.caminho(de, para, todos)
 	if cam.is_empty(): cam = grade.caminho(de, para, _ocupadas_por(grupo))
 	return cam
 
@@ -295,6 +301,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_K: if not combate.ativo and not fim: _surgir_errantes(true)
 			KEY_B: if not fim: _brotar_goblin()
 			KEY_O: _acao_hud("ouvir")
+			KEY_P: _acao_hud("procurar")
 			KEY_T: if not fim: _arsenal_teste()
 			KEY_I: _acao_hud("ficha")
 			KEY_ESCAPE: _selecionar(null)
@@ -344,7 +351,7 @@ func _porta_no_raio(o: Vector3, d: Vector3, limite: float) -> Dictionary:
 	var vistas := {}
 	for ch in grade.portas:
 		var pt: Dictionary = grade.portas[ch]
-		if vistas.has(pt.id) or grade.porta_aberta.has(pt.id) or not (pt.tipo in ["porta", "dupla"]): continue
+		if vistas.has(pt.id) or grade.porta_aberta.has(pt.id) or not (pt.tipo in ["porta", "dupla"]) or procurar.secreta(pt): continue
 		vistas[pt.id] = true
 		var conhecida := false
 		for par in grade.lados_da_porta(pt):
@@ -366,7 +373,7 @@ func _porta_perto(p: Vector3) -> Dictionary:
 	for viz in [[Vector2i(-1, 0), fx], [Vector2i(1, 0), 1.0 - fx], [Vector2i(0, -1), fz], [Vector2i(0, 1), 1.0 - fz]]:
 		if float(viz[1]) > 0.22: continue
 		var pt: Dictionary = grade.porta_entre(c, c + viz[0])
-		if not pt.is_empty() and not grade.porta_aberta.has(pt.id) and pt.tipo in ["porta", "dupla"]: return pt
+		if not pt.is_empty() and not grade.porta_aberta.has(pt.id) and pt.tipo in ["porta", "dupla"] and not procurar.secreta(pt): return pt
 	return {}
 
 ## Cada porta ganha o próprio material (contorno quente enquanto fechada, acende com o mouse).
@@ -392,7 +399,7 @@ func _desenhar_portas() -> void:
 	var feitas := {}
 	for ch in grade.portas:
 		var pt: Dictionary = grade.portas[ch]
-		if feitas.has(pt.id) or grade.porta_aberta.has(pt.id) or not (pt.tipo in ["porta", "dupla"]): continue
+		if feitas.has(pt.id) or grade.porta_aberta.has(pt.id) or not (pt.tipo in ["porta", "dupla"]) or (procurar and procurar.secreta(pt)): continue
 		feitas[pt.id] = true
 		var conhecida := mestre
 		for par in grade.lados_da_porta(pt):
@@ -499,6 +506,11 @@ func _ao_iniciar_passo(de: Vector2i, para: Vector2i, quem: Node3D) -> void:
 
 func _ao_chegar(_c: Vector2i, metros: float, quem: Node3D) -> void:
 	_atualizar_visao()
+	if quem.lado == "grupo" and quem.vivo():
+		procurar.pisou(quem, _c)
+		if not combate.ativo:
+			procurar.elfo_passando(quem)
+			if quem == heroi and modo == "cauteloso": procurar.cauteloso(quem, _c)
 	if quem == heroi: _anotar_area()
 	if combate.ativo or quem != heroi: return
 	metros_no_turno += metros
@@ -922,6 +934,7 @@ func _acao_hud(acao: String) -> void:
 		"brotar": if not fim: _brotar_goblin()
 		"arsenal": if not fim: _arsenal_teste()
 		"ouvir": if not fim and not combate.ativo: _ouvir_aqui()
+		"procurar": if not fim and not combate.ativo and not portas.ocupado: procurar.procurar_sala()
 		"ficha": _abrir_ficha(combate.vez if combate.ativo and combate.vez and combate.vez.lado == "grupo" else heroi)
 
 ## Teste (tecla T): quem lidera passa para a próxima arma do catálogo, para ver todos os estilos de luta.
@@ -1394,6 +1407,35 @@ func _linha_de_comando() -> void:
 		for g in errantes:
 			if g.has_meta("ouvido"): g.set_meta("ciente", false)
 		if errantes.any(func(x): return x.has_meta("ouvido")): await _comecar_combate(true, false)
+	elif teste == "procurar":
+		# Grupo no corredor 23 (P03 aberta): procurar acha a P02 secreta e o fosso; elfo de passagem; cauteloso.
+		var p3: Dictionary = portas.por_id["P03"]; portas.de(p3).estado = "fechada"; _abrir_porta(p3, Vector2i(11, 5), "teste")
+		var p2: Dictionary = portas.por_id["P02"]
+		print("PROCURAR P02 secreta=", procurar.secreta(p2), " clicável=", not _porta_perto(grade.centro(Vector2i(12, 4)) + Vector3(0, 0, -0.6)).is_empty(), " monstro passa=", grade.passa_reto(Vector2i(12, 3), Vector2i(12, 4), true))
+		grupo[0].colocar(Vector2i(14, 5)); grupo[1].colocar(Vector2i(13, 5)); grupo[2].colocar(Vector2i(15, 6)); _atualizar_visao()
+		print("PROCURAR área=", grade.area_de(grupo[0].celula), " trechos=", procurar.trechos("23"), " turnos=", procurar.turnos_para("23"))
+		for k in 12:
+			await procurar.procurar_sala()
+			if not procurar.secreta(p2) and procurar.armadilhas[Vector2i(17, 5)].visto: break
+			procurar.procurou.clear()
+		print("PROCURAR achou P02=", not procurar.secreta(p2), " fosso visto=", procurar.armadilhas[Vector2i(17, 5)].visto, " turno=", turno,
+			" P02 clicável=", not _porta_perto(grade.centro(Vector2i(12, 4)) + Vector3(0, 0, -0.6)).is_empty())
+		var cam: Array[Vector2i] = _caminho_lider(grupo[0].celula, Vector2i(19, 5))
+		print("PROCURAR caminho desvia do fosso=", not cam.has(Vector2i(17, 5)), " ", cam)
+		var f2: Dictionary = procurar.armadilhas[Vector2i(10, 1)]
+		var caiu := false
+		for k in 20:
+			procurar.pisou(grupo[0], Vector2i(10, 1))
+			if f2.visto: caiu = true; break
+		print("PROCURAR pisou no fosso escondido: disparou=", caiu, " Tessa PV=", grupo[0].pv)
+	elif teste == "secreta":
+		# Captura da P02 vista do corredor 23: escondida (--revelar: depois de achada).
+		var p3: Dictionary = portas.por_id["P03"]; portas.de(p3).estado = "fechada"; _abrir_porta(p3, Vector2i(11, 5), "teste")
+		for i in 3: grupo[i].colocar(Vector2i(13 + i, 6))
+		if OS.get_cmdline_user_args().has("--revelar"): procurar.revelar(portas.por_id["P02"], "teste")
+		_atualizar_visao()
+		camera.alvo = grade.centro(Vector2i(12, 4)); camera.distancia = 8.0; camera.guinada = -20.0; camera.inclinacao = 40.0
+		await get_tree().create_timer(1.0).timeout
 	elif teste == "corrida":
 		# No combate os monstros correm (velocidade do modo rápido, animação de corrida); fugindo também.
 		for k in 3: _brotar_goblin(); await get_tree().process_frame
