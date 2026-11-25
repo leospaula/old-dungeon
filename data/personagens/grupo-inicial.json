@@ -9,7 +9,7 @@
       "pv": 9, "ca": 3, "thac0": 19,
       "protecao": { "morte": 12, "varinhas": 13, "paralisia": 14, "sopro": 15, "magias": 16 },
       "armas": [{ "nome": "espada", "dano": "1d8" }, { "nome": "lança", "dano": "1d6", "arremesso": true }],
-      "equipamento": ["cota de malha", "escudo", "mochila", "tocha x6", "rações x7", "odre", "corda 15 m"],
+      "equipamento": ["cota de malha", "escudo", "mochila", "tocha x6", "rações x7"],
       "po": 8
     },
     {
@@ -28,7 +28,7 @@
       "protecao": { "morte": 13, "varinhas": 14, "paralisia": 13, "sopro": 16, "magias": 15 },
       "armas": [{ "nome": "adaga", "dano": "1d4", "arremesso": true }, { "nome": "funda", "dano": "1d4", "distancia": true }],
       "habilidades_ladrao": { "abrir_fechaduras": 15, "armadilhas": 10, "bater_carteira": 20, "escalar": 87, "silencio": 20, "esconder": 10, "ouvir": "1-2" },
-      "equipamento": ["armadura de couro", "adaga", "pedras de funda x20", "ferramentas de ladrão", "mochila", "corda 10 m", "tocha x3", "rações x7"],
+      "equipamento": ["armadura de couro", "adaga", "pedras de funda x20", "ferramentas de ladrão", "mochila", "tocha x3", "rações x7"],
       "po": 22
     },
     {
@@ -48,7 +48,7 @@
       "protecao": { "morte": 13, "varinhas": 14, "paralisia": 13, "sopro": 16, "magias": 15 },
       "armas": [{ "nome": "adaga", "dano": "1d4", "arremesso": true }],
       "grimorio": ["sono"], "magias_por_dia": { "1": 1 },
-      "equipamento": ["adaga x2", "grimório", "tinta e pena", "mochila", "lanterna", "óleo x2", "rações x7"],
+      "equipamento": ["adaga x2", "grimório", "mochila", "lanterna", "óleo x2", "rações x7"],
       "po": 14
     },
     {
@@ -68,7 +68,7 @@
       "pv": 7, "ca": 5, "thac0": 19,
       "protecao": { "morte": 8, "varinhas": 9, "paralisia": 10, "sopro": 13, "magias": 12 },
       "armas": [{ "nome": "espada curta", "dano": "1d6" }, { "nome": "funda", "dano": "1d4", "distancia": true }],
-      "equipamento": ["armadura de couro", "escudo pequeno", "pedras de funda x30", "mochila", "tocha x8", "panela", "rações x10"],
+      "equipamento": ["armadura de couro", "escudo pequeno", "pedras de funda x30", "mochila", "tocha x8", "rações x10"],
       "po": 11
     }
   ]

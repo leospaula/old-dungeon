@@ -810,8 +810,6 @@ func _usar_item(h: Node3D, item) -> void:
 				_atualizar_visao()
 		"rações":
 			if h.ficha.gastar("rações"): _registrar("%s come uma ração (restam %d)." % [h.nome, h.ficha.contar("rações")])
-		"odre":
-			_registrar("%s bebe do odre." % h.nome)
 		_:
 			_registrar("[i]%s: o uso deste item entra com as habilidades.[/i]" % inf.nome)
 	_ficha_mudou(h)

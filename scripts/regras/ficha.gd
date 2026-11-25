@@ -33,8 +33,9 @@ static func info(it) -> Dictionary:
 
 static func icone(it) -> Texture2D:
 	var ic: String = str(info(it).get("icone", ""))
-	if ic == "": return null
-	return load("res://arte/final/interface/icones/%s.png" % ic)
+	var arq := "res://arte/final/interface/icones/%s.png" % ic
+	if ic == "" or not ResourceLoader.exists(arq): return null   # ícone ainda não feito: mostra o nome
+	return load(arq)
 
 func _init(dados: Dictionary, arma_preferida := "") -> void:
 	p = dados; id = str(p.id); nome = str(p.nome)
