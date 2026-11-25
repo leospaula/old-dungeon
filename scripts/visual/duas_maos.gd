@@ -28,7 +28,7 @@ func _process(_dt: float) -> void:
 	var local: Vector3 = pai.global_transform.affine_inverse() * esq_glob - position
 	var d_esq := (sk.global_transform.affine_inverse() * esq_glob).distance_to(sk.global_transform.affine_inverse() * pai.global_transform * position)
 	# Folga larga: só solta o alinhamento quando a mão esquerda sai mesmo do cabo (sem tremer).
-	var peso := 1.0 - smoothstep(0.45, 0.65, d_esq)
+	var peso := 1.0 - smoothstep(0.7, 0.9, d_esq)
 	if peso <= 0.001 or local.length() < 0.001:
 		transform.basis = base; return
 	var y0 := base.y.normalized()

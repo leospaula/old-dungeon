@@ -39,7 +39,9 @@ const TESSA_GIRO := {"parado-espada-escudo": 76.0, "parado": 45.0, "andar": 90.0
 	"impacto-guarda": 91.0, "impacto-de-cima": 82.0, "impacto-horizontal": 112.0, "impacto-reves": 75.0,
 	"duas-maos-guarda": 89.0, "duas-maos-golpe": 85.0, "aparar": 99.0, "haste-estocada": 84.0, "haste-guarda": 84.0, "cajado-golpe": 91.0,
 	"besta-mirar": 88.0, "arco-guarda": 89.0, "arco-espera": 85.0, "arco-andar": 88.0, "atirar-flecha": 80.0, "arremessar": 93.0,
-	"arremessar-faca": 101.0, "arremessar-frasco": 94.0, "chutar-porta": 73.0, "ajoelhar": 91.0, "beber": 96.0}
+	"arremessar-faca": 101.0, "arremessar-frasco": 94.0, "chutar-porta": 73.0, "ajoelhar": 91.0, "beber": 96.0,
+	"faca-guarda": 74.0, "faca-estocada": 81.0, "besta-guarda": 88.0, "besta-disparo": 89.0, "machado-guarda": 76.0,
+	"haste-bloquear": 91.0, "arco-bloquear": 85.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
 const GOBLIN_ESCALA := 0.95
 ## Velocidade natural de cada animação de deslocamento já na escala do jogo (tools/medir_passada.gd).
@@ -1033,12 +1035,7 @@ func _linha_de_comando() -> void:
 		await get_tree().create_timer(1.5).timeout
 		var g: Node3D = monstros[0]
 		var casos := [[0, "parado-espada-escudo", 0.5], [0, "parado-espada-escudo", 0.5, 0.0], [2, "sacar-flecha", 1.0], [2, "atirar-flecha", 2.6, 0.0], [2, "atirar-flecha", 3.0, 0.0]]
-		for x in [["impacto-guarda", 0.5], ["impacto-de-cima", 0.83], ["impacto-horizontal", 0.97], ["impacto-reves", 1.03],
-				["duas-maos-guarda", 0.5], ["duas-maos-golpe", 0.57], ["aparar", 0.3], ["haste-estocada", 0.93], ["cajado-golpe", 1.0],
-				["besta-mirar", 0.1], ["arco-guarda", 1.0], ["arco-andar", 0.5], ["atirar-flecha", 2.6], ["arremessar", 0.57],
-				["arremessar-faca", 1.3], ["arremessar-frasco", 0.85], ["chutar-porta", 0.55], ["ajoelhar", 2.5], ["beber", 1.5],
-				["impacto-de-cima", 0.3], ["impacto-de-cima", 0.6], ["impacto-de-cima", 1.0], ["impacto-reves", 0.4], ["impacto-reves", 0.8],
-				["impacto-reves", 1.3], ["impacto-horizontal", 0.5], ["impacto-horizontal", 1.2]]:
+		for x in [["faca-guarda", 1.0], ["faca-estocada", 0.73], ["corte-fora", 0.87], ["besta-guarda", 1.0], ["besta-disparo", 0.15], ["machado-guarda", 1.0], ["haste-bloquear", 0.3], ["arco-bloquear", 0.3], ["arco-guarda", 1.0]]:
 			casos.append([0, x[0], x[1], 0.0])
 		for caso in casos:
 			var eu: Node3D = grupo[caso[0]]

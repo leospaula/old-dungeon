@@ -147,10 +147,11 @@ func vestir(f, catalogo: Callable) -> void:
 	if not andando() and vivo(): tocar("parado", 0.0)
 
 ## Armas só aparecem no combate; o escudo fica sempre no braço.
+var _escondida := false
 func _mostrar_armas() -> void:
 	for lugar in _vestidos:
 		var no: Node3D = _vestidos[lugar][1]
-		if is_instance_valid(no): no.visible = em_combate or bool(no.get_meta("escudo", false))
+		if is_instance_valid(no): no.visible = (em_combate or bool(no.get_meta("escudo", false))) and not (_escondida and lugar == "mao_d")
 
 ## Saca (combate) ou guarda a arma (exploração).
 func empunhar(sim: bool) -> void:
@@ -160,6 +161,8 @@ func empunhar(sim: bool) -> void:
 	if not andando() and vivo(): tocar("parado")
 
 func tocar(papel: String, misturar := 0.2) -> void:
+	if papel == "parado" and _escondida:
+		_escondida = false; _mostrar_armas()
 	if papel == "parado":
 		if em_combate and _tem("parado_combate"): papel = "parado_combate"
 		elif papel_andar == "andar_furtivo" and _tem("parado_furtivo"): papel = "parado_furtivo"   # agachado
@@ -290,13 +293,17 @@ func animar_tiro(alvo: Node3D) -> void:
 	if player and _tem("atirar"): tocar("atirar", 0.12)
 	await get_tree().create_timer(tempo_tiro()).timeout
 	if player and _tem("soltar"): tocar("soltar", 0.05)   # a corda solta: a flecha sai agora
+	# Arma de arremesso (azagaia): some da mão ao soltar; volta "nova" quando a vez acaba (tocar parado).
+	if bool(estilos().estilos.get(estilo, {}).get("some_ao_soltar", false)) and _vestidos.has("mao_d"):
+		_escondida = true; _mostrar_armas()
 
 ## Defesa (bloquear/esquivar) cronometrada para o auge cair no instante em que a lâmina chega.
 ## Auge medido com tools/curva_quadril.gd: escudo firme ~0,35 s; maior inclinação da esquiva ~0,55 s.
 const DEFESA_AUGE := {"bloquear": 0.35, "esquivar": 0.55}
 func defender(papel: String, de: Vector3, impacto_em: float) -> void:
 	if not _tem(papel): return
-	var espera := maxf(impacto_em - float(estilos().auge_defesa.get(papel, DEFESA_AUGE.get(papel, 0.3))), 0.0)
+	var au: Dictionary = estilos().auge_defesa
+	var espera := maxf(impacto_em - float(au.get(anim.get(papel, ""), au.get(papel, DEFESA_AUGE.get(papel, 0.3)))), 0.0)
 	await get_tree().create_timer(espera).timeout
 	if not vivo(): return
 	olhar_para(de)

@@ -28,10 +28,10 @@ func _run() -> void:
 	for id in cat:
 		var it: Dictionary = cat[id]
 		if not it.has("modelo3d"): continue
-		var arq := str(it.modelo3d.arquivo).get_file().get_basename()
+		var arq := str(it.modelo3d.get("arquivo", "")).get_file().get_basename()
 		out.itens[id] = {"nome": it.nome, "tipo": it.tipo, "estilo": it.get("estilo", ""), "maos": int(it.get("maos", 1)),
 			"icone": it.get("icone", ""), "modelo": arq}
-		out.modelos_itens[arq] = "arena/itens/%s.gltf.json" % arq
+		if arq != "": out.modelos_itens[arq] = "arena/itens/%s.gltf.json" % arq
 	for p in PERS:
 		var cfg: Dictionary = PERS[p]
 		var t: Node3D = load(cfg.glb).instantiate(); root.add_child(t)
@@ -44,12 +44,14 @@ func _run() -> void:
 		out.montagens[p] = {}
 		for id in out.itens:
 			var m: Dictionary = cat[id].modelo3d
+			if m.has("procedural"):
+				out.montagens[p][id] = {"procedural": str(m.procedural), "comprimento": float(m.get("comprimento", 0.5))}
+				continue
 			var ba: Node3D = Armas3D.montar(sk, ap, m, float(cfg.escala))
 			if ba == null: continue
 			var piv: Node3D = ba.get_child(0)
-			var giro: Node3D = piv.get_child(0)
-			var item: Node3D = giro.get_child(0)
-			var d := {"osso": str(ba.bone_name), "piv": _m(piv.transform), "resto": _m(giro.transform * item.transform),
+			var item: Node3D = Armas3D.item_de(ba)
+			var d := {"osso": str(ba.bone_name), "piv": _m(piv.transform), "resto": _m(Armas3D.resto_de(ba)),
 				"duas_maos": bool(m.get("duas_maos", false)), "ponta": str(m.get("ponta", "olhar")), "prumo": bool(m.get("prumo", false))}
 			if piv.get("eixo_item") != null: d["eixo_item"] = _v(piv.eixo_item)
 			for c in item.get_children():

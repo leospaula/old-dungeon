@@ -7,11 +7,13 @@ extends RefCounted
 ## modelo3d: {arquivo, comprimento (m reais), pega [0–1]×3 (ponto da malha que fica no punho),
 ##            mao: "direita" | "esquerda" | "antebraco", pose, pose_t, rotacao [graus], ao_longo, afastar (m),
 ##            ajuste_punho [m]×3, duas_maos (o cabo aponta para a mão esquerda quando ela está no cabo),
-##            corda (arco: corda desenhada), escala_eixos [x, y, z]}
+##            corda (arco: corda desenhada), escala_eixos [x, y, z], alinhar_curva (arco: curva para +Z),
+##            alinhar_em [anim, t, "mao_esquerda"|"frente"] (eixo fixo calculado nessa pose), procedural: "funda"}
 
 const CordaArco = preload("res://scripts/visual/corda_arco.gd")
 const DuasMaos = preload("res://scripts/visual/duas_maos.gd")
 const PrumoArco = preload("res://scripts/visual/prumo_arco.gd")
+const Funda = preload("res://scripts/visual/funda.gd")
 
 ## Prende o item ao esqueleto. `escala` = escala do modelo do personagem no jogo (para o comprimento real).
 ## Devolve o BoneAttachment3D (remova-o para tirar o item).
@@ -19,6 +21,11 @@ static func montar(sk: Skeleton3D, ap: AnimationPlayer, m: Dictionary, escala: f
 	var mao: String = m.get("mao", "direita")
 	var osso: String = {"direita": "mixamorig_RightHand", "esquerda": "mixamorig_LeftHand", "antebraco": "mixamorig_LeftForeArm"}[mao]
 	var i_osso := sk.find_bone(osso)
+	if str(m.get("procedural", "")) == "funda":
+		var bf := BoneAttachment3D.new(); bf.bone_name = osso; sk.add_child(bf)
+		var fu: Node3D = Funda.new(); fu.sk = sk; fu.comprimento = float(m.get("comprimento", 0.5)) / escala
+		bf.add_child(fu)
+		return bf
 	if i_osso < 0 or not ResourceLoader.exists(str(m.arquivo)): return null
 	var item: Node3D = load(str(m.arquivo)).instantiate()
 	var caixa := _aabb(item)
@@ -37,7 +44,11 @@ static func montar(sk: Skeleton3D, ap: AnimationPlayer, m: Dictionary, escala: f
 	if mao == "antebraco": piv.transform = _no_antebraco(sk, i_osso, ap, m, caixa, escala)
 	else: piv.transform = _no_punho(sk, i_osso, ap, m, mao)
 	# vertical_em: endireita o item (eixo do comprimento) na vertical nesta pose/instante (arco na puxada).
-	var r0: Array = m.get("rotacao", [0, 0, 0])
+	var r0: Array = (m.get("rotacao", [0, 0, 0]) as Array).duplicate()
+	var guinada := 0.0   # alinhar_curva: gira o item no próprio comprimento para a barriga do arco ir para +Z
+	if bool(m.get("alinhar_curva", false)):
+		var barriga := _barriga(item)
+		guinada = -atan2(barriga.x, barriga.z)
 	var rot_item := Basis.from_euler(Vector3(deg_to_rad(r0[0]), deg_to_rad(r0[1]), deg_to_rad(r0[2])))
 	if m.has("vertical_em") and ap.has_animation(str(m.vertical_em[0])):
 		ap.play(str(m.vertical_em[0])); ap.seek(float(m.vertical_em[1]), true); ap.advance(0); sk.force_update_all_bone_transforms()
@@ -46,16 +57,28 @@ static func montar(sk: Skeleton3D, ap: AnimationPlayer, m: Dictionary, escala: f
 		var cima_local: Vector3 = (osso_glob.inverse() * Vector3.UP).normalized()
 		if eixo_local.dot(cima_local) < 0: cima_local = -cima_local
 		piv.transform.basis = Basis(Quaternion(eixo_local, cima_local)) * piv.transform.basis
+	if m.has("alinhar_em") and ap.has_animation(str(m.alinhar_em[0])):
+		ap.play(str(m.alinhar_em[0])); ap.seek(float(m.alinhar_em[1]), true); ap.advance(0); sk.force_update_all_bone_transforms()
+		var og: Transform3D = sk.get_bone_global_pose(i_osso)
+		var alvo_glob := Vector3.ZERO
+		if str(m.alinhar_em[2]) == "mao_esquerda":
+			alvo_glob = sk.get_bone_global_pose(sk.find_bone("mixamorig_LeftHandMiddle1")).origin - sk.get_bone_global_pose(sk.find_bone("mixamorig_RightHandMiddle1")).origin
+		else:   # "frente": para onde a cabeça olha
+			var cab := sk.find_bone("mixamorig_Head")
+			alvo_glob = sk.get_bone_global_pose(cab).basis * (sk.get_bone_global_rest(cab).basis.inverse() * _frente(sk))
+		var eixo_l: Vector3 = (piv.transform.basis * rot_item).y.normalized()
+		var alvo_l: Vector3 = (og.basis.inverse() * alvo_glob).normalized()
+		piv.transform.basis = Basis(Quaternion(eixo_l, alvo_l)) * piv.transform.basis
 	if piv is DuasMaos: piv.base = piv.transform.basis
 	if piv is PrumoArco: piv.base = piv.transform.basis; piv.eixo_item = (rot_item * Vector3.UP).normalized()
 	if antes != "": ap.play(antes); ap.seek(pos, true)
 	var giro := Node3D.new(); piv.add_child(giro)
-	var r: Array = m.get("rotacao", [0, 0, 0])
-	giro.rotation_degrees = Vector3(r[0], r[1], r[2])
-	# escala_eixos: corrige malhas que vieram grossas num eixo (ex.: arco que o Tripo fez largo demais).
+	giro.rotation_degrees = Vector3(r0[0], r0[1], r0[2])
+	# giro → achata (escala_eixos, depois de alinhar a curva: afina a espessura, não a curva) → alinha → item
 	var ex: Array = m.get("escala_eixos", [1, 1, 1])
-	var ev := Vector3(ex[0], ex[1], ex[2])
-	giro.add_child(item); item.scale = Vector3.ONE * esc * ev; item.position = -pega * esc * ev
+	var achata := Node3D.new(); achata.scale = Vector3(ex[0], ex[1], ex[2]); giro.add_child(achata)
+	var alinha := Node3D.new(); alinha.rotation.y = guinada; achata.add_child(alinha)
+	alinha.add_child(item); item.scale = Vector3.ONE * esc; item.position = -pega * esc
 	if bool(m.get("corda", false)): CordaArco.prender(item, sk, ap)
 	return ba
 
@@ -115,6 +138,34 @@ static func _frente(sk: Skeleton3D) -> Vector3:
 	var t := sk.get_bone_global_rest(sk.find_bone("mixamorig_LeftToeBase")).origin
 	var pe := t - p; pe.y = 0
 	return f if f.dot(pe) >= 0 else -f
+
+## O modelo do item dentro do BoneAttachment devolvido por montar(), e a transformação dele relativa ao osso.
+static func item_de(ba: Node3D) -> Node3D:
+	var n: Node = ba.get_child(0)
+	while n.get_child_count() > 0 and not (n is Node3D and n.scene_file_path != ""):
+		var prox: Node = null
+		for c in n.get_children():
+			if c is Node3D and c.get_script() == null: prox = c; break
+		if prox == null: break
+		n = prox
+	return n as Node3D
+
+static func resto_de(ba: Node3D) -> Transform3D:
+	var piv: Node3D = ba.get_child(0)
+	var it := item_de(ba)
+	var t := Transform3D.IDENTITY; var n: Node = it
+	while n != piv:
+		t = (n as Node3D).transform * t; n = n.get_parent()
+	return t
+
+## Para onde o meio do arco se curva (x, z), no espaço do item: centro do meio menos o centro das pontas.
+static func _barriga(n: Node3D) -> Vector3:
+	var caixa := _aabb(n); var f := caixa.size.y * 0.03
+	var meio := _centro_na_altura(n, caixa.position.y + caixa.size.y * 0.5, f, Vector3.ZERO)
+	var a := _centro_na_altura(n, caixa.position.y + caixa.size.y * 0.03, f, Vector3.ZERO)
+	var b := _centro_na_altura(n, caixa.end.y - caixa.size.y * 0.03, f, Vector3.ZERO)
+	var d := meio - (a + b) * 0.5; d.y = 0
+	return d.normalized() if d.length() > 1e-5 else Vector3.BACK
 
 ## Centro (x, z) dos vértices numa faixa de altura y ± faixa, no espaço do item.
 static func _centro_na_altura(n: Node3D, y: float, faixa: float, padrao: Vector3) -> Vector3:

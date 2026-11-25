@@ -65,7 +65,14 @@
   "soltar-flecha": "arte/animacoes/mixamo/soltar-flecha.fbx",
   "magia-area": "arte/animacoes/mixamo/magia-area.fbx",
   "haste-guarda": "arte/animacoes/mixamo/haste-estocada.fbx",
-  "arco-espera": "arte/animacoes/mixamo/atirar-flecha.fbx"
+  "arco-espera": "arte/animacoes/mixamo/atirar-flecha.fbx",
+  "faca-guarda": "arte/animacoes/mixamo/faca-guarda.fbx",
+  "besta-guarda": "arte/animacoes/mixamo/besta-guarda.fbx",
+  "machado-guarda": "arte/animacoes/mixamo/machado-guarda.fbx",
+  "haste-bloquear": "arte/animacoes/mixamo/haste-bloquear.fbx",
+  "arco-bloquear": "arte/animacoes/mixamo/arco-bloquear.fbx",
+  "besta-disparo": "arte/animacoes/mixamo/besta-disparo.fbx",
+  "faca-estocada": "arte/animacoes/mixamo/faca-estocada.fbx"
  },
  "angulo": 35,
  "no_lugar": [
@@ -74,10 +81,12 @@
   "andar-furtivo",
   "aparar",
   "arco-andar",
+  "arco-bloquear",
   "arremessar",
   "arremessar-faca",
   "arremessar-frasco",
   "atirar-flecha",
+  "besta-disparo",
   "bloquear",
   "cajado-golpe",
   "chutar-porta",
@@ -89,6 +98,8 @@
   "esquivar",
   "estocada",
   "estocada-cima",
+  "faca-estocada",
+  "haste-bloquear",
   "haste-estocada",
   "impacto-de-cima",
   "impacto-horizontal",
@@ -116,8 +127,8 @@
    2.2
   ],
   "haste-guarda": [
-   0.0,
-   0.3
+   0.08,
+   0.1
   ],
   "arco-espera": [
    0.0,

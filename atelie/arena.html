@@ -170,6 +170,7 @@ function osso(nome) { let b = null; P.obj.traverse(n => { if (!b && n.isBone && 
 
 async function montar(id) {
   const m = D.montagens[S.pers][id]; if (!m) return;
+  if (m.procedural === "funda") { criarFunda(m); return; }
   const g = await carregar(D.modelos_itens[D.itens[id].modelo]);
   const b = osso(m.osso); if (!b) return;
   const piv = new THREE.Group(), resto = new THREE.Group();
@@ -184,6 +185,31 @@ async function montar(id) {
 function desmontar() {
   for (const r of P.montados) r.osso.remove(r.piv);
   P.montados = []; if (P.corda) { cena.remove(P.corda.a); cena.remove(P.corda.b); P.corda = null; }
+  if (P.funda) { for (const o of P.funda.objs) cena.remove(o); P.funda = null; }
+}
+
+// ---------- funda desenhada (mesma ideia de scripts/visual/funda.gd: pêndulo preso à mão) ----------
+function criarFunda(m) {
+  const corda = new THREE.MeshStandardMaterial({ color: 0x6b5438, roughness: 0.95 });
+  const couro = new THREE.MeshStandardMaterial({ color: 0x5c3820, roughness: 0.9 });
+  const geo = new THREE.CylinderGeometry(0.004, 0.004, 1, 5, 1);
+  const a = new THREE.Mesh(geo, corda), b = new THREE.Mesh(geo, corda);
+  const bolsa = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 6), couro); bolsa.scale.y = 0.7;
+  cena.add(a); cena.add(b); cena.add(bolsa);
+  P.funda = { objs: [a, b, bolsa], a, b, bolsa, mao: osso("mixamorig_RightHandIndex1"), l: m.comprimento, p: null, ant: null };
+}
+function atualizarFunda(dt) {
+  const f = P.funda; if (!f || !f.mao) return;
+  const mao = f.mao.getWorldPosition(new THREE.Vector3());
+  if (!f.p) { f.p = mao.clone().add(new THREE.Vector3(0, -f.l, 0)); f.ant = f.p.clone(); }
+  if (!S.pausado) {
+    const v = f.p.clone().sub(f.ant).multiplyScalar(0.985); f.ant.copy(f.p);
+    f.p.add(v).add(new THREE.Vector3(0, -9.8 * dt * dt, 0));
+    const d = f.p.clone().sub(mao); if (d.length() > 1e-4) f.p.copy(mao).add(d.normalize().multiplyScalar(f.l));
+  }
+  const lado = f.p.clone().sub(mao).cross(new THREE.Vector3(0, 1, 0));
+  if (lado.length() > 1e-4) lado.normalize().multiplyScalar(0.018); else lado.set(0.018, 0, 0);
+  ligar(f.a, mao, f.p.clone().add(lado)); ligar(f.b, mao, f.p.clone().sub(lado)); f.bolsa.position.copy(f.p);
 }
 async function vestir() {
   desmontar();
@@ -227,7 +253,7 @@ function ajustarDinamicos(dt) {
       const local = r.osso.worldToLocal(pe.clone()).sub(r.piv.position);
       const pivW = r.piv.getWorldPosition(new THREE.Vector3());
       const dist = pe.distanceTo(pivW) / P.obj.scale.x;
-      const peso = 1 - THREE.MathUtils.smoothstep(dist, 0.45, 0.65);
+      const peso = 1 - THREE.MathUtils.smoothstep(dist, 0.7, 0.9);
       if (peso <= 0.001 || local.length() < 1e-4) { r.piv.quaternion.copy(r.base); continue; }
       let alvo = local.normalize();
       if (r.m.ponta === "direita") alvo.negate();
@@ -268,11 +294,19 @@ function tocar(nome, vezes, mistura = 0.15, depois = null) {
   if (antes && antes !== ac) ac.crossFadeFrom(antes, mistura, false);
   ac.play(); P.atual = nome; P.fim = depois; S.pausado = false; $("#b-pausa").textContent = "Pausar";
 }
-function guarda(mistura = 0.2) { S.andando = false; tocar(papel("parado_combate"), 0, mistura); marcarAndar(); }
+function guarda(mistura = 0.2) { for (const r of P.montados) r.piv.visible = true; S.andando = false; tocar(papel("parado_combate"), 0, mistura); marcarAndar(); }
 function atacar(critico) {
   const e = estiloAtual();
   let nome;
-  if (e.atirar) nome = e.atirar;
+  if (e.atirar) {
+    nome = e.atirar;
+    // arma de arremesso: some ao soltar e volta "nova" na guarda
+    if (e.some_ao_soltar) {
+      const solta = (D.estilos.solta[nome] || 0.5) / ritmoDe(nome);
+      const r = P.montados.find(x => x.id === S.arma);
+      if (r) setTimeout(() => { r.piv.visible = false; }, solta * 1000);
+    }
+  }
   else if (critico && e.golpe_critico) nome = e.golpe_critico;
   else if (e.golpe2) { S.alterna = !S.alterna; nome = S.alterna ? e.golpe2 : (e.golpe || "golpe"); }
   else nome = e.golpe || "golpe";
@@ -350,7 +384,7 @@ function laco() {
   requestAnimationFrame(laco);
   const dt = relogio.getDelta();
   if (P.mixer && !S.pausado) P.mixer.update(dt);
-  if (P.obj) { P.obj.updateMatrixWorld(true); ajustarDinamicos(dt); P.obj.updateMatrixWorld(true); atualizarCorda(); hud(); }
+  if (P.obj) { P.obj.updateMatrixWorld(true); ajustarDinamicos(dt); P.obj.updateMatrixWorld(true); atualizarCorda(); atualizarFunda(Math.min(dt, 0.05)); hud(); }
   controles.update(); renderer.render(cena, camera);
 }
 
