@@ -1,0 +1,19 @@
+{
+  "_doc": "Magias de 1º círculo do MVP (Regras B-X §8). Texto próprio. quando: ex = exploração, co = combate, am = os dois. listas: arcana (mago, elfo) e divina (clérigo).",
+  "arcana": ["sono", "missil_magico", "enfeiticar_pessoa", "luz", "escudo", "detectar_magia", "ler_idiomas", "disco_flutuante"],
+  "divina": ["curar_ferimentos_leves", "protecao_contra_o_mal", "luz", "detectar_magia", "remover_medo", "purificar"],
+  "magias": {
+    "sono":                   {"nome": "Sono", "quando": "co", "alcance": "72 m", "duracao": "4d4 turnos", "texto": "Até 2d8 DV de criaturas dormem (cada uma com até 4+1 DV), sem jogada de proteção. Área de 12 × 12 m."},
+    "missil_magico":          {"nome": "Míssil Mágico", "quando": "co", "alcance": "45 m", "duracao": "instantâneo", "texto": "Um dardo de energia acerta sempre e causa 1d6+1 de dano."},
+    "enfeiticar_pessoa":      {"nome": "Enfeitiçar Pessoa", "quando": "am", "alcance": "36 m", "duracao": "até quebrar", "texto": "Um humano ou semi-humano passa a ver o mago como amigo, se falhar na proteção contra magias."},
+    "luz":                    {"nome": "Luz", "quando": "ex", "alcance": "36 m", "duracao": "7 turnos (mago 1) · 12 (clérigo)", "texto": "Ilumina um círculo de 9 m. Lançada nos olhos de alguém, cega."},
+    "escudo":                 {"nome": "Escudo", "quando": "co", "alcance": "o próprio mago", "duracao": "2 turnos", "texto": "CA 2 contra projéteis e CA 4 contra os outros ataques."},
+    "detectar_magia":         {"nome": "Detectar Magia", "quando": "ex", "alcance": "18 m", "duracao": "2 turnos", "texto": "Itens, lugares e efeitos mágicos por perto brilham."},
+    "ler_idiomas":            {"nome": "Ler Idiomas", "quando": "ex", "alcance": "o próprio mago", "duracao": "2 turnos", "texto": "Lê qualquer escrita, mapa ou código (mas não magias)."},
+    "disco_flutuante":        {"nome": "Disco Flutuante", "quando": "ex", "alcance": "2 m", "duracao": "6 turnos", "texto": "Um disco invisível carrega até 5.000 moedas e segue o mago."},
+    "curar_ferimentos_leves": {"nome": "Curar Ferimentos Leves", "quando": "am", "alcance": "toque", "duracao": "instantâneo", "texto": "Cura 1d6+1 PV ou desfaz uma paralisia."},
+    "protecao_contra_o_mal":  {"nome": "Proteção contra o Mal", "quando": "am", "alcance": "o próprio clérigo", "duracao": "12 turnos", "texto": "Criaturas malignas têm −1 para acertá-lo e ele ganha +1 nas proteções."},
+    "remover_medo":           {"nome": "Remover Medo", "quando": "am", "alcance": "toque", "duracao": "2 turnos", "texto": "Acalma um aliado tomado pelo medo."},
+    "purificar":              {"nome": "Purificar Comida e Água", "quando": "ex", "alcance": "3 m", "duracao": "permanente", "texto": "Torna seguras comida e água estragadas ou envenenadas."}
+  }
+}

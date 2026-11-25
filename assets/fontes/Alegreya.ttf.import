@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://ypg1b86s115j"
-path="res://.godot/imported/NotoSerif-Regular.ttf-7c11a13b294626858e7b4daabb7f1b87.fontdata"
+uid="uid://dc8tpnmdf8h14"
+path="res://.godot/imported/Alegreya.ttf-a46745270e2abe2c63bbf3d1bdcffbf4.fontdata"
 
 [deps]
 
-source_file="res://assets/fontes/NotoSerif-Regular.ttf"
-dest_files=["res://.godot/imported/NotoSerif-Regular.ttf-7c11a13b294626858e7b4daabb7f1b87.fontdata"]
+source_file="res://assets/fontes/Alegreya.ttf"
+dest_files=["res://.godot/imported/Alegreya.ttf-a46745270e2abe2c63bbf3d1bdcffbf4.fontdata"]
 
 [params]
 

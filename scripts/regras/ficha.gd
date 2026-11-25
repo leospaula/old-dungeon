@@ -259,6 +259,87 @@ func habilidades_especiais() -> Array:
 		"mago": return ["Magia arcana: 1 magia de 1º círculo por dia", "Grimório"]
 	return ["Usa qualquer arma e armadura"]
 
+## Linhas da aba Habilidades do livro: {nome, desc, valor, chance (0–100), quando: ex | co | am}.
+func habilidades() -> Array:
+	var out: Array = []
+	if p.has("habilidades_ladrao"):
+		var h: Dictionary = p.habilidades_ladrao
+		out.append(_hab("Mover em silêncio", "Você não sabe se falhou: o jogo rola escondido.", "%d%%" % int(h.silencio), int(h.silencio), "am"))
+		out.append(_hab("Esconder-se nas sombras", "Parado, na sombra. Atacar revela.", "%d%%" % int(h.esconder), int(h.esconder), "am"))
+		out.append(_hab("Abrir fechaduras", "Uma tentativa por fechadura; precisa das ferramentas.", "%d%%" % int(h.abrir_fechaduras), int(h.abrir_fechaduras), "ex"))
+		out.append(_hab("Achar e desarmar armadilhas", "1 turno por área; substitui o 1 em 6 comum.", "%d%%" % int(h.armadilhas), int(h.armadilhas), "ex"))
+		out.append(_hab("Escalar paredes", "Um teste por subida; cair causa dano.", "%d%%" % int(h.escalar), int(h.escalar), "ex"))
+		out.append(_hab("Bater carteira", "Falha grande: a vítima percebe.", "%d%%" % int(h.bater_carteira), int(h.bater_carteira), "ex"))
+		out.append(_hab("Ouvir atrás de portas", "Um teste por porta, em silêncio.", "%s em 6" % str(h.ouvir), 33, "ex"))
+	match str(p.classe):
+		"elfo":
+			out.append(_hab("Infravisão", "Vê calor no escuro.", "18 m", -1, "am"))
+			out.append(_hab("Achar porta secreta", "1 turno procurando a área.", "2 em 6", 33, "ex"))
+			out.append(_hab("Imune à paralisia", "O toque do carniçal não a prende.", "sempre", -1, "co"))
+		"anao":
+			out.append(_hab("Infravisão", "Vê calor no escuro.", "18 m", -1, "am"))
+			out.append(_hab("Achar construções e armadilhas", "Paredes falsas, salas escondidas, armadilhas.", "2 em 6", 33, "ex"))
+		"halfling":
+			out.append(_hab("Esconder-se", "No mato 90%; na masmorra, parado e quieto.", "2 em 6", 33, "am"))
+			out.append(_hab("Pontaria", "+1 no acerto com projéteis.", "+1", -1, "co"))
+			out.append(_hab("Pequeno", "−2 na CA contra criaturas grandes.", "−2 CA", -1, "co"))
+	return out
+
+func _hab(nome: String, desc: String, valor: String, chance: int, quando: String) -> Dictionary:
+	return {"nome": nome, "desc": desc, "valor": valor, "chance": chance, "quando": quando}
+
+## Testes de masmorra que todos fazem (o que a classe já cobre não se repete).
+func testes_masmorra() -> Array:
+	var c := str(p.classe)
+	var out: Array = []
+	var fp := clampi(2 + mod("for"), 1, 5)
+	out.append(_hab("Forçar porta", "Uma tentativa por rodada; o barulho chama errantes.", "%d em 6" % fp, int(fp * 100 / 6.0), "ex"))
+	if not p.has("habilidades_ladrao"):
+		var ouv := c in ["anao", "elfo", "halfling"]
+		out.append(_hab("Ouvir atrás de portas", "Um teste por porta.", "1–2 em 6" if ouv else "1 em 6", 33 if ouv else 17, "ex"))
+	if c != "elfo": out.append(_hab("Achar porta secreta", "1 turno procurando a área.", "1 em 6", 17, "ex"))
+	if not p.has("habilidades_ladrao") and c != "anao": out.append(_hab("Achar armadilha", "1 turno por área.", "1 em 6", 17, "ex"))
+	return out
+
+## Quadro de destaque da classe na aba Habilidades ({} = nenhum).
+func destaque() -> Dictionary:
+	match str(p.classe):
+		"ladrao": return {"tipo": "furtivo", "acerto": 4, "dano": 2}
+		"clerigo":
+			var t: Dictionary = p.get("afastar_mortos_vivos", {})
+			return {"tipo": "afastar", "tabela": [["Esqueleto", int(t.get("esqueleto", 7))], ["Zumbi", int(t.get("zumbi", 9))], ["Carniçal", int(t.get("carnical", 11))]]}
+	return {}
+
+## Chance (%) de tirar `alvo` ou mais em 2d6.
+static func chance_2d6(alvo: int) -> int:
+	var n := 0
+	for a in range(1, 7):
+		for b in range(1, 7):
+			if a + b >= alvo: n += 1
+	return int(round(n * 100.0 / 36.0))
+
+## Magia: quem lança, que lista, quantas por dia no 1º círculo e o que está memorizado.
+func lanca_magia() -> bool:
+	return str(p.classe) in ["mago", "elfo", "clerigo"]
+
+func lista_magia() -> String:
+	return "divina" if str(p.classe) == "clerigo" else "arcana"
+
+func magias_por_dia() -> int:
+	return int(p.get("magias_por_dia", {}).get("1", 0))
+
+## Memorizadas hoje (ids). Por enquanto: as do grimório, até o limite por dia.
+func memorizadas() -> Array:
+	return p.get("grimorio", []).slice(0, magias_por_dia())
+
+var magias_gastas := 0
+
+static var _magias := {}
+static func magias_catalogo() -> Dictionary:
+	if _magias.is_empty():
+		_magias = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/magias.json"))
+	return _magias
+
 func magias() -> Array:
 	var nomes := {"missil_magico": "Míssil Mágico", "sono": "Sono", "luz": "Luz", "escudo": "Escudo"}
 	return p.get("grimorio", []).map(func(x): return nomes.get(x, str(x)))

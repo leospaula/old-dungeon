@@ -32,6 +32,9 @@ var grupo: Array = []
 var monstros: Array = []
 var _alc := {}
 var ordem_lados: Array = []   # ordem dos lados nesta rodada (para a tela de iniciativa)
+var ini_grupo := 0            # d6 de iniciativa de cada lado nesta rodada (0 = rodada de surpresa)
+var ini_monstros := 0
+var alvo_pairado: Node = null # inimigo sob o mouse (a tela mostra o que precisa no d20)
 var _mortos := 0
 var _xp := 0
 var _moral_primeira := false
@@ -53,12 +56,14 @@ func _laco(rodada_de_surpresa: bool, grupo_surpreso: bool) -> void:
 		var ordem: Array = []
 		if rodada == 1 and rodada_de_surpresa:
 			ordem = ["monstros"] if grupo_surpreso else ["grupo"]
+			ini_grupo = 0; ini_monstros = 0
 			registro.emit("[color=#c8b89a]— Rodada 1 (surpresa) —[/color]")
 		else:
 			var ig := Dados.d(6); var im := Dados.d(6)
 			while ig == im:
 				ig = Dados.d(6); im = Dados.d(6)
 			ordem = ["grupo", "monstros"] if ig > im else ["monstros", "grupo"]
+			ini_grupo = ig; ini_monstros = im
 			registro.emit("[color=#c8b89a]— Rodada %d —[/color] iniciativa: grupo %d × monstros %d" % [rodada, ig, im])
 		ordem_lados = ordem
 		for lado in ordem:
@@ -150,6 +155,7 @@ func pairar(c: Vector2i, alvo: Node) -> void:
 	if not ativo or ocupado or vez == null or vez.lado != "grupo": return
 	marca_caminho.limpar(); previa_m = -1.0
 	if alvo == null: alvo = _monstro_em(c)
+	alvo_pairado = alvo if alvo and _ve(alvo) else null
 	if alvo and _faixa(vez, alvo) >= 0:
 		# Disparo: sem caminho; a cor diz a faixa (curta +1 · média · longa −1).
 		var fx := _faixa(vez, alvo)
@@ -232,6 +238,16 @@ func _faixa(a: Node, alvo: Node) -> int:
 	for i in 3:
 		if d <= float(a.dist_faixas[i]): return i
 	return -1
+
+## O que `a` precisa tirar no d20 para acertar `alvo` (já com os bônus), a chance e o dano.
+## 20 sempre acerta e 1 sempre erra, então o número fica entre 2 e 20.
+func previsao(a: Node, alvo: Node) -> Dictionary:
+	var faixa := _faixa(a, alvo)
+	var dist: bool = faixa >= 0 and not grade.adjacentes(a.celula, alvo.celula)
+	var mod: int = (a.dist_mod + [1, 0, -1][faixa]) if dist else a.mod_acerto
+	var n: int = clampi(a.thac0 - alvo.ca - mod, 2, 20)
+	var dano: String = a.dist_dano if dist else ("%s%s" % [a.dano, ("%+d" % a.mod_dano) if a.mod_dano != 0 else ""])
+	return {"n": n, "chance": (21 - n) * 5, "dano": dano, "distancia": dist, "mod": mod}
 
 func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 	marca_caminho.limpar()

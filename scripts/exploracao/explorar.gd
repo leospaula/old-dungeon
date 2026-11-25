@@ -25,6 +25,7 @@ const Dados = preload("res://scripts/regras/dados.gd")
 const Ficha = preload("res://scripts/regras/ficha.gd")
 const Hud = preload("res://scripts/interface/hud.gd")
 const Livro = preload("res://scripts/interface/livro.gd")
+const Estilo = preload("res://scripts/interface/estilo.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
@@ -266,9 +267,9 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_K: if not combate.ativo and not fim: _surgir_errantes(true)
 			KEY_B: if not fim: _brotar_goblin()
 			KEY_I: _acao_hud("ficha")
-			KEY_1: _mudar_modo("devagar")
-			KEY_2: _mudar_modo("normal")
-			KEY_3: _mudar_modo("rapido")
+			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
+				# Atalhos dos medalhões (a tecla aparece no canto de cada um).
+				if hud_ui and not livro.visible: hud_ui.atalho(str(e.keycode - KEY_0))
 			KEY_SPACE, KEY_ENTER: combate.encerrar_turno()
 	if fim: return
 	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
@@ -748,7 +749,8 @@ func _montar_hud() -> void:
 	hud_ui.trocar_arma.connect(_trocar_arma)
 	hud_ui.usar_item.connect(_usar_item)
 	hud_ui.ficha_pedida.connect(_abrir_ficha)
-	var enorme := LabelSettings.new(); enorme.font_size = 40; enorme.font_color = Color(1, 0.6, 0.45); enorme.outline_size = 10; enorme.outline_color = Color.BLACK
+	var enorme := LabelSettings.new(); enorme.font = Estilo.fonte("titulo"); enorme.font_size = 40; enorme.font_color = Estilo.OURO_CLARO
+	enorme.outline_size = 10; enorme.outline_color = Color(0.08, 0.05, 0.03)
 	hud_centro = Label.new(); hud_centro.label_settings = enorme
 	hud_centro.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud_centro.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; hud_centro.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -837,19 +839,20 @@ func _fora_da_tela(p: Vector3) -> bool:
 
 func _atualizar_hud() -> void:
 	if hud_ui == null: return
-	var luz_txt := ("tocha: %d de %d turnos · %d de reserva" % [tocha_turnos, TURNOS_POR_TOCHA, _tochas_reserva()]) if tocha_turnos > 0 else "sem luz"
+	var luz_txt := ("tocha %d de %d turnos" % [tocha_turnos, TURNOS_POR_TOCHA]) if tocha_turnos > 0 else "sem luz"
 	if not combate.ativo:
 		var area: String = grade.nomes.get(grade.area_de(heroi.celula), "")
 		var prox := turno + (2 - turno % 2)
-		hud_ui.atualizar_exploracao(MOV.modos, modo, [area, "Turno %d · %s" % [turno, _hora()],
-			"andado no turno: %.1f de %d m" % [metros_no_turno, int(_taxa_turno())], "teste de errantes no turno %d" % prox, "XP do grupo: %d" % xp_total], heroi, luz_txt)
+		hud_ui.atualizar_exploracao(MOV.modos, modo, {"area": area, "turno": turno, "hora": _hora(), "andado": metros_no_turno,
+			"taxa": _taxa_turno(), "errantes": prox, "xp": xp_total, "tocha": tocha_turnos, "tocha_max": TURNOS_POR_TOCHA,
+			"reserva": _tochas_reserva()}, heroi, luz_txt)
 		return
 	var v: Node = combate.vez
 	var info := ""
 	if v and is_instance_valid(v):
 		if v.lado == "grupo":
-			var previa := "  →  este caminho: %.1f m" % combate.previa_m if combate.previa_m >= 0 else ""
-			info = "Vez de %s · movimento %.1f de %.0f m%s" % [v.nome, combate.restante, v.mov_combate_m, previa]
+			var previa := ("  →  este caminho: %.1f m" % combate.previa_m).replace(".", ",") if combate.previa_m >= 0 else ""
+			info = ("Vez de %s · movimento %.1f de %.0f m" % [v.nome, combate.restante, v.mov_combate_m]).replace(".", ",") + previa
 		else:
 			info = "Vez %s" % (("do " + v.nome) if v.visible else "de algo no escuro")
 	var ordem: Array = []
@@ -858,9 +861,18 @@ func _atualizar_hud() -> void:
 		for a in lista:
 			if not is_instance_valid(a): continue
 			var visto: bool = a.lado == "grupo" or a.visible
-			ordem.append({"nome": a.nome if visto else "?", "lado": a.lado, "vivo": a.vivo(), "vez": a == v,
-				"retrato": str(a.ficha.id) if a.get("ficha") else ""})
-	hud_ui.atualizar_combate(combate.rodada, ordem, v, info, heroi, luz_txt)
+			ordem.append({"nome": a.nome if visto else "?", "lado": a.lado, "vivo": a.vivo(), "vez": a == v, "no": a,
+				"retrato": (str(a.ficha.id) if a.get("ficha") else str(a.nome).get_slice(" ", 0).to_lower()) if visto else ""})
+	# Dica do inimigo sob o mouse: o que precisa no d20, a chance e o dano.
+	var alvo := {}
+	var ap: Node = combate.alvo_pairado
+	if v and is_instance_valid(v) and v.lado == "grupo" and ap and is_instance_valid(ap) and ap.vivo() and ap.visible:
+		var pr: Dictionary = combate.previsao(v, ap)
+		var fr: float = float(maxi(ap.pv, 0)) / ap.pv_max
+		var topo: Vector3 = ap.global_position + Vector3(0, ap.altura_texto() * 0.6, 0)
+		alvo = {"nome": ap.nome, "estado": "ileso" if fr >= 1.0 else ("ferido" if fr > 0.5 else "muito ferido"),
+			"n": pr.n, "chance": pr.chance, "dano": pr.dano, "tela": camera.unproject_position(topo)}
+	hud_ui.atualizar_combate(combate.rodada, [combate.ini_grupo, combate.ini_monstros], ordem, v, info, heroi, luz_txt, alvo)
 
 # ---------- testes por linha de comando ----------
 

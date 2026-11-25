@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://c2wwika7ux5nd"
-path="res://.godot/imported/NotoSerif-Italic.ttf-e7e2a6e4ad94523929c4e91ccc690324.fontdata"
+uid="uid://hx6e06lxqoux"
+path="res://.godot/imported/Cinzel.ttf-7bf5599314add8c22ec9ea59a89f688d.fontdata"
 
 [deps]
 
-source_file="res://assets/fontes/NotoSerif-Italic.ttf"
-dest_files=["res://.godot/imported/NotoSerif-Italic.ttf-e7e2a6e4ad94523929c4e91ccc690324.fontdata"]
+source_file="res://assets/fontes/Cinzel.ttf"
+dest_files=["res://.godot/imported/Cinzel.ttf-7bf5599314add8c22ec9ea59a89f688d.fontdata"]
 
 [params]
 
