@@ -363,13 +363,16 @@ function botoesEscudo() {
   const ops = [["", "Nada"]];
   for (const id in D.itens) if (D.itens[id].tipo === "escudo") ops.push([id, D.itens[id].nome]);
   const bloqueado = doisMaos();
+  const lista = (D.itens[S.arma] && D.itens[S.arma].escudos) || [];
+  const pode = id => id === "" || (!bloqueado && (!lista.length || lista.includes(id)));
+  if (!pode(S.escudo)) S.escudo = lista.length ? lista[0] : "";
   for (const [id, nome] of ops) {
     const b = document.createElement("button"); b.textContent = nome;
-    b.setAttribute("aria-pressed", String((bloqueado ? "" : S.escudo) === id)); b.disabled = bloqueado && id !== "";
+    b.setAttribute("aria-pressed", String((bloqueado ? "" : S.escudo) === id)); b.disabled = !pode(id);
     b.onclick = async () => { S.escudo = id; botoesEscudo(); await vestir(); guarda(0.15); };
     box.append(b);
   }
-  $("#escudo-nota").textContent = bloqueado ? "Esta arma usa as duas mãos: sem escudo." : "";
+  $("#escudo-nota").textContent = bloqueado ? "Esta arma usa as duas mãos: sem escudo." : (lista.length ? "Com esta arma, só o escudo pequeno." : "");
 }
 async function aplicarArma() {
   const it = D.itens[S.arma];

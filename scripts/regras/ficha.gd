@@ -189,7 +189,7 @@ func empunhar(nova) -> void:
 	if antiga != null:
 		if de_cinto >= 0 and bool(info(antiga).get("cinto", false)): cinto[de_cinto] = antiga
 		else: mochila.append(antiga)
-	if int(info(nova).get("maos", 1)) >= 2 and mao_e != null:
+	if (int(info(nova).get("maos", 1)) >= 2 or not escudo_permitido(mao_e, nova)) and mao_e != null:
 		mochila.append(mao_e); mao_e = null
 	elif mao_e == null:
 		for x in mochila:
@@ -387,10 +387,12 @@ func motivo_para_nao(it, lugar: String) -> String:
 	match lugar:
 		"mao_d":
 			if not tipo in ["arma", "luz", "escudo"]: return "só armas, escudo ou luz na mão"
+			if mao_e != null and mao_e != it and info(mao_e).get("tipo") == "escudo" and not escudo_permitido(mao_e, it): return "com %s, só o escudo pequeno" % str(inf.nome).to_lower()
 		"mao_e":
 			if duas: return "arma de duas mãos vai na mão direita"
 			if not tipo in ["arma", "luz", "escudo"]: return "só armas, escudo ou luz na mão"
 			if mao_d != null and mao_d != it and int(info(mao_d).get("maos", 1)) >= 2: return "a mão direita segura uma arma de duas mãos"
+			if tipo == "escudo" and not escudo_permitido(it, mao_d): return "com %s, só o escudo pequeno" % str(info(mao_d).nome).to_lower()
 		"corpo":
 			if tipo != "armadura": return "só armadura no corpo"
 		"cinto0", "cinto1":
@@ -398,6 +400,12 @@ func motivo_para_nao(it, lugar: String) -> String:
 		"mochila":
 			if not cabe_na_mochila(it, it): return "a mochila está cheia"
 	return ""
+
+## Armas leves (adaga) só aceitam o escudo pequeno na outra mão (campo "escudos" no catálogo).
+func escudo_permitido(escudo, arma) -> bool:
+	if arma == null or escudo == null: return true
+	var lista: Array = info(arma).get("escudos", [])
+	return lista.is_empty() or str(escudo.id) in lista
 
 ## Move `it` para `lugar`. Quem estava lá vai para onde `it` estava (se puder) ou para a mochila.
 func mover(it, lugar: String) -> String:

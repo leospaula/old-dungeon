@@ -30,7 +30,7 @@ func _run() -> void:
 		if not it.has("modelo3d"): continue
 		var arq := str(it.modelo3d.get("arquivo", "")).get_file().get_basename()
 		out.itens[id] = {"nome": it.nome, "tipo": it.tipo, "estilo": it.get("estilo", ""), "maos": int(it.get("maos", 1)),
-			"icone": it.get("icone", ""), "modelo": arq}
+			"icone": it.get("icone", ""), "modelo": arq, "escudos": it.get("escudos", [])}
 		if arq != "": out.modelos_itens[arq] = "arena/itens/%s.gltf.json" % arq
 	for p in PERS:
 		var cfg: Dictionary = PERS[p]

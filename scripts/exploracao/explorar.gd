@@ -812,7 +812,9 @@ func _arsenal_teste() -> void:
 		if escudo != null: f.mao_e = null; f.mochila.append(escudo)
 	elif f.mao_e == null:
 		for x in f.mochila:
-			if Ficha.info(x).get("tipo") == "escudo": f.mochila.erase(x); f.mao_e = x; break
+			if Ficha.info(x).get("tipo") == "escudo" and f.escudo_permitido(x, f.mao_d): f.mochila.erase(x); f.mao_e = x; break
+	if f.mao_e != null and not f.escudo_permitido(f.mao_e, f.mao_d):
+		f.mochila.append(f.mao_e); f.mao_e = null
 	if inf.has("municao") and f.contar(str(inf.municao)) < 10: f.mochila.append({"id": str(inf.municao), "qtd": 20})
 	_aplicar_ficha(heroi); hud_ui.refazer()
 	_registrar("[i](teste T)[/i] %s empunha [b]%s[/b] · estilo %s · %d de %d." % [heroi.nome, inf.nome, str(inf.estilo).replace("_", " "), _arsenal_i + 1, lista.size()])
