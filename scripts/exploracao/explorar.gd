@@ -65,6 +65,7 @@ var heroi: Node3D          # quem lidera a fila (leva a tocha)
 var grupo: Array = []      # personagens em jogo, na ordem da fila
 var selecionado: Node3D = null   # quem age nas ações de exploração (carta clicada); sem seleção, quem lidera
 var portas: RefCounted     # ações e estado das portas (scripts/exploracao/portas.gd)
+var bonus_silencio_ate := -1   # até este turno o grupo se move em silêncio com bônus (ouviu monstros antes)
 var _porta_menu := {}      # porta do balão aberto
 var monstros: Array = []   # todos os monstros vivos em cena
 var errantes: Array = []   # monstros vindo na direção do grupo, ainda sem combate
@@ -259,6 +260,7 @@ func vivos() -> Array:
 func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 	var d: Dictionary = MONSTROS[id]
 	var a: Node3D = Ator.new(); a.grade = grade; a.lado = "monstros"; a.nome = nome
+	a.set_meta("id", id)
 	a.ca = int(d.ca); a.thac0 = Regras.thac0_monstro(str(d.dv)); a.pv = Regras.pv_monstro(str(d.dv)); a.pv_max = a.pv
 	a.dano = str(d.ataques[0].dano); a.arma = str(d.ataques[0].nome)
 	a.moral = int(d.moral); a.xp = int(d.xp); a.infravisao_m = float(d.get("infravisao_m", 0.0))
@@ -292,6 +294,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_G: grade_forte = not grade_forte; luz.set_grade(grade_forte or combate.ativo)
 			KEY_K: if not combate.ativo and not fim: _surgir_errantes(true)
 			KEY_B: if not fim: _brotar_goblin()
+			KEY_O: _acao_hud("ouvir")
 			KEY_T: if not fim: _arsenal_teste()
 			KEY_I: _acao_hud("ficha")
 			KEY_ESCAPE: _selecionar(null)
@@ -547,6 +550,46 @@ func _acao_porta(id: String) -> void:
 	porta_alvo = {}
 	await portas.agir(pt, agente(), id)
 
+func monstros_vivos() -> Array:
+	var out: Array = []
+	for m in monstros + errantes:
+		if is_instance_valid(m) and m.vivo() and not out.has(m): out.append(m)
+	return out
+
+## Ouvir no corredor (medalhão): quem age e quem estiver perto param e escutam (1 rodada). O sucesso
+## detecta monstros até 18 m pelos caminhos abertos: o grupo não será surpreendido por eles e se move
+## em silêncio com bônus por 3 turnos.
+var _ouvindo := false
+func _ouvir_aqui() -> void:
+	if _ouvindo or portas.ocupado: return
+	if modo == "rapido":
+		_registrar("Correndo não dá para ouvir: mude para Normal ou Devagar."); return
+	_ouvindo = true
+	var q := agente()
+	var ouvintes: Array = vivos().filter(func(h): return Vector2(h.celula - q.celula).length() <= 2.5)
+	for h in vivos(): h.parar()
+	for h in ouvintes: h.tocar_anim("ajoelhar")
+	await get_tree().create_timer(2.2).timeout
+	_gastar_tempo(1.0 / 60.0)
+	var alc: Dictionary = grade.alcance(q.celula, Portas.LIMITE_OUVIR_M, {}, false)
+	var perto: Array = monstros_vivos().filter(func(m): return alc.has(m.celula))
+	var nomes := ", ".join(ouvintes.map(func(h): return h.nome))
+	var ouviu: Array = portas.ouvir(ouvintes, perto)
+	if ouviu.is_empty():
+		_registrar("%s para%s e escuta%s: nenhum som além da tocha." % [nomes, "m" if ouvintes.size() > 1 else "", "m" if ouvintes.size() > 1 else ""])
+	else:
+		var m: Node3D = ouviu[0]
+		var d: Vector2i = m.celula - q.celula
+		var rumo: String = ("norte" if d.y < 0 else "sul") if absi(d.y) >= absi(d.x) else ("oeste" if d.x < 0 else "leste")
+		var dist := float(alc[m.celula][0])
+		_registrar("%s escuta%s [color=#ff9a6a]%s[/color], %s, para o %s." % [nomes, "m" if ouvintes.size() > 1 else "", portas._descrever(ouviu), "bem perto" if dist <= 9.0 else "mais adiante", rumo])
+		bonus_silencio_ate = turno + 3
+		_diario("evento", "Ouviram %s para o %s." % [portas._descrever(ouviu), rumo])
+	for h in ouvintes:
+		if h.vivo() and not h.andando(): h.tocar("parado", 0.4)
+	_ouvindo = false
+	_checar_avistamento()
+
 ## Alguém caiu fora do combate (armadilha): sai da fila; se era quem liderava, o próximo pega a tocha.
 func _heroi_caiu_fora(h: Node3D) -> void:
 	_diario("evento", "%s caiu." % h.nome)
@@ -652,13 +695,14 @@ func _mudar_modo(novo: String, avisar := true) -> void:
 func _rolar_furtividade() -> bool:
 	var partes: Array[String] = []
 	var ok := true
+	var bonus := 1.0 / 6.0 if turno <= bonus_silencio_ate else 0.0   # ouviram os monstros antes: +1 em 6
 	for p in fichas:
-		var chance := Regras.furtividade(p, MOV.furtividade)
+		var chance := minf(Regras.furtividade(p, MOV.furtividade) + bonus, 0.95)
 		var r := randf()
 		var passou := r < chance
 		ok = ok and passou
 		partes.append("%s %d%%: %s" % [str(p.nome).get_slice(" ", 0), roundi(chance * 100), "passou" if passou else "falhou"])
-	_registrar("Furtividade do grupo (%s) → %s" % [", ".join(partes), "[color=#9ad0ff]ninguém os ouviu[/color]" if ok else "[color=#ff9a6a]vocês foram ouvidos[/color]"])
+	print("(furtividade do grupo: %s → %s)" % [", ".join(partes), "ninguém ouviu" if ok else "ouvidos"])   # rolagem escondida
 	return ok
 
 func _hora() -> String:
@@ -763,13 +807,21 @@ func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
 	for a in lista:
 		if a.andando(): await a.parou
 	var mm: Dictionary = MOV.modos[modo]
+	# Monstros que o grupo ouviu (até 3 turnos atrás): o grupo não é surpreendido por eles e, se eles
+	# não ouviram o grupo, eles é que são surpreendidos.
+	var ouvidos := lista.filter(func(x): return turno - int(x.get_meta("ouvido", -99)) <= 3)
 	# Surpresa (normal 1–2 em d6). Devagar e sem ter sido ouvido: +1 para surpreender.
 	# Correndo: impossível surpreender os monstros, e +1 na chance de ser surpreendido.
 	var sg := (not grupo_ve) or Dados.d(6) <= 2 + int(mm.ser_surpreendido)
 	var sm := false
 	if mm.surpreender != null:
 		sm = (not monstros_veem) or Dados.d(6) <= 2 + (int(mm.surpreender) if furtivos else 0)
-	if grupo_ve and not monstros_veem: _registrar("A Tessa avista os monstros antes de ser vista.")
+	if not ouvidos.is_empty():
+		sg = false
+		if ouvidos.any(func(x): return not bool(x.get_meta("ciente", true))):
+			sm = true; _registrar("Vocês os ouviram antes e eles não ouviram vocês: [color=#9ad0ff]os monstros são pegos de surpresa[/color].")
+		else: _registrar("Vocês os ouviram chegando: o grupo não é pego de surpresa.")
+	if grupo_ve and not monstros_veem: _registrar("%s avista os monstros antes de ser vista." % heroi.nome)
 	elif monstros_veem and not grupo_ve: _registrar("[color=#ff9a6a]Algo a viu primeiro, do escuro.[/color]")
 	_registrar("Surpresa: grupo %s · monstros %s" % ["surpreendido" if sg else "atento", "surpreendidos" if sm else "atentos"])
 	luz.set_grade(true)
@@ -869,6 +921,7 @@ func _acao_hud(acao: String) -> void:
 		"encerrar": combate.encerrar_turno()
 		"brotar": if not fim: _brotar_goblin()
 		"arsenal": if not fim: _arsenal_teste()
+		"ouvir": if not fim and not combate.ativo: _ouvir_aqui()
 		"ficha": _abrir_ficha(combate.vez if combate.ativo and combate.vez and combate.vez.lado == "grupo" else heroi)
 
 ## Teste (tecla T): quem lidera passa para a próxima arma do catálogo, para ver todos os estilos de luta.
@@ -1318,6 +1371,29 @@ func _linha_de_comando() -> void:
 		# visão: com só a Tessa na sala, a casa (14,5) do 23 conta? E com o Caco no vão?
 		tessa.colocar(Vector2i(7, 5)); caco.colocar(Vector2i(11, 5)); _atualizar_visao()
 		print("VAO Caco no vão vê (14,5)=", visao.visiveis.has(Vector2i(14, 5)), " · (16,5)=", visao.visiveis.has(Vector2i(16, 5)), " lianne infravisão=", lianne.infravisao_m)
+	elif teste == "ouvir":
+		# Goblins errantes fora da vista; ouvir no corredor e na porta, depois o combate.
+		var na23: Array = grade.area.keys().filter(func(c): return grade.area_de(c) == "23" and grade.chao(c))
+		na23.sort_custom(func(a, b): return a.x > b.x)
+		for k in 2:
+			var g := _criar_monstro("goblin", "Goblin %d" % (k + 1), na23[k * 3])
+			g.set_meta("ciente", false); g.set_meta("turno", turno); monstros.append(g); errantes.append(g)
+		var p3x: Dictionary = portas.por_id["P03"]; portas.de(p3x).estado = "fechada"
+		print("OUVIR errantes=", errantes.size(), " em ", errantes.map(func(x): return grade.area_de(x.celula)))
+		for k in 6:
+			var tessa: Node3D = grupo[0]
+			await _ouvir_aqui()
+			if errantes.any(func(x): return x.has_meta("ouvido")): break
+		print("OUVIR marcados=", errantes.filter(func(x): return x.has_meta("ouvido")).size(), " bônus até turno ", bonus_silencio_ate, " turno=", turno)
+		var p3: Dictionary = portas.por_id["P03"]
+		for k in 8:
+			await portas.agir(p3, agente(), "ouvir_todos")
+			if errantes.any(func(x): return x.has_meta("ouvido")): break
+			_gastar_tempo(1.0)
+		print("OUVIR opções depois=", portas.opcoes(p3, agente()).map(func(o): return "%s%s" % [o.id, "" if o.ativo else "(x)"]))
+		for g in errantes:
+			if g.has_meta("ouvido"): g.set_meta("ciente", false)
+		if errantes.any(func(x): return x.has_meta("ouvido")): await _comecar_combate(true, false)
 	elif teste == "corrida":
 		# No combate os monstros correm (velocidade do modo rápido, animação de corrida); fugindo também.
 		for k in 3: _brotar_goblin(); await get_tree().process_frame

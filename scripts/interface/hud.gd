@@ -218,9 +218,10 @@ func _barra_exploracao(modos: Dictionary, modo: String, lider: Node) -> void:
 	var quem: Node = selecionado if is_instance_valid(selecionado) and selecionado.vivo() else lider   # quem age
 	if quem and quem.get("ficha"):
 		for x in quem.ficha.habilidades_exploracao(): hab[x[0]] = x[1]
-	var ou := _med("Ouvir", "Ou", "", "", str(hab.get("Ouvir", "")), "Portas: ouvir, forçar, fechadura…",
-		"Clique numa porta para escolher a ação de %s.\nOuvir %s · Forçar %s." % [quem.nome if quem else "quem lidera", hab.get("Ouvir", "?"), hab.get("Forçar porta", "?")])
-	ou.disabled = true
+	var ou := _med("Ouvir", "Ou", "", "O", str(hab.get("Ouvir", "")), "Ouvir",
+		"Aqui: %s e quem estiver perto param e escutam (1 rodada, até 18 m). Numa porta: clique nela.\nOuvir %s · Forçar %s. Correndo não dá." % [quem.nome if quem else "quem lidera", hab.get("Ouvir", "?"), hab.get("Forçar porta", "?")])
+	ou.disabled = modo == "rapido"
+	ou.pressed.connect(func(): acao_pedida.emit("ouvir"))
 	var pr := _med("Procurar", "Pr", "", "", str(hab.get("Achar porta secreta", "")), "Procurar portas e armadilhas",
 		"1 turno por área. Porta secreta %s, armadilha %s.\nChega com as habilidades." % [hab.get("Achar porta secreta", "?"), hab.get("Achar armadilha", "?")])
 	pr.disabled = true

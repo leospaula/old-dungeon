@@ -10,6 +10,13 @@ const Dados = preload("res://scripts/regras/dados.gd")
 const ARQ := "res://data/masmorra/portas-teste.json"
 const RODADA := 1.0 / 60.0   # turno de 10 min = 60 rodadas de 10 s
 const BARRAM := ["trancada", "pregada"]   # monstros não passam
+const LIMITE_OUVIR_M := 18.0              # no corredor, até onde se ouve
+## O que se ouve de cada criatura (mortos-vivos e o cubo não fazem barulho).
+const SONS := {"goblin": "risadas agudas e metal batendo", "kobold": "latidos baixos e passos miúdos",
+	"chefe_kobold": "latidos baixos e passos miúdos", "rato_gigante": "guinchos e unhas na pedra",
+	"besouro_de_fogo": "estalos de carapaça", "estirge": "um zumbido de asas", "aranha_caranguejo": "patas raspando",
+	"bandido": "vozes abafadas e passos de botas", "hobgoblin": "grunhidos e ferro batendo",
+	"chefe_hobgoblin": "grunhidos e ferro batendo", "nao_combatente": "vozes"}
 
 var ex: Node                 # explorar.gd
 var est := {}                # id -> estado da porta (ver portas-teste.json) + o que o grupo descobriu
@@ -38,7 +45,13 @@ func opcoes(pt: Dictionary, q: Node) -> Array:
 	var abrir := {"id": "abrir", "texto": "Abrir", "dica": "Empurra a porta.", "ativo": true}
 	if sabe != "": abrir.texto = "Abrir (%s)" % sabe
 	out.append(abrir)
-	out.append({"id": "ouvir", "texto": "Ouvir · %d em 6 · 1 rodada" % f.chance_ouvir(), "dica": "Encosta o ouvido na porta. Ninguém sabe se falhou ou se não há nada.", "ativo": true})
+	var ouv := {"id": "ouvir", "texto": "Ouvir · %d em 6 · 1 rodada" % f.chance_ouvir(), "dica": "Encosta o ouvido na porta e ouve a sala inteira do outro lado. Ninguém sabe se falhou ou se não há nada.", "ativo": true}
+	var tod := {"id": "ouvir_todos", "texto": "Todos que couberem ouvem · 1 rodada", "dica": "Quem estiver perto da porta encosta o ouvido também; vale o melhor.", "ativo": true}
+	if ex.modo == "rapido":
+		for o in [ouv, tod]: o.ativo = false; o.dica = "Correndo não dá para ouvir: mude para Normal ou Devagar."
+	elif int(e.get("ouviu", {}).get(q.nome, -99)) >= ex.turno:
+		for o in [ouv, tod]: o.ativo = false; o.dica = "%s já ouviu nesta porta; tente de novo no próximo turno." % q.nome
+	out.append(ouv); out.append(tod)
 	if sabe in ["emperrada", "trancada", "pregada"]:
 		out.append({"id": "forcar", "texto": "Forçar · %d em 6 · 1 rodada" % _chance_forcar(e, f), "dica": "No ombro e no chute. Faz barulho: pode atrair monstros errantes.", "ativo": true})
 	if sabe == "trancada":
@@ -52,9 +65,9 @@ func opcoes(pt: Dictionary, q: Node) -> Array:
 	if e.get("procurou", {}).has(q.nome): proc.ativo = false; proc.dica = "%s já procurou nesta porta." % q.nome
 	out.append(proc)
 	if bool(e.get("armadilha_achada", false)) and not bool(e.get("armadilha_fora", false)):
-		var o := {"id": "desarmar", "texto": "Desarmar armadilha · %d%% · 1 turno" % (int(f.p.habilidades_ladrao.armadilhas) if f.ladrao() else 0), "dica": "Se falhar, só no próximo nível.", "ativo": f.ladrao()}
+		var o := {"id": "desarmar", "texto": "Desarmar armadilha · %d%% · 1 turno" % (int(f.p.habilidades_ladrao.armadilhas) if f.ladrao() else 0), "dica": "Se falhar, a armadilha dispara.", "ativo": f.ladrao()}
 		if not f.ladrao(): o.texto = "Desarmar armadilha · só ladrão"; o.dica = "Só o ladrão desarma armadilhas."
-		elif int(e.get("desarmar_falhou", {}).get(q.nome, -1)) >= int(f.p.nivel): o.ativo = false; o.dica = "%s já falhou; só no próximo nível." % q.nome
+		else: o.dica = "Se falhar, a armadilha dispara."
 		out.append(o)
 	var pr := {"id": "pregar", "texto": "Pregar · 1 turno", "dica": "Martelo e pregos: ninguém abre sem forçar, e os monstros não passam.", "ativo": true}
 	if f.contar("martelo e pregos") <= 0: pr.ativo = false; pr.dica = "%s não tem martelo e pregos." % q.nome
@@ -75,7 +88,8 @@ func agir(pt: Dictionary, q: Node3D, acao: String) -> void:
 	if await _ir_ate(pt, q):
 		match acao:
 			"abrir": tentar_abrir(pt, q)
-			"ouvir": await _ouvir(pt, q)
+			"ouvir": await _ouvir(pt, q, false)
+			"ouvir_todos": await _ouvir(pt, q, true)
 			"forcar": await _forcar(pt, q)
 			"fechadura": await _fechadura(pt, q)
 			"armadilha": await _procurar(pt, q)
@@ -127,24 +141,50 @@ func tentar_abrir(pt: Dictionary, q: Node3D) -> bool:
 	ex._abrir_porta(pt, q.celula, q.nome)
 	return true
 
-func _ouvir(pt: Dictionary, q: Node3D) -> void:
-	await _animar(q, "ajoelhar")
+## Ouvir na porta: o sucesso vale para a sala inteira do outro lado (diz se há monstros).
+## Falha e sala vazia dão o mesmo texto. Quem ouviu marca os monstros: o grupo não é surpreendido
+## por eles e, se eles não ouviram o grupo, são surpreendidos ao abrir a porta.
+func _ouvir(pt: Dictionary, q: Node3D, todos: bool) -> void:
+	var e := de(pt)
+	if not e.has("ouviu"): e.ouviu = {}
+	var ouvintes: Array = [q]
+	if todos:
+		for h in ex.vivos():
+			if h != q and Vector2(h.celula - q.celula).length() <= 2.5 and int(e.ouviu.get(h.nome, -99)) < ex.turno: ouvintes.append(h)
+	for h in ouvintes:
+		e.ouviu[h.nome] = ex.turno
+		h.tocar_anim("ajoelhar")
+	await q.get_tree().create_timer(2.2).timeout
 	ex._gastar_tempo(RODADA)
-	var n: int = q.ficha.chance_ouvir(); var r := Dados.d(6)
-	var ha := _ha_algo_atras(pt, q)
-	print("(ouvir %s: d6 %d contra %d; há algo: %s)" % [q.nome, r, n, ha])
-	if r <= n and ha: ex._registrar("%s encosta o ouvido na porta %s: [color=#ff9a6a]passos e respiração do outro lado.[/color]" % [q.nome, pt.id])
-	else: ex._registrar("%s encosta o ouvido na porta %s e não ouve nada." % [q.nome, pt.id])
-
-## Há monstro vivo até 9 m do outro lado da porta?
-func _ha_algo_atras(pt: Dictionary, q: Node3D) -> bool:
 	var outro: Array[Vector2i] = []
 	for par in ex.grade.lados_da_porta(pt): outro.append(par[1] if par[0] == q.celula else par[0])
-	for m in ex.monstros + ex.errantes:
-		if not is_instance_valid(m) or not m.vivo(): continue
-		for c in outro:
-			if ex.grade.area_de(m.celula) == ex.grade.area_de(c) or Vector2(m.celula - c).length() <= 6.0: return true
-	return false
+	var area: String = ex.grade.area_de(outro[0])
+	var la: Array = ex.monstros_vivos().filter(func(m): return ex.grade.area_de(m.celula) == area or ex.grade.alcance(outro[0], 9.0, {}, false).has(m.celula))
+	var nomes := ", ".join(ouvintes.map(func(h): return h.nome))
+	var ouviu := ouvir(ouvintes, la)
+	if ouviu.is_empty():
+		ex._registrar("%s encosta%s o ouvido na porta %s e não ouve%s nada." % [nomes, "m" if ouvintes.size() > 1 else "", pt.id, "m" if ouvintes.size() > 1 else ""])
+	else:
+		ex._registrar("%s ouve%s do outro lado da porta %s: [color=#ff9a6a]%s[/color] (%s)." % [nomes, "m" if ouvintes.size() > 1 else "", pt.id, _descrever(ouviu), ex.grade.nomes.get(area, "do outro lado")])
+		ex._diario("evento", "Ouviram %s atrás da porta %s." % [_descrever(ouviu), pt.id])
+
+## Rolagens escondidas de quem ouve; devolve os monstros ouvidos (já marcados) ou [].
+func ouvir(ouvintes: Array, candidatos: Array) -> Array:
+	var ok := false
+	for h in ouvintes:
+		var n: int = h.ficha.chance_ouvir(); var r := Dados.d(6)
+		print("(ouvir %s: d6 %d contra %d)" % [h.nome, r, n])
+		ok = ok or r <= n
+	var ruidosos := candidatos.filter(func(m): return SONS.has(str(m.get_meta("id", ""))))
+	print("(há %d criatura(s), %d fazem barulho)" % [candidatos.size(), ruidosos.size()])
+	if not ok or ruidosos.is_empty(): return []
+	for m in ruidosos: m.set_meta("ouvido", ex.turno)
+	return ruidosos
+
+func _descrever(ms: Array) -> String:
+	var sons := {}
+	for m in ms: sons[SONS[str(m.get_meta("id"))]] = true
+	return " e ".join(sons.keys())
 
 func _forcar(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt); var f = q.ficha
@@ -205,9 +245,8 @@ func _desarmar(pt: Dictionary, q: Node3D) -> void:
 		e.armadilha_fora = true
 		ex._registrar("%s desarma a armadilha da porta %s (d%% [b]%d[/b] contra %d)." % [q.nome, pt.id, r, pct])
 	else:
-		if not e.has("desarmar_falhou"): e.desarmar_falhou = {}
-		e.desarmar_falhou[q.nome] = int(f.p.nivel)
-		ex._registrar("%s não consegue desarmar a armadilha da porta %s (d%% [b]%d[/b] contra %d); só no próximo nível." % [q.nome, pt.id, r, pct])
+		ex._registrar("%s erra ao desarmar a armadilha da porta %s (d%% [b]%d[/b] contra %d) e ela dispara!" % [q.nome, pt.id, r, pct])
+		_disparar(pt, q)
 
 func _pregar(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt)
