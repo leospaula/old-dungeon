@@ -151,11 +151,28 @@ func clicar(c: Vector2i, alvo: Node) -> void:
 		if restante < 1.49 and _inimigo_ao_lado(vez) == null:
 			_fim_de_turno.emit()
 
+const CURSOR_ESPADA := preload("res://arte/final/interface/cursores/espada.png")
+const CURSOR_FLECHA := preload("res://arte/final/interface/cursores/flecha.png")
+var _cursor := ""
+## Cursor sobre um inimigo atacável: espada (corpo a corpo) ou flecha (à distância); fora disso, o normal.
+func _por_cursor(tipo: String) -> void:
+	if tipo == _cursor: return
+	_cursor = tipo
+	match tipo:
+		"espada": Input.set_custom_mouse_cursor(CURSOR_ESPADA, Input.CURSOR_ARROW, Vector2(2, 2))
+		"flecha": Input.set_custom_mouse_cursor(CURSOR_FLECHA, Input.CURSOR_ARROW, Vector2(2, 2))
+		_: Input.set_custom_mouse_cursor(null)
+
 func pairar(c: Vector2i, alvo: Node) -> void:
-	if not ativo or ocupado or vez == null or vez.lado != "grupo": return
+	if not ativo or ocupado or vez == null or vez.lado != "grupo":
+		_por_cursor(""); return
 	marca_caminho.limpar(); previa_m = -1.0
 	if alvo == null: alvo = _monstro_em(c)
 	alvo_pairado = alvo if alvo and _ve(alvo) else null
+	if alvo_pairado == null: _por_cursor("")
+	elif _faixa(vez, alvo) >= 0 and not grade.adjacentes(vez.celula, alvo.celula): _por_cursor("flecha")
+	elif grade.adjacentes(vez.celula, alvo.celula) or _melhor_vizinha(alvo) != Vector2i(-999, -999): _por_cursor("espada")
+	else: _por_cursor("")
 	if alvo and _faixa(vez, alvo) >= 0:
 		# Disparo: sem caminho; a cor diz a faixa (curta +1 · média · longa −1).
 		var fx := _faixa(vez, alvo)
@@ -251,6 +268,7 @@ func previsao(a: Node, alvo: Node) -> Dictionary:
 
 func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 	marca_caminho.limpar()
+	_por_cursor(""); alvo_pairado = null
 	# Rola antes: o d20 aparece girando sobre o atacante enquanto ele arma o golpe.
 	var r := Dados.d(20)
 	var precisa: int = a.thac0 - alvo.ca
@@ -258,7 +276,6 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 	var mod: int = (a.dist_mod + [1, 0, -1][faixa]) if distancia else a.mod_acerto
 	var total: int = r + mod
 	var acerta: bool = r == 20 or (r != 1 and total >= precisa)
-	Efeitos.dado(a, r, acerta, 0.6)
 	# Erro com motivo: escudo bloqueia, arma de duas mãos apara, o resto esquiva; 1 natural = golpe em falso.
 	var defesa: String = "" if acerta or r == 1 else alvo.defesa()
 	if distancia:
@@ -359,7 +376,7 @@ func _checar_fim() -> bool:
 	var g := grupo.any(func(h): return is_instance_valid(h) and h.vivo())
 	var m := monstros.any(func(x): return is_instance_valid(x) and x.vivo())
 	if g and m: return false
-	ativo = false; vez = null
+	ativo = false; vez = null; _por_cursor("")
 	marca_alcance.limpar(); marca_caminho.limpar(); marca_vez.limpar()
 	terminou.emit("vitoria" if g else "derrota", _xp, rodada)
 	return true
@@ -401,7 +418,7 @@ func _andar(a: Node, cam: Array[Vector2i]) -> void:
 func _ocupadas(exceto: Node) -> Dictionary:
 	var d := {}
 	for x in grupo + monstros:
-		if is_instance_valid(x) and x != exceto and x.vivo(): d[x.celula] = true
+		if is_instance_valid(x) and x != exceto and x.vivo(): d[x.celula] = true; d[x.proxima_celula()] = true
 	return d
 
 func _monstro_em(c: Vector2i) -> Node:

@@ -225,10 +225,27 @@ func _puxar_fila(de: Vector2i) -> void:
 		if f == heroi or not f.vivo(): continue
 		var atual: Vector2i = f.proxima_celula()
 		if atual != alvo:
-			var cam: Array[Vector2i] = grade.caminho(atual, alvo)
+			var cam: Array[Vector2i] = grade.caminho(atual, alvo, _ocupadas_por(grupo))   # nunca através de monstros
 			if cam.size() > 3: cam = cam.slice(0, 3)
 			f.seguir(cam)
 		alvo = atual
+
+## Casas ocupadas por seres vivos (onde estão e para onde já estão indo), menos os de `exceto`.
+func _ocupadas_por(exceto: Array = []) -> Dictionary:
+	var d := {}
+	for x in grupo + monstros + errantes:
+		if not is_instance_valid(x) or not x.vivo() or x in exceto: continue
+		d[x.celula] = true; d[x.proxima_celula()] = true
+	return d
+
+## Caminho de quem lidera sem atravessar ninguém. Se o grupo fecha um corredor de uma casa só, os
+## companheiros dão passagem (a fila se reorganiza); monstros nunca são atravessados.
+func _caminho_lider(de: Vector2i, para: Vector2i) -> Array[Vector2i]:
+	var todos := _ocupadas_por([heroi])
+	if todos.has(para): return []
+	var cam: Array[Vector2i] = grade.caminho(de, para, todos)
+	if cam.is_empty(): cam = grade.caminho(de, para, _ocupadas_por(grupo))
+	return cam
 
 func vivos() -> Array:
 	return grupo.filter(func(h): return is_instance_valid(h) and h.vivo())
@@ -398,7 +415,7 @@ func _andar_para(c: Vector2i) -> void:
 	if not grade.chao(c) or not visao.exploradas.has(c): return
 	porta_alvo = {}
 	var de: Vector2i = heroi.proxima_celula()
-	var cam: Array[Vector2i] = grade.caminho(de, c)
+	var cam: Array[Vector2i] = _caminho_lider(de, c)
 	if cam.is_empty() and de == c and not heroi.andando(): return
 	if cam.is_empty() and de != c: return
 	if heroi.andando(): cam.push_front(de)
@@ -414,7 +431,7 @@ func _ir_abrir_porta(pt: Dictionary) -> void:
 			if c == de:
 				melhor = []; menor = 0.0; achou = true
 			else:
-				var cam: Array[Vector2i] = grade.caminho(de, c)
+				var cam: Array[Vector2i] = _caminho_lider(de, c)
 				if cam.is_empty(): continue
 				var l: float = grade.comprimento(de, cam)
 				if l < menor: menor = l; melhor = cam; achou = true
@@ -459,7 +476,7 @@ func _previa(c: Vector2i, porta: Dictionary) -> void:
 	marca_caminho.limpar()
 	if not porta.is_empty(): return
 	if not grade.chao(c) or c == heroi.celula or not visao.exploradas.has(c): return
-	var cam: Array[Vector2i] = grade.caminho(heroi.celula, c)
+	var cam: Array[Vector2i] = _caminho_lider(heroi.celula, c)
 	if cam.is_empty(): return
 	marca_caminho.por(cam.slice(0, cam.size() - 1), Color(1, 0.95, 0.8, 0.18), 0.55)
 	marca_caminho.por([c], Color(1, 0.95, 0.8, 0.3), 0.15)
@@ -525,27 +542,28 @@ func _passar_turno() -> void:
 
 ## Teste: põe 1 goblin ao lado da Tessa. Fora de combate, começa o combate (sem surpresa);
 ## em combate, o goblin entra na luta. Cada clique (ou tecla B) gera mais um.
-func _brotar_goblin() -> void:
-	var ocup := {heroi.celula: true}
-	for m in monstros:
-		if is_instance_valid(m) and m.vivo(): ocup[m.proxima_celula()] = true
-	var alc: Dictionary = grade.alcance(heroi.celula, 9.0, {}, true)
-	var lugares: Array = alc.keys().filter(func(c): return not ocup.has(c))
+func _brotar_goblin(perto := false) -> void:
+	# Casa livre ao acaso na mesma sala de quem lidera (nunca onde já há alguém).
+	var ocup := _ocupadas_por()
+	var sala: String = grade.area_de(heroi.celula)
+	var alc: Dictionary = grade.alcance(heroi.celula, 30.0, {}, true, visao.exploradas)
+	var lugares: Array = alc.keys().filter(func(c): return not ocup.has(c) and grade.area_de(c) == sala)
 	if lugares.is_empty():
-		_registrar("Não há lugar livre perto da Tessa para brotar um goblin.")
+		lugares = alc.keys().filter(func(c): return not ocup.has(c) and float(alc[c][0]) <= 9.0)
+	if lugares.is_empty():
+		_registrar("Não há lugar livre na sala para brotar um goblin.")
 		return
-	var frente: Vector3 = heroi.frente_vetor()
-	lugares.sort_custom(func(a, b):
-		var da := float(alc[a][0]) - 0.3 * Vector2(a - heroi.celula).normalized().dot(Vector2(frente.x, frente.z))
-		var db := float(alc[b][0]) - 0.3 * Vector2(b - heroi.celula).normalized().dot(Vector2(frente.x, frente.z))
-		return da < db)
 	_goblins_brotados += 1
-	var m := _criar_monstro("goblin", "Goblin %d" % _goblins_brotados, lugares[0])
+	var lugar: Vector2i = lugares[randi() % lugares.size()]
+	if perto:   # testes: a casa livre mais perto de quem lidera
+		lugares.sort_custom(func(a, b): return float(alc[a][0]) < float(alc[b][0]))
+		lugar = lugares[0]
+	var m := _criar_monstro("goblin", "Goblin %d" % _goblins_brotados, lugar)
 	m.visible = true
 	monstros.append(m)
 	m.scale = Vector3(0.01, 0.01, 0.01)
 	create_tween().tween_property(m, "scale", Vector3.ONE, 0.3)
-	_registrar("[i](teste)[/i] %s brota ao lado da Tessa." % m.nome)
+	_registrar("[i](teste)[/i] %s brota na sala." % m.nome)
 	if combate.ativo:
 		combate.adicionar(m)
 		return
@@ -712,7 +730,7 @@ func _grupo_em_guarda() -> void:
 		if h.andando(): await h.parou
 	for h in vivos():
 		h.velocidade = Ator.VEL_BASE; h.papel_andar = "andar"
-		h.empunhar(true); h.rotulo.visible = true
+		h.empunhar(true)   # PV dos heróis só nas cartas, não sobre a cabeça
 
 func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 	luz.set_grade(grade_forte)
@@ -932,7 +950,7 @@ func _linha_de_comando() -> void:
 		print("   andando à toa: ", errantes.map(func(x): return x.andando()))
 	elif teste == "brotar":
 		for i in 3:
-			_brotar_goblin()
+			_brotar_goblin(true)
 			await get_tree().create_timer(0.6).timeout
 		camera.alvo = heroi.position; camera.distancia = 6.5; camera.inclinacao = 42.0; camera.guinada = 160.0
 		await get_tree().create_timer(5.0).timeout
@@ -982,7 +1000,7 @@ func _linha_de_comando() -> void:
 				await get_tree().create_timer(0.3).timeout
 	elif teste == "impacto":
 		# Quadros do golpe da Tessa e do goblin (acerto ou erro, conforme o dado), para conferir os efeitos.
-		_brotar_goblin()
+		_brotar_goblin(true)
 		await get_tree().create_timer(1.5).timeout
 		var g: Node3D = monstros[0]
 		camera.alvo = (heroi.position + g.position) / 2.0; camera.distancia = 5.0; camera.inclinacao = 32.0; camera.guinada = 200.0
@@ -1000,7 +1018,7 @@ func _linha_de_comando() -> void:
 			await get_tree().create_timer(1.5).timeout
 	elif teste == "mirar":
 		# Para onde olham cabeça e escudo em cada animação de combate, em relação ao oponente.
-		_brotar_goblin()
+		_brotar_goblin(true)
 		await get_tree().create_timer(1.5).timeout
 		var g: Node3D = monstros[0]
 		var escudo: Node3D = null
@@ -1033,7 +1051,7 @@ func _linha_de_comando() -> void:
 				print(linha)
 	elif teste == "olhar":
 		# Ângulo do olhar (cabeça) em relação ao oponente, por animação e instante, com o giro atual.
-		_brotar_goblin()
+		_brotar_goblin(true)
 		await get_tree().create_timer(1.5).timeout
 		var g: Node3D = monstros[0]
 		var casos := [[0, "parado-espada-escudo", 0.5], [0, "parado-espada-escudo", 0.5, 0.0], [2, "sacar-flecha", 1.0], [2, "atirar-flecha", 2.6, 0.0], [2, "atirar-flecha", 3.0, 0.0]]
@@ -1070,7 +1088,7 @@ func _linha_de_comando() -> void:
 		await get_tree().create_timer(0.5).timeout
 	elif teste == "tela":
 		# Combate de verdade (goblin brotado) para ver a tela de combate na vez de um personagem.
-		_brotar_goblin(); _brotar_goblin()
+		_brotar_goblin(true); _brotar_goblin(true)
 		await get_tree().create_timer(1.5).timeout
 		for _i in 40:
 			if combate.vez and combate.vez.lado == "grupo": break
@@ -1172,7 +1190,7 @@ func _linha_de_comando() -> void:
 	elif teste == "besta":
 		for x in OS.get_cmdline_user_args():
 			if x.begins_with("--heroi="): heroi = grupo[int(x.get_slice("=", 1))]
-		_brotar_goblin()
+		_brotar_goblin(true)
 		await get_tree().create_timer(1.5).timeout
 		for k in 18:
 			_arsenal_teste()
@@ -1180,9 +1198,28 @@ func _linha_de_comando() -> void:
 		for i in 6:
 			await get_tree().create_timer(0.5).timeout
 			print("BESTA anim=", heroi.player.current_animation, " em_combate=", heroi.em_combate, " estilo=", heroi.estilo, " parado_combate=", heroi.anim.get("parado_combate"))
+	elif teste == "ocupacao":
+		# 12 goblins pela tecla B: nenhum pode cair onde já há alguém; e o cursor sobre um deles.
+		for k in 12: _brotar_goblin(); await get_tree().process_frame
+		var casas := {}; var repetidas := 0
+		for x in grupo + monstros:
+			if casas.has(x.celula): repetidas += 1
+			casas[x.celula] = true
+		print("OCUPACAO seres=", (grupo + monstros).size(), " casas repetidas=", repetidas, " sala=", grade.area_de(heroi.celula),
+			" goblins fora da sala=", monstros.filter(func(m): return grade.area_de(m.celula) != grade.area_de(heroi.celula)).size())
+		await get_tree().create_timer(2.0).timeout
+		for k in 20:
+			if combate.vez == heroi: break
+			await get_tree().create_timer(0.5).timeout
+		var alvo: Node3D = null
+		for m in monstros:
+			if m.vivo() and combate._ve(m): alvo = m; break
+		if alvo:
+			combate.pairar(alvo.celula, alvo)
+			print("CURSOR sobre ", alvo.nome, ": ", combate._cursor)
 	elif teste == "arsenal":
 		# A Tessa passa por todas as armas (tecla T) e ataca um goblin com cada uma; quadro no impacto.
-		_brotar_goblin()
+		_brotar_goblin(true)
 		await get_tree().create_timer(1.5).timeout
 		var g: Node3D = monstros[0]
 		g.pv = 999; g.pv_max = 999
@@ -1208,7 +1245,7 @@ func _linha_de_comando() -> void:
 		# Erros forçados, vistos por trás de quem ataca: o defensor deve aparecer de frente. --arma=<item> troca a arma da Tessa.
 		for x in OS.get_cmdline_user_args():
 			if x.begins_with("--arma="): heroi.ficha.empunhar({"id": x.get_slice("=", 1).replace("_", " "), "qtd": 1}); _aplicar_ficha(heroi)
-		_brotar_goblin()
+		_brotar_goblin(true)
 		await get_tree().create_timer(1.5).timeout
 		var g: Node3D = monstros[0]
 		var cam := Camera3D.new(); add_child(cam); cam.fov = 50
