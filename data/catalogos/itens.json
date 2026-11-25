@@ -21,6 +21,7 @@
     "óleo":                  {"nome": "Frasco de óleo", "tipo": "consumivel", "espacos": 1, "pilha": 2, "cinto": true, "icone": "oleo", "dica": "abastece a lanterna; aceso e arremessado, queima", "preco": 2},
     "água benta":            {"nome": "Água benta", "tipo": "consumivel", "espacos": 1, "cinto": true, "icone": "agua-benta", "dica": "1d8 de dano em mortos-vivos", "preco": 25},
     "rações":                {"nome": "Rações", "tipo": "consumivel", "espacos": 1, "pilha": 7, "icone": "racao", "dica": "comida para 1 dia", "preco": 5},
+    "martelo e pregos":      {"nome": "Martelo e pregos", "tipo": "ferramenta", "espacos": 1, "icone": "martelo-pregos", "dica": "prega uma porta para ninguém abrir", "preco": 3},
     "pé de cabra":           {"nome": "Pé de cabra", "tipo": "ferramenta", "espacos": 1, "icone": "pe-de-cabra", "preco": 2},
     "ferramentas de ladrão": {"nome": "Ferramentas de ladrão", "tipo": "ferramenta", "espacos": 1, "icone": "ferramentas-ladrao", "preco": 25},
     "grimório":              {"nome": "Grimório", "tipo": "ferramenta", "espacos": 1, "icone": "grimorio", "preco": 0},
@@ -40,8 +41,6 @@
     "saco pequeno":          {"nome": "Saco pequeno", "tipo": "ferramenta", "espacos": 1, "icone": "saco-pequeno", "dica": "guarda moedas e miudezas", "preco": 1},
     "saco grande":           {"nome": "Saco grande", "tipo": "ferramenta", "espacos": 1, "icone": "saco-grande", "dica": "+4 espaços para carregar tesouro", "preco": 2},
     "rações de viagem":      {"nome": "Rações de viagem", "tipo": "consumivel", "espacos": 1, "pilha": 7, "icone": "racao-viagem", "dica": "não estragam", "preco": 15},
-    "cravos de ferro":       {"nome": "Cravos de ferro", "tipo": "ferramenta", "espacos": 1, "pilha": 12, "icone": "cravos", "dica": "travam portas abertas ou fechadas", "preco": 1},
-    "martelo":               {"nome": "Martelo pequeno", "tipo": "ferramenta", "espacos": 1, "icone": "martelo", "preco": 2},
     "mochila":               {"nome": "Mochila", "tipo": "ferramenta", "espacos": 0, "icone": "mochila", "dica": "dá os espaços da mochila", "preco": 5}
   }
 }
