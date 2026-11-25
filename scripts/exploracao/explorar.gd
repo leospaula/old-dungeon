@@ -168,7 +168,8 @@ func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	a.nome = str(p.nome).get_slice(" ", 0)
 	a.ficha = Ficha.new(p, str(cfg.get("distancia", "")))
 	a.pv = int(p.pv); a.thac0 = int(p.thac0)
-	a.infravisao_m = float(p.get("infravisao_m", 0.0))
+	# Infravisão (B/X): elfos e anões enxergam no escuro até 18 m.
+	a.infravisao_m = float(p.get("infravisao_m", 18.0 if str(p.classe) in ["elfo", "anao"] else 0.0))
 	add_child(a); a.colocar(onde)
 	a.giro_anim = TESSA_GIRO
 	var modelo: Node3D = load(cfg.glb).instantiate()
@@ -667,7 +668,9 @@ func _hora() -> String:
 # ---------- visão ----------
 
 func _atualizar_visao() -> void:
-	visao.atualizar_jogador(heroi.celula, tocha_turnos > 0)
+	var olhos: Array = []
+	for h in vivos(): olhos.append([h.celula, float(h.infravisao_m)])
+	visao.atualizar_grupo(olhos, heroi.celula, tocha_turnos > 0)
 	visao.atualizar_textura(mestre)
 	luz.atualizar_tochas(visao.exploradas, mestre)
 	_atualizar_monstros_visiveis()
@@ -1299,6 +1302,22 @@ func _linha_de_comando() -> void:
 		camera.alvo = grade.centro(lado); await get_tree().create_timer(0.6).timeout
 		_menu_da_porta(pt, get_viewport().get_camera_3d().unproject_position(grade.centro(lado)))
 		await get_tree().create_timer(0.5).timeout
+	elif teste == "vao":
+		# Tessa no vão da P03 (aberta), goblin do outro lado, Caco ao lado dela: Caco golpeia na diagonal
+		# e atravessa a Tessa; e cada um vê com os próprios olhos.
+		var tessa: Node3D = grupo[0]; var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]
+		var p3: Dictionary = portas.por_id["P03"]; portas.de(p3).estado = "fechada"
+		_abrir_porta(p3, Vector2i(11, 5), "teste")
+		tessa.colocar(Vector2i(11, 5)); caco.colocar(Vector2i(11, 4)); lianne.colocar(Vector2i(9, 3))
+		print("VAO diagonal Caco(11,4)->(12,5) adjacentes=", grade.adjacentes(Vector2i(11, 4), Vector2i(12, 5)),
+			" · andar cortando a quina=", grade.passa(Vector2i(11, 4), Vector2i(12, 5)))
+		combate.grupo = grupo; combate.monstros = []; combate.vez = caco; combate.restante = 18.0
+		combate._mostrar_alcance()
+		print("VAO Caco atravessa a Tessa: chega em (13,5)=", combate._alc.has(Vector2i(13, 5)), " · pode parar na casa dela=", combate._alc.has(Vector2i(11, 5)))
+		combate.vez = null; combate.marca_alcance.limpar(); combate.marca_vez.limpar()
+		# visão: com só a Tessa na sala, a casa (14,5) do 23 conta? E com o Caco no vão?
+		tessa.colocar(Vector2i(7, 5)); caco.colocar(Vector2i(11, 5)); _atualizar_visao()
+		print("VAO Caco no vão vê (14,5)=", visao.visiveis.has(Vector2i(14, 5)), " · (16,5)=", visao.visiveis.has(Vector2i(16, 5)), " lianne infravisão=", lianne.infravisao_m)
 	elif teste == "corrida":
 		# No combate os monstros correm (velocidade do modo rápido, animação de corrida); fugindo também.
 		for k in 3: _brotar_goblin(); await get_tree().process_frame

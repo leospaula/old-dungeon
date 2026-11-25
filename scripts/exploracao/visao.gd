@@ -41,12 +41,25 @@ func iluminada_fixa(c: Vector2i) -> bool:
 	return _iluminadas.has(c)
 
 func atualizar_jogador(origem: Vector2i, tocha_acesa: bool, infra_m := 0.0) -> void:
+	atualizar_grupo([[origem, infra_m]], origem, tocha_acesa)
+
+## Visão do grupo: cada um vê, da própria casa, o que está iluminado (tochas de parede ou a tocha de
+## quem lidera, cuja luz também precisa alcançar a casa) ou dentro da própria visão no escuro.
+## olhos: [[célula, infravisão_m], ...]
+func atualizar_grupo(olhos: Array, tocha: Vector2i, tocha_acesa: bool) -> void:
 	visiveis.clear()
-	visiveis[origem] = true
-	for c in _perto(origem, ALCANCE_MAX):
-		var d := Vector2(c - origem).length() * CEL
-		var luz := _iluminadas.has(c) or (tocha_acesa and d <= RAIO_TOCHA) or d <= infra_m
-		if luz and grade.linha(origem, c): visiveis[c] = true
+	var luz_tocha := {}
+	if tocha_acesa:
+		for c in _perto(tocha, RAIO_TOCHA):
+			if grade.linha(tocha, c): luz_tocha[c] = true
+	for o in olhos:
+		var origem: Vector2i = o[0]; var infra: float = o[1]
+		visiveis[origem] = true
+		for c in _perto(origem, ALCANCE_MAX):
+			if visiveis.has(c): continue
+			var d := Vector2(c - origem).length() * CEL
+			var luz := _iluminadas.has(c) or luz_tocha.has(c) or d <= infra
+			if luz and grade.linha(origem, c): visiveis[c] = true
 	for c in visiveis:
 		if not exploradas.has(c):
 			exploradas[c] = true

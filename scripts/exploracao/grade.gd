@@ -162,8 +162,14 @@ func vizinhas(c: Vector2i, abre_portas := false) -> Array[Vector2i]:
 	return out
 
 ## Lado a lado (inclui diagonal) e sem parede no meio: alcance de corpo a corpo.
+## Na diagonal basta um dos dois lados da quina estar livre (porta aberta conta): dá para golpear
+## quem está do outro lado do vão da porta, mesmo sem poder andar cortando a quina.
 func adjacentes(a: Vector2i, b: Vector2i) -> bool:
-	return passa(a, b)
+	var d := b - a
+	if absi(d.x) > 1 or absi(d.y) > 1 or d == Vector2i.ZERO: return false
+	if d.x == 0 or d.y == 0: return passa_reto(a, b)
+	var h := a + Vector2i(d.x, 0); var v := a + Vector2i(0, d.y)
+	return (passa_reto(a, h) and passa_reto(h, b)) or (passa_reto(a, v) and passa_reto(v, b))
 
 ## Caminho mais curto (sem a célula de saída). `ocupadas` bloqueia células; o destino pode estar ocupado
 ## se `ate_vizinho` for verdadeiro (para chegar ao lado de alguém).

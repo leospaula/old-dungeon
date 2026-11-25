@@ -30,7 +30,8 @@ var restante := 0.0        # metros de movimento que sobram na vez de um persona
 var previa_m := -1.0       # custo do caminho sob o mouse
 var grupo: Array = []
 var monstros: Array = []
-var _alc := {}
+var _alc := {}             # onde quem age pode parar (custo, anterior)
+var _alc_todo := {}        # inclui as casas de aliados, que se atravessam mas onde não se para
 var ordem_lados: Array = []   # ordem dos lados nesta rodada (para a tela de iniciativa)
 var ini_grupo := 0            # d6 de iniciativa de cada lado nesta rodada (0 = rodada de surpresa)
 var ini_monstros := 0
@@ -130,14 +131,14 @@ func clicar(c: Vector2i, alvo: Node) -> void:
 			ocupado = true
 			restante -= float(_alc[rumo][0])
 			marca_caminho.limpar(); marca_alcance.limpar()
-			await _andar(vez, grade.refazer(_alc, rumo))
+			await _andar(vez, grade.refazer(_alc_todo, rumo))
 			ocupado = false
 			_mostrar_alcance(); mudou.emit()
 			if restante < 1.49: _fim_de_turno.emit()
 			return
 		ocupado = true
 		restante -= float(_alc[lado][0])
-		await _andar(vez, grade.refazer(_alc, lado))
+		await _andar(vez, grade.refazer(_alc_todo, lado))
 		await _atacar(vez, alvo)
 		ocupado = false
 		_fim_de_turno.emit()
@@ -146,7 +147,7 @@ func clicar(c: Vector2i, alvo: Node) -> void:
 		ocupado = true
 		restante -= float(_alc[c][0])
 		marca_caminho.limpar(); marca_alcance.limpar()
-		await _andar(vez, grade.refazer(_alc, c))
+		await _andar(vez, grade.refazer(_alc_todo, c))
 		ocupado = false
 		_mostrar_alcance(); mudou.emit()
 		if restante < 1.49 and _inimigo_ao_lado(vez) == null:
@@ -185,18 +186,22 @@ func pairar(c: Vector2i, alvo: Node) -> void:
 			var lado := _melhor_vizinha(alvo)
 			if lado == Vector2i(-999, -999): lado = _rumo(_alc, vez, alvo)
 			if lado != vez.celula:
-				marca_caminho.por(grade.refazer(_alc, lado), Color(1, 0.95, 0.8, 0.45), 0.5)
+				marca_caminho.por(grade.refazer(_alc_todo, lado), Color(1, 0.95, 0.8, 0.45), 0.5)
 				previa_m = float(_alc[lado][0])
 		marca_caminho.por([alvo.celula], Color(0.9, 0.15, 0.1, 0.55), 0.05)
 	elif _alc.has(c) and c != vez.celula:
-		var cam: Array[Vector2i] = grade.refazer(_alc, c)
+		var cam: Array[Vector2i] = grade.refazer(_alc_todo, c)
 		marca_caminho.por(cam.slice(0, cam.size() - 1), Color(1, 0.95, 0.8, 0.45), 0.5)
 		marca_caminho.por([c], Color(1, 0.95, 0.8, 0.5), 0.1)
 		previa_m = float(_alc[c][0])
 	mudou.emit()
 
 func _mostrar_alcance() -> void:
-	_alc = grade.alcance(vez.celula, restante, _ocupadas(vez), false, exploradas)
+	# Heróis atravessam os companheiros (só não param na casa deles); monstros barram.
+	_alc_todo = grade.alcance(vez.celula, restante, _barram(vez), false, exploradas)
+	_alc = _alc_todo.duplicate()
+	for x in grupo:
+		if is_instance_valid(x) and x != vez and x.vivo(): _alc.erase(x.celula); _alc.erase(x.proxima_celula())
 	marca_alcance.limpar()
 	var cels: Array = _alc.keys().filter(func(k): return k != vez.celula)
 	marca_alcance.por(cels, Color(0.35, 0.65, 1.0, 0.28))
@@ -210,9 +215,9 @@ func _mostrar_alcance() -> void:
 ## Célula mais adiantada, dentro do alcance, no caminho de `quem` até `alvo`.
 func _rumo(alc: Dictionary, quem: Node, alvo: Node) -> Vector2i:
 	var destino: Vector2i = quem.celula
-	for c in grade.caminho(quem.celula, alvo.celula, _ocupadas(quem), quem.lado == "monstros"):
+	for c in grade.caminho(quem.celula, alvo.celula, _barram(quem), quem.lado == "monstros"):
 		if alc.has(c): destino = c
-		else: break
+		elif quem.lado != "grupo" or not _alc_todo.has(c): break   # casa de aliado: atravessa e segue
 	return destino
 
 func _melhor_vizinha(alvo: Node) -> Vector2i:
@@ -407,7 +412,7 @@ func clicar_porta(pt: Dictionary) -> void:
 	if lado != vez.celula:
 		restante -= menor
 		marca_alcance.limpar(); marca_caminho.limpar()
-		await _andar(vez, grade.refazer(_alc, lado))
+		await _andar(vez, grade.refazer(_alc_todo, lado))
 	abrir_porta.call(pt, vez.celula)
 	await get_tree().create_timer(0.4).timeout
 	ocupado = false
@@ -417,6 +422,14 @@ func _andar(a: Node, cam: Array[Vector2i]) -> void:
 	if cam.is_empty(): return
 	a.seguir(cam)
 	await a.parou
+
+## Casas que barram o caminho de `quem`: para heróis, só os monstros; para monstros, todos.
+func _barram(quem: Node) -> Dictionary:
+	if quem.lado != "grupo": return _ocupadas(quem)
+	var d := {}
+	for x in monstros:
+		if is_instance_valid(x) and x.vivo(): d[x.celula] = true; d[x.proxima_celula()] = true
+	return d
 
 func _ocupadas(exceto: Node) -> Dictionary:
 	var d := {}
