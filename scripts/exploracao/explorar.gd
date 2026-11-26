@@ -30,6 +30,7 @@ const Estilo = preload("res://scripts/interface/estilo.gd")
 const Portas = preload("res://scripts/exploracao/portas.gd")
 const Procurar = preload("res://scripts/exploracao/procurar.gd")
 const Aventura = preload("res://scripts/exploracao/aventura.gd")
+const EscolherGrupo = preload("res://scripts/interface/escolher_grupo.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
@@ -119,6 +120,10 @@ func _ready() -> void:
 	MOV = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/movimento.json"))
 	var av := _aventura_pedida()
 	if av != "": aventura = Aventura.new(grade, av); aventura.colocar_props(self)
+	if aventura:
+		set_process(false); set_process_unhandled_input(false)
+		await _escolher_grupo()
+		set_process(true); set_process_unhandled_input(true)
 	_criar_grupo()
 	luz = Luz.new(); add_child(luz)
 	luz.configurar(self, $Masmorra, $Ambiente, heroi)
@@ -185,10 +190,43 @@ func _aventura_pedida() -> String:
 		if a.begins_with("--teste=") or a.begins_with("--captura"): return ""
 	return "aventura-1" if Aventura.existe("aventura-1") else ""
 
+## Antes da aventura: o jogador escolhe quem joga entre os personagens disponíveis (tela de escolha).
+## --grupo=id,id,... escolhe direto; testes e capturas pegam os primeiros. --captura-escolha=arq.png
+## fotografa a tela vazia e com a escolha feita.
+func _escolher_grupo() -> void:
+	var disp: Array = aventura.grupo_ids(); var n: int = aventura.tamanho_grupo()
+	var args := OS.get_cmdline_user_args()
+	var foto := ""
+	for a in args:
+		if a.begins_with("--grupo="): aventura.escolhidos = Array(a.trim_prefix("--grupo=").split(",")); return
+		if a.begins_with("--captura-escolha="): foto = a.trim_prefix("--captura-escolha=")
+	if n <= 0 or n >= disp.size(): aventura.escolhidos = disp.duplicate(); return
+	if foto == "" and Array(args).any(func(a): return a.begins_with("--teste=") or a.begins_with("--captura")):
+		aventura.escolhidos = disp.slice(0, n); return
+	camera.alvo = grade.centro(aventura.celula_inicio()); camera.distancia = 12.0; camera.inclinacao = 55.0; camera.guinada = -30.0
+	var G: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/personagens/grupo-inicial.json"))
+	var fichas: Array = []
+	for id in disp:
+		for x in G.personagens:
+			if x.id == id: fichas.append(x)
+	var tela := EscolherGrupo.new(); $HUD.add_child(tela)
+	tela.montar(str(aventura.d.get("titulo", "")), fichas, n)
+	if foto != "":
+		for _f in 20: await get_tree().process_frame
+		get_viewport().get_texture().get_image().save_png(foto)
+		for id in ["durgo", "tessa", "anselmo", "caco", "mirela"]: tela.alternar(id)
+		for _f in 5: await get_tree().process_frame
+		get_viewport().get_texture().get_image().save_png(foto.replace(".png", "-2.png"))
+		get_tree().quit(); return
+	var ids: Array = await tela.escolhido
+	tela.queue_free()
+	aventura.escolhidos = ids
+
 func _criar_grupo() -> void:
 	var G: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/personagens/grupo-inicial.json"))
 	var ini: Vector2i = aventura.celula_inicio() if aventura else INICIO
-	var ids: Array = aventura.grupo_ids() if aventura and not aventura.grupo_ids().is_empty() else GRUPO_EM_JOGO
+	var ids: Array = GRUPO_EM_JOGO
+	if aventura: ids = aventura.escolhidos if not aventura.escolhidos.is_empty() else aventura.grupo_ids()
 	var lugares: Array[Vector2i] = [ini]
 	var alc: Dictionary = grade.alcance(ini, 9.0, {}, aventura == null)
 	var perto: Array = alc.keys().filter(func(c): return c != ini and (aventura == null or grade.area_de(c) == grade.area_de(ini)))

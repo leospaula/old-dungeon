@@ -7,6 +7,7 @@
   "gancho": "Vocês são gente comum da vila. Dois bandidos os pegaram na estrada, uma pancada na cabeça e mais nada.",
   "notas_mestre": "Montada sala a sala, na ordem da aventura (vault: Aventura 1 - Fuga da Dungeon de Zastan). Parte I: cela (1), vestíbulo (2), corredor (3), sala dos guardas (4).",
   "grupo": ["tessa", "durgo", "caco", "lianne", "mirela", "anselmo", "bento"],
+  "tamanho_grupo": 5,
   "inicio": {"tipo": "capturados", "area": "1", "pos": "B3", "sem_equipamento": true,
              "equipamento_em": {"area": "4", "pos": "F5", "prop": "pilha-armaduras"}},
   "portas": {

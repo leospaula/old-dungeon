@@ -338,7 +338,12 @@
       "items": {
         "type": "string"
       },
-      "description": "Ids dos personagens prontos (data/personagens/grupo-inicial.json) que jogam esta aventura, na ordem de marcha."
+      "description": "Personagens prontos (data/personagens/grupo-inicial.json) disponíveis para esta aventura."
+    },
+    "tamanho_grupo": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Quantos o jogador escolhe entre os de 'grupo' antes de começar (a ordem da escolha é a ordem de marcha). Sem isto, jogam todos."
     }
   },
   "$defs": {
