@@ -584,7 +584,7 @@ func _previa(c: Vector2i, porta: Dictionary) -> void:
 func _ao_iniciar_passo(de: Vector2i, para: Vector2i, quem: Node3D) -> void:
 	var pt: Dictionary = grade.porta_entre(de, para)
 	if not pt.is_empty() and not grade.porta_aberta.has(pt.id): _abrir_porta(pt, de)
-	if quem == heroi and not combate.ativo: _puxar_fila(de)
+	if quem == heroi and not combate.ativo and not procurar.vasculhando: _puxar_fila(de)
 	if quem.lado == "grupo": _pulo(de, para, quem)
 
 ## Atravessar armadilha vista: ao entrar na casa dela, pula (animação "pular", no lugar; o ator anda
@@ -604,9 +604,9 @@ func _ao_chegar(_c: Vector2i, metros: float, quem: Node3D) -> void:
 		procurar.pisou(quem, _c)
 		if not combate.ativo:
 			procurar.elfo_passando(quem)
-			if (quem == heroi or quem.separado) and modo == "cauteloso": procurar.cauteloso(quem, _c)
+			if (quem == heroi or quem.separado) and modo == "cauteloso" and not procurar.vasculhando: procurar.cauteloso(quem, _c)
 	if quem == heroi: _anotar_area()
-	if combate.ativo or quem.lado != "grupo": return
+	if combate.ativo or quem.lado != "grupo" or procurar.vasculhando: return
 	# O tempo corre com quem lidera; quem anda separado conta só enquanto quem lidera está parado.
 	if quem != heroi and not (quem.separado and not heroi.andando()):
 		_checar_avistamento(); return
@@ -1558,7 +1558,12 @@ func _linha_de_comando() -> void:
 		grupo[0].colocar(Vector2i(14, 5)); grupo[1].colocar(Vector2i(13, 5)); grupo[2].colocar(Vector2i(15, 6)); _atualizar_visao()
 		print("PROCURAR área=", grade.area_de(grupo[0].celula), " m²=", procurar.metros2("23"), " turnos=", procurar.turnos_para("23"))
 		for k in 12:
+			var antes: Array = grupo.map(func(h): return h.celula)
 			await procurar.procurar_sala()
+			var depois: Array = grupo.map(func(h): return h.celula)
+			var unicas := {}
+			for c in depois: unicas[c] = true
+			print("PROCURAR vasculhar: ", antes, " -> ", depois, " distintas=", unicas.size() == depois.size(), " armadilha=", depois.any(func(c): return procurar.armadilhas.has(c)))
 			if not procurar.secreta(p2) and procurar.armadilhas[Vector2i(17, 5)].visto: break
 			procurar.procurou.clear()
 		print("PROCURAR achou P02=", not procurar.secreta(p2), " fosso visto=", procurar.armadilhas[Vector2i(17, 5)].visto, " turno=", turno,

@@ -150,9 +150,7 @@ func procurar_sala() -> void:
 		if h.andando(): await h.parou
 	ex._registrar("%s procura%s aqui, %s (%d m² de chão e paredes%s): %d turno%s." % [", ".join(quem.map(func(h): return h.nome)),
 		"m" if quem.size() > 1 else "", nome_area, roundi(metros2(area)), "" if fator_mobilia(area) == 1.0 else ", " + str(mobilia[area]), turnos, "s" if turnos > 1 else ""])
-	var dur := 4.0
-	for h in quem: dur = maxf(dur, h.tocar_anim("olhar-em-volta", 0.3) if h.player and h.player.has_animation("olhar-em-volta") else 4.0)
-	await ex.get_tree().create_timer(dur).timeout
+	await _vasculhar(quem, area)
 	if not procurou.has(area): procurou[area] = {}
 	for h in quem: procurou[area][h.nome] = true
 	var achou := false
@@ -180,6 +178,56 @@ func procurar_sala() -> void:
 	ocupado = false
 	ex.hud_ui.refazer()
 	ex._checar_avistamento()
+
+## Encenação da busca: cada um vira para um lado e olha em volta; depois cada um anda até ~2 casas
+## (para uma casa livre da mesma área, nunca numa armadilha), vira para outro lado e olha de novo.
+var vasculhando := false   # explorar: andar aqui não puxa a fila nem conta tempo (o tempo é o da busca)
+func _vasculhar(quem: Array, area: String) -> void:
+	vasculhando = true
+	await _olhar_todos(quem)
+	var reservadas: Dictionary = ex._ocupadas_por(quem)
+	for h in quem: reservadas[h.celula] = true
+	for h in quem:
+		var cam := _passeio(h, area, reservadas)
+		if cam.is_empty(): continue
+		reservadas[cam[-1]] = true
+		h.seguir(cam)
+	for h in quem:
+		if h.andando(): await h.parou
+	await _olhar_todos(quem)
+	vasculhando = false
+
+## Vira cada um para um lado diferente (leque com início sorteado) e toca "olhar-em-volta".
+func _olhar_todos(quem: Array) -> void:
+	var base := randf() * TAU
+	var dur := 0.0
+	for i in quem.size():
+		var h: Node3D = quem[i]
+		var ang := base + TAU * i / quem.size() + randf_range(-0.4, 0.4)
+		var de: float = h.rotation.y; var para: float = ang + h.frente
+		h.create_tween().tween_method(func(t: float): h.rotation.y = lerp_angle(de, para, t), 0.0, 1.0, 0.35)
+		var d: float = h.tocar_anim("olhar-em-volta", 0.3) if h.player and h.player.has_animation("olhar-em-volta") else 4.0
+		dur = maxf(dur, d)
+	await ex.get_tree().create_timer(dur + 0.35).timeout
+
+## Caminho curto até uma casa sorteada da mesma área (de preferência a 2 casas).
+func _passeio(h: Node3D, area: String, reservadas: Dictionary) -> Array[Vector2i]:
+	var de: Vector2i = h.celula
+	var opcoes := {1: [], 2: []}
+	for dx in range(-2, 3):
+		for dy in range(-2, 3):
+			var c := de + Vector2i(dx, dy)
+			var dist: int = maxi(absi(dx), absi(dy))
+			if dist == 0 or reservadas.has(c) or armadilhas.has(c) or not ex.grade.chao(c): continue
+			if ex.grade.area_de(c) != area or not ex.visao.exploradas.has(c): continue
+			opcoes[dist].append(c)
+	for dist in [2, 1]:
+		var lista: Array = opcoes[dist]
+		lista.shuffle()
+		for c in lista:
+			var cam: Array[Vector2i] = ex.grade.caminho(de, c, reservadas)
+			if not cam.is_empty() and cam.size() <= 3 and not cam.any(func(x): return armadilhas.has(x)): return cam
+	return []
 
 # ---------- armadilhas de sala ----------
 
