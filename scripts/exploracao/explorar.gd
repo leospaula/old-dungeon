@@ -43,7 +43,7 @@ const TESSA_GIRO := {"parado-espada-escudo": 76.0, "parado": 45.0, "andar": 90.0
 	"duas-maos-guarda": 89.0, "duas-maos-golpe": 85.0, "aparar": 99.0, "haste-estocada": 84.0, "haste-guarda": 84.0, "cajado-golpe": 91.0,
 	"besta-mirar": 88.0, "arco-guarda": 89.0, "arco-espera": 85.0, "arco-andar": 88.0, "atirar-flecha": 80.0, "arremessar": 93.0,
 	"arremessar-faca": 101.0, "arremessar-frasco": 94.0, "chutar-porta": 73.0, "ajoelhar": 91.0, "beber": 96.0,
-	"pular": 68.0, "examinar-ajoelhado": 65.0, "olhar-em-volta": 95.0, "sair-do-buraco": 90.0, "levantar": 90.0,
+	"pular": 68.0, "examinar-ajoelhado": 65.0, "olhar-em-volta": 95.0, "sair-do-buraco": 90.0, "levantar": 90.0, "ouvir": 86.0,
 	"faca-guarda": 74.0, "faca-estocada": 81.0, "besta-guarda": 88.0, "besta-disparo": 89.0, "machado-guarda": 76.0,
 	"haste-bloquear": 91.0, "arco-bloquear": 85.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
@@ -682,8 +682,12 @@ func _ouvir_aqui() -> void:
 	var q := agente()
 	var ouvintes: Array = vivos().filter(func(h): return Vector2(h.celula - q.celula).length() <= 2.5)
 	for h in vivos(): h.parar()
-	for h in ouvintes: h.tocar_anim("ajoelhar")
-	await get_tree().create_timer(2.2).timeout
+	for h in ouvintes:   # parado, curvado, olhando em volta devagar (sem porta para encostar)
+		if h.player and h.player.has_animation("ouvir"): h.tocar_anim("ouvir", 0.3); h.player.speed_scale = 0.6
+		else: h.tocar_anim("ajoelhar")
+	await get_tree().create_timer(portas.OUVIR_DUR).timeout
+	for h in ouvintes:
+		if h.vivo(): h.tocar("parado", 0.4)
 	_gastar_tempo(1.0 / 60.0)
 	var alc: Dictionary = grade.alcance(q.celula, Portas.LIMITE_OUVIR_M, {}, false)
 	var perto: Array = monstros_vivos().filter(func(m): return alc.has(m.celula))
@@ -1542,6 +1546,21 @@ func _linha_de_comando() -> void:
 			if errantes.any(func(x): return x.has_meta("ouvido")): break
 		print("OUVIR marcados=", errantes.filter(func(x): return x.has_meta("ouvido")).size(), " bônus até turno ", bonus_silencio_ate, " turno=", turno)
 		var p3: Dictionary = portas.por_id["P03"]
+		if OS.get_cmdline_user_args().has("--captura-ouvir"):
+			hud_ui.visible = false
+			portas.agir(p3, agente(), "ouvir_todos")
+			var ag: Node3D = agente()
+			await get_tree().create_timer(0.3).timeout
+			while ag.andando(): await get_tree().process_frame
+			camera.distancia = 3.5; camera.inclinacao = 72.0; camera.guinada = 300.0
+			for k in 3:
+				await get_tree().create_timer(1.0).timeout
+				camera.alvo = ag.global_position + Vector3(0, 0.8, 0); camera.guinada = [300.0, 300.0, 250.0][k]
+				await get_tree().create_timer(0.9).timeout
+				await get_tree().create_timer(0.1).timeout
+				get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/ouvir-%d.png" % k)
+			await get_tree().create_timer(3.0).timeout
+			get_tree().quit(); return
 		for k in 8:
 			await portas.agir(p3, agente(), "ouvir_todos")
 			if errantes.any(func(x): return x.has_meta("ouvido")): break

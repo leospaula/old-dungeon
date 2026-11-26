@@ -151,10 +151,8 @@ func _ouvir(pt: Dictionary, q: Node3D, todos: bool) -> void:
 	if todos:
 		for h in ex.vivos():
 			if h != q and Vector2(h.celula - q.celula).length() <= 2.5 and int(e.ouviu.get(h.nome, -99)) < ex.turno: ouvintes.append(h)
-	for h in ouvintes:
-		e.ouviu[h.nome] = ex.turno
-		h.tocar_anim("ajoelhar")
-	await q.get_tree().create_timer(2.2).timeout
+	for h in ouvintes: e.ouviu[h.nome] = ex.turno
+	await _encostar_ouvido(pt, ouvintes)
 	ex._gastar_tempo(RODADA)
 	var outro: Array[Vector2i] = []
 	for par in ex.grade.lados_da_porta(pt): outro.append(par[1] if par[0] == q.celula else par[0])
@@ -167,6 +165,42 @@ func _ouvir(pt: Dictionary, q: Node3D, todos: bool) -> void:
 	else:
 		ex._registrar("%s ouve%s do outro lado da porta %s: [color=#ff9a6a]%s[/color] (%s)." % [nomes, "m" if ouvintes.size() > 1 else "", pt.id, _descrever(ouviu), ex.grade.nomes.get(area, "do outro lado")])
 		ex._diario("evento", "Ouviram %s atrás da porta %s." % [_descrever(ouviu), pt.id])
+
+## Encenação do ouvir: quem está colado na porta chega rente a ela, vira a orelha para a madeira e
+## inclina o corpo (animação "ouvir", curvada e cautelosa, mais lenta); os outros só viram para a porta.
+## Sem a animação, ajoelha como antes.
+const OUVIR_DUR := 4.0
+func _encostar_ouvido(pt: Dictionary, ouvintes: Array) -> void:
+	var lados: Array = ex.grade.lados_da_porta(pt)
+	var voltar := []
+	for h in ouvintes:
+		var porta := Vector3.INF
+		for par in lados:
+			if h.celula in par: porta = (ex.grade.centro(par[0]) + ex.grade.centro(par[1])) * 0.5
+		if porta == Vector3.INF:   # companheiro perto: olha para a porta
+			var c0: Vector2i = lados[0][0]; var c1: Vector2i = lados[0][1]
+			h.olhar_para((ex.grade.centro(c0) + ex.grade.centro(c1)) * 0.5)
+			if h.player and h.player.has_animation("ouvir"):
+				h.tocar_anim("ouvir", 0.3); h.player.speed_scale = 0.7
+			else: h.tocar_anim("ajoelhar")
+			continue
+		if h.player == null or not h.player.has_animation("ouvir"):
+			h.olhar_para(porta); h.tocar_anim("ajoelhar"); continue
+		var antes: Transform3D = h.transform
+		var d: Vector3 = porta - h.position; d.y = 0; d = d.normalized()
+		h.olhar_para(porta)
+		var giro: float = h.rotation.y + PI * 0.5   # orelha direita para a porta
+		var t := Transform3D(Basis(Vector3.UP, giro), antes.origin + d * 0.3)
+		t.basis = Basis(Vector3.UP.cross(d).normalized(), deg_to_rad(9.0)) * t.basis   # inclina para a porta
+		h.create_tween().tween_property(h, "transform", t, 0.45).set_trans(Tween.TRANS_SINE)
+		h.tocar_anim("ouvir", 0.3); h.player.speed_scale = 0.6
+		voltar.append([h, antes])
+	await ex.get_tree().create_timer(OUVIR_DUR).timeout
+	for v in voltar:
+		v[0].create_tween().tween_property(v[0], "transform", v[1], 0.4).set_trans(Tween.TRANS_SINE)
+	for h in ouvintes:
+		if h.vivo(): h.tocar("parado", 0.4)
+	if not voltar.is_empty(): await ex.get_tree().create_timer(0.4).timeout
 
 ## Rolagens escondidas de quem ouve; devolve os monstros ouvidos (já marcados) ou [].
 func ouvir(ouvintes: Array, candidatos: Array) -> Array:
