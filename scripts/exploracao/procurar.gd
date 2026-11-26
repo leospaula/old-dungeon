@@ -1,7 +1,7 @@
 extends RefCounted
 ## Procurar (B/X) adaptado: portas secretas e armadilhas de sala.
-## - Procurar na sala (medalhão Procurar): todos da área vasculham. Cada pessoa cobre 36 m² de chão
-##   (com as paredes em volta) por turno; mínimo 1 turno. Sala 24 (110 m²): 3 pessoas 2 turnos, 5–6 → 1. Cada um rola em segredo, uma vez por
+## - Procurar na sala (medalhão Procurar): todos da área vasculham. Cada pessoa cobre 25 m² de chão
+##   (com as paredes em volta) por turno, × mobília (pouca 1,5 · mobiliada 2 · abarrotada 3); mínimo 1 turno. Cada um rola em segredo, uma vez por
 ##   área: porta secreta 1 em 6 (elfo 2 em 6); armadilha de sala 1 em 6 (anão 2 em 6).
 ## - Elfo nota porta secreta de passagem (1 em 6, até 2 casas), uma vez por turno, se não estiver correndo.
 ## - Modo Cauteloso: quem lidera procura armadilhas nas casas à frente enquanto anda (rolagem secreta).
@@ -10,6 +10,9 @@ extends RefCounted
 ## Dados de teste: data/masmorra/estado-teste.json ("portas" com estado "secreta" e "armadilhas").
 
 const Dados = preload("res://scripts/regras/dados.gd")
+const Fosso = preload("res://scripts/visual/fosso.gd")
+const COR_CHAO := {"sala": Color(0.47, 0.44, 0.39), "corredor": Color(0.42, 0.40, 0.36), "cela": Color(0.36, 0.34, 0.31),
+	"prisao": Color(0.40, 0.38, 0.34), "caverna": Color(0.38, 0.32, 0.25), "mina": Color(0.42, 0.35, 0.27)}   # tools/gerar_masmorra.gd
 const ESP := 0.3     # espessura da parede (tools/gerar_masmorra.gd)
 const ALT_VAO := 2.4 # altura do vão da porta (a verga de pedra fica por cima)
 
@@ -19,6 +22,8 @@ var procurou := {}     # área -> {nome: true}
 var _tampas := {}      # id da porta secreta -> parede falsa
 var _elfo := {}        # "porta:nome" -> turno da última chance de passagem
 var ocupado := false
+var fossos := {}       # Vector2i -> Fosso (buraco com alçapão)
+var no_fosso := {}     # personagem -> casa do fosso onde está (caiu e ainda não saiu)
 
 func _init(explorar: Node) -> void:
 	ex = explorar
@@ -26,8 +31,30 @@ func _init(explorar: Node) -> void:
 	for t in d.get("armadilhas", []):
 		var a: Dictionary = (t as Dictionary).duplicate(true); a.visto = false; a.fora = false
 		armadilhas[Vector2i(int(t.cel[0]), int(t.cel[1]))] = a
+	_montar_fossos()
+	var lay = JSON.parse_string(FileAccess.get_file_as_string(ex.LAYOUT))
+	for ar in lay.areas:
+		if ar.has("mobilia"): mobilia[str(ar.id)] = str(ar.mobilia)
+	for k in d.get("mobilia", {}): mobilia[str(k)] = str(d.mobilia[k])
 	for id in ex.portas.est:
 		if str(ex.portas.est[id].estado) == "secreta" and ex.portas.por_id.has(id): _disfarcar(ex.portas.por_id[id])
+
+## Cada armadilha "fosso" vira um buraco de verdade, tapado por um alçapão igual ao chão.
+func _montar_fossos() -> void:
+	var rects: Array = []
+	var tampa: ShaderMaterial = ex.luz.chao_mat.duplicate()
+	tampa.set_shader_parameter("n_buracos", 0)
+	for c in armadilhas:
+		if str(armadilhas[c].tipo) != "fosso" or rects.size() >= 8: continue
+		var f := Fosso.new()
+		ex.get_node("Masmorra").add_child(f)
+		var tipo: String = str(ex.grade.tipo.get(ex.grade.area_de(c), "sala"))
+		f.montar(c, ex.luz.chao_mat, tampa, ex.luz.pedra_mat, COR_CHAO.get(tipo, Color(0.45, 0.42, 0.38)))
+		fossos[c] = f
+		rects.append(Vector4(c.x * 1.5, c.y * 1.5, (c.x + 1) * 1.5, (c.y + 1) * 1.5))
+	while rects.size() < 8: rects.append(Vector4.ZERO)
+	ex.luz.chao_mat.set_shader_parameter("buracos", rects)
+	ex.luz.chao_mat.set_shader_parameter("n_buracos", fossos.size())
 
 func secreta(pt: Dictionary) -> bool:
 	return ex.portas.est.has(pt.id) and str(ex.portas.est[pt.id].estado) == "secreta"
@@ -84,7 +111,11 @@ func mostrar_tampas(v: bool) -> void:
 
 # ---------- procurar na sala ----------
 
-const M2_POR_TURNO := 36.0   # chão (e paredes em volta) que uma pessoa vasculha num turno: 4 quadrados de 3 m
+const M2_POR_TURNO := 25.0   # chão (e paredes em volta) que uma pessoa vasculha num turno (sala vazia)
+## Mobília multiplica o trabalho (móveis, gavetas, livros nas prateleiras): "mobilia" da área no
+## layout (ou em estado-teste.json), padrão vazia.
+const MOBILIA := {"vazia": 1.0, "pouca": 1.5, "mobiliada": 2.0, "abarrotada": 3.0}
+var mobilia := {}   # área -> nível
 
 ## Chão da área em m² (casas de 1,5 m).
 func metros2(area: String) -> float:
@@ -100,7 +131,10 @@ func procuradores(area: String) -> Array:
 
 func turnos_para(area: String) -> int:
 	var n := procuradores(area).size()
-	return maxi(1, ceili(metros2(area) / (M2_POR_TURNO * n))) if n > 0 else 0
+	return maxi(1, ceili(metros2(area) * fator_mobilia(area) / (M2_POR_TURNO * n))) if n > 0 else 0
+
+func fator_mobilia(area: String) -> float:
+	return float(MOBILIA.get(str(mobilia.get(area, "vazia")), 1.0))
 
 func procurar_sala() -> void:
 	if ocupado or ex.combate.ativo: return
@@ -114,8 +148,8 @@ func procurar_sala() -> void:
 	for h in ex.vivos(): h.parar()
 	for h in quem:
 		if h.andando(): await h.parou
-	ex._registrar("%s procura%s aqui, %s (%d m² de chão e paredes): %d turno%s." % [", ".join(quem.map(func(h): return h.nome)),
-		"m" if quem.size() > 1 else "", nome_area, roundi(metros2(area)), turnos, "s" if turnos > 1 else ""])
+	ex._registrar("%s procura%s aqui, %s (%d m² de chão e paredes%s): %d turno%s." % [", ".join(quem.map(func(h): return h.nome)),
+		"m" if quem.size() > 1 else "", nome_area, roundi(metros2(area)), "" if fator_mobilia(area) == 1.0 else ", " + str(mobilia[area]), turnos, "s" if turnos > 1 else ""])
 	for h in quem: h.tocar_anim("ajoelhar"); h.player.speed_scale = 0.6
 	await ex.get_tree().create_timer(4.0).timeout
 	if not procurou.has(area): procurou[area] = {}
@@ -164,7 +198,7 @@ func vistas() -> Dictionary:
 
 func desenhar() -> void:
 	ex.marca_armadilhas.limpar()
-	var cs: Array = vistas().keys()
+	var cs: Array = vistas().keys().filter(func(c): return not (fossos.has(c) and fossos[c].aberto))   # fosso aberto já se vê
 	if not cs.is_empty(): ex.marca_armadilhas.por(cs, Color(0.85, 0.15, 0.08, 0.45), 0.08)
 
 ## Alguém do grupo chegou numa casa: armadilha escondida dispara 2 em 6; vista, pula por cima.
@@ -178,6 +212,8 @@ func pisou(h: Node3D, c: Vector2i) -> void:
 	ex._secreto("%s pisa na armadilha escondida %s: d6 %d contra 2 → %s" % [h.nome, c, r, "dispara" if r <= 2 else "não dispara"])
 	if r > 2: return
 	a.visto = true; a.fora = str(a.tipo) != "fosso"   # o fosso continua lá, aberto
+	if fossos.has(c):
+		await cair(h, c, a); return
 	var dd := Dados.detalhar(str(a.get("dano", "1d6"))); var dano := maxi(1, int(dd.total))
 	h.pv -= dano
 	var txt := "[color=#ff7a5a]Armadilha![/color] %s %s sofre %s = [b]%d[/b] de dano." % [str(a.get("efeito", "")), h.nome, dd.texto, dano]
@@ -189,6 +225,187 @@ func pisou(h: Node3D, c: Vector2i) -> void:
 	desenhar()
 	if not h.vivo(): ex._heroi_caiu_fora(h)
 	ex._ficha_mudou(h)
+
+# ---------- fosso: queda e saída ----------
+
+## Caiu no fosso: o alçapão abre, cai, sofre o dano, levanta lá no fundo e o jogador escolhe o que fazer.
+func cair(h: Node3D, c: Vector2i, a: Dictionary) -> void:
+	h._caminho.clear()
+	h.position = ex.grade.centro(c)
+	no_fosso[h] = c; h.set_meta("no_fosso", true)
+	h.separado = true
+	var f: Node3D = fossos[c]
+	f.abrir()
+	ex._registrar("[color=#ff7a5a]O chão cede![/color] %s cai num fosso." % h.nome)
+	if h.player: h.tocar("dano", 0.05)
+	var t := h.create_tween()
+	t.tween_property(h, "position:y", f.fundo_y(), 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await t.finished
+	var dd := Dados.detalhar(str(a.get("dano", "1d6"))); var dano := maxi(1, int(dd.total))
+	h.pv -= dano
+	h.piscar(Color(1, 0.25, 0.2, 0.6))
+	var txt := "%s %s sofre %s = [b]%d[/b] de dano." % [str(a.get("efeito", "")), h.nome, dd.texto, dano]
+	ex._diario("evento", "%s caiu num fosso." % h.nome)
+	desenhar()
+	if h.pv <= 0:
+		h.animar_morte(); ex._registrar(txt + " [color=#ff7a5a]%s morre no fundo do fosso.[/color]" % h.nome)
+		ex._heroi_caiu_fora(h)
+		ex._ficha_mudou(h)
+		if not ex.fim: await h.get_tree().create_timer(2.5).timeout
+	else:
+		ex._registrar(txt)
+		h.animar_dano(); ex._ficha_mudou(h)
+		await h.get_tree().create_timer(0.9).timeout
+		await ex.portas._animar(h, "ajoelhar", 1.2, 0.8)   # no chão do fosso, levanta
+		h.tocar("parado", 0.5)
+		await h.get_tree().create_timer(0.6).timeout
+	if h == ex.heroi and h.vivo(): _liderar_quem_esta_fora()
+	if not ex.combate.ativo and not ex.fim: dialogo_fosso(h)
+
+## Quem está no fosso não leva a fila: a liderança (e a tocha) passa para o primeiro que está fora.
+func _liderar_quem_esta_fora() -> void:
+	for x in ex.vivos():
+		if not no_fosso.has(x): ex._passar_lideranca(x); return
+
+func esta_no_fosso(h: Node3D) -> bool:
+	return no_fosso.has(h)
+
+## Chance de sair sozinho: ladrão escala (d%); os outros d6 contra 2 + mod FOR. [texto, tipo, alvo]
+func chance_sair(h: Node3D) -> Array:
+	var f = h.ficha
+	if f.ladrao(): return ["escalar %d%% (d%%)" % int(f.p.habilidades_ladrao.escalar), "%", int(f.p.habilidades_ladrao.escalar)]
+	var n: int = f.chance_forcar()
+	return ["%s em 6 (d6, Força)" % ("1" if n == 1 else "1–%d" % n), "d6", n]
+
+func _ajudantes(h: Node3D) -> Array:
+	return ex.vivos().filter(func(x): return x != h and not no_fosso.has(x))
+
+func _ladrao_fora() -> Node3D:
+	for x in _ajudantes(null):
+		if x.ficha.ladrao(): return x
+	return null
+
+## A caixa de escolhas de quem está no fosso (vivo: sair, ajudar, ficar; morto: resgatar o corpo, deixar).
+func dialogo_fosso(h: Node3D) -> void:
+	if not no_fosso.has(h): return
+	var ops: Array = []
+	var txt: String
+	if h.vivo():
+		var ch := chance_sair(h)
+		txt = "%s está no fundo de um fosso de 3 m (PV %d/%d). O que fazer?" % [h.nome, h.pv, h.pv_max]
+		ops.append({"id": "sair", "texto": "%s tenta sair sozinho · 1 turno" % h.nome, "dica": "Precisa de %s. Se falhar, o turno passa e pode tentar de novo." % ch[0]})
+		var aj := _ajudantes(h)
+		ops.append({"id": "ajudar", "texto": "O grupo ajuda a sair · ½ turno", "dica": "Sem teste: alguém vai até a borda e puxa." if not aj.is_empty() else "Não há ninguém fora do fosso para ajudar.", "ativo": not aj.is_empty()})
+		ops.append({"id": "ficar", "texto": "Deixar %s no fosso" % h.nome, "dica": "O grupo segue; clique na carta para voltar a esta escolha."})
+	else:
+		var l := _ladrao_fora()
+		txt = "O corpo de %s está no fundo do fosso." % h.nome
+		ops.append({"id": "resgatar", "texto": ("%s desce e traz o corpo · 1 turno" % l.nome) if l else "Resgatar o corpo · precisa do ladrão", "dica": "O corpo fica numa casa ao lado do fosso." if l else "Só o ladrão desce e sobe as paredes do fosso.", "ativo": l != null})
+		ops.append({"id": "ficar", "texto": "Deixar o corpo no fosso", "dica": "Clique na carta para voltar a esta escolha."})
+	ex.hud_ui.dialogo("Fosso", txt, ops, func(id): _escolha_fosso(h, id))
+
+func _escolha_fosso(h: Node3D, id: String) -> void:
+	if ocupado: return
+	match id:
+		"sair": await _sair_sozinho(h)
+		"ajudar": await _ajudar(h)
+		"resgatar": await _resgatar(h)
+		"ficar":
+			ex._registrar("%s fica no fosso." % h.nome if h.vivo() else "O corpo de %s fica no fosso." % h.nome)
+
+func _sair_sozinho(h: Node3D) -> void:
+	ocupado = true
+	var ch := chance_sair(h)
+	var r := Dados.d(100) if ch[1] == "%" else Dados.d(6)
+	var ok := r <= int(ch[2])
+	await ex.portas._animar(h, "ajoelhar", 1.0, 0.8)
+	ex._gastar_tempo(1.0)
+	ex._registrar("%s tenta escalar a parede do fosso (%s): [b]%d[/b] → %s" % [h.nome, ch[0], r, "[color=#ffcf6a]consegue![/color]" if ok else "escorrega de volta."])
+	if ok:
+		var saida := _casa_ao_lado(no_fosso[h], [])
+		await _subir(h, saida)
+	ocupado = false
+	if not ok and h.vivo() and not ex.fim: dialogo_fosso(h)
+
+func _ajudar(h: Node3D) -> void:
+	ocupado = true
+	var c: Vector2i = no_fosso[h]
+	var aj: Array = _ajudantes(h)
+	aj.sort_custom(func(a, b): return ex.grade.centro(a.celula).distance_to(ex.grade.centro(c)) < ex.grade.centro(b.celula).distance_to(ex.grade.centro(c)))
+	var quem: Node3D = aj[0]
+	var borda := await _ir_para_borda(quem, c)
+	if borda == ex.SEM_CELULA:
+		ex._registrar("%s não consegue chegar à borda do fosso." % quem.nome); ocupado = false; return
+	quem.olhar_para(ex.grade.centro(c))
+	ex.portas._animar(quem, "ajoelhar", 1.4, 0.8)
+	ex._gastar_tempo(0.5)
+	ex._registrar("%s se debruça na borda e puxa %s para fora do fosso." % [quem.nome, h.nome])
+	await _subir(h, _casa_ao_lado(c, [borda]))
+	quem.tocar("parado", 0.4)
+	ocupado = false
+
+func _resgatar(h: Node3D) -> void:
+	ocupado = true
+	var c: Vector2i = no_fosso[h]
+	var l := _ladrao_fora()
+	var borda := await _ir_para_borda(l, c)
+	if borda == ex.SEM_CELULA:
+		ex._registrar("%s não consegue chegar à borda do fosso." % l.nome); ocupado = false; return
+	l.olhar_para(ex.grade.centro(c))
+	await ex.portas._animar(l, "ajoelhar", 1.2, 0.8)
+	ex._gastar_tempo(1.0)
+	var destino := _casa_ao_lado(c, [borda])
+	no_fosso.erase(h); h.set_meta("no_fosso", false)
+	h.celula = destino; h._de = destino
+	var t := h.create_tween()
+	t.tween_property(h, "position", ex.grade.centro(destino), 0.8).set_trans(Tween.TRANS_SINE)
+	await t.finished
+	l.tocar("parado", 0.4)
+	ex._registrar("%s desce no fosso, amarra o corpo de %s e o traz para cima." % [l.nome, h.nome])
+	ex._diario("evento", "%s resgatou o corpo de %s do fosso." % [l.nome, h.nome])
+	ocupado = false
+
+## Sobe do fundo para uma casa ao lado (animação "sair-do-buraco" se houver na biblioteca).
+func _subir(h: Node3D, destino: Vector2i) -> void:
+	h.olhar_para(ex.grade.centro(destino))
+	var dur := 1.2
+	if h.player and h.player.has_animation("sair-do-buraco"): dur = h.tocar_anim("sair-do-buraco")
+	else: h.tocar_anim("ajoelhar")
+	var t := h.create_tween()
+	t.tween_property(h, "position:y", 0.0, dur * 0.6).set_trans(Tween.TRANS_SINE)
+	t.tween_property(h, "position", ex.grade.centro(destino), dur * 0.4)
+	await t.finished
+	h.celula = destino; h._de = destino
+	no_fosso.erase(h); h.set_meta("no_fosso", false)
+	h.tocar("parado", 0.3)
+	ex._registrar("%s sai do fosso." % h.nome)
+	if ex.agrupado: h.separado = false
+	ex._atualizar_visao(); ex.hud_ui.refazer()
+
+## Leva quem ajuda até uma casa ao lado do fosso (devolve a casa, ou SEM_CELULA).
+func _ir_para_borda(q: Node3D, c: Vector2i) -> Vector2i:
+	var melhor: Array[Vector2i] = []; var alvo: Vector2i = ex.SEM_CELULA; var menor := INF
+	for v in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		var n: Vector2i = c + v
+		if not ex.grade.chao(n) or not ex.grade.passa_reto(c, n) or not ex.visao.exploradas.has(n): continue
+		if n == q.celula: return n
+		var cam: Array[Vector2i] = ex._caminho_lider(q.proxima_celula(), n, q)
+		if cam.is_empty(): continue
+		var l: float = ex.grade.comprimento(q.proxima_celula(), cam)
+		if l < menor: menor = l; melhor = cam; alvo = n
+	if alvo == ex.SEM_CELULA: return alvo
+	if q.andando(): await q.parou
+	q.seguir(melhor); await q.parou
+	return alvo
+
+## Casa do chão ao lado do fosso, livre (sem ninguém), sem parede no meio.
+func _casa_ao_lado(c: Vector2i, evitar: Array) -> Vector2i:
+	var ocup: Dictionary = ex._ocupadas_por(no_fosso.keys())
+	for v in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]:
+		var n: Vector2i = c + v
+		if n in evitar or ocup.has(n) or armadilhas.has(n): continue
+		if ex.grade.chao(n) and ex.grade.adjacentes(c, n): return n
+	return c + Vector2i(1, 0)
 
 ## Modo Cauteloso: quem lidera olha as casas logo à frente (até 2) ao chegar numa casa.
 func cauteloso(h: Node3D, c: Vector2i) -> void:

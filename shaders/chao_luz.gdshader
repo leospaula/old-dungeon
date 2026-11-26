@@ -9,6 +9,8 @@ uniform float escala = 3.0;           // metros por repetição da textura
 uniform float cel = 1.5;              // tamanho da célula da grade
 uniform float grade_forca = 0.12;     // 0.12 exploração · 0.6 combate
 uniform float tinge = 0.55;           // quanto a cor do tipo de área tinge a laje
+uniform vec4 buracos[8];              // fossos: retângulos (x0, z0, x1, z1) sem chão em cima
+uniform int n_buracos = 0;
 varying vec3 w;
 varying vec3 n_mundo;
 void vertex() {
@@ -16,6 +18,12 @@ void vertex() {
 	TANGENT = vec3(1.0, 0.0, 0.0); BINORMAL = vec3(0.0, 0.0, 1.0);   // malha gerada sem tangentes
 }
 void fragment() {
+	if (w.y > -0.3) {
+		for (int i = 0; i < n_buracos; i++) {
+			vec4 b = buracos[i];
+			if (w.x > b.x && w.x < b.z && w.z > b.y && w.z < b.w) { discard; }
+		}
+	}
 	vec2 uv = w.xz / escala;
 	vec3 c = texture(cor_tex, uv).rgb;
 	vec3 tinta = COLOR.rgb / max(max(COLOR.r, COLOR.g), max(COLOR.b, 0.001));   // matiz do tipo de área

@@ -108,7 +108,7 @@ func _carta(h: Node) -> Dictionary:
 	painel.gui_input.connect(func(e):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			if e.double_click: ficha_pedida.emit(h)
-			elif h != selecionado and h.vivo(): carta_escolhida.emit(h)   # 1º clique: escolhe quem age
+			elif h != selecionado and (h.vivo() or h.get_meta("no_fosso", false)): carta_escolhida.emit(h)   # 1º clique: escolhe quem age
 			else:
 				extra.visible = not extra.visible
 				if extra.visible: _preencher_extra(h, extra))
@@ -312,6 +312,43 @@ func menu_acoes(titulo: String, opcoes: Array, onde: Vector2) -> void:
 	_acoes.reset_size()
 	_acoes.position = Vector2i(onde) + Vector2i(14, -_acoes.size.y / 2)
 	_acoes.popup()
+
+# ---------- caixa de diálogo (escolhas do jogador) ----------
+
+var _dialogo: Control
+## Caixa no meio da tela com texto e botões. opcoes: [{id, texto, dica, ativo}]. ao_escolher(id).
+func dialogo(titulo: String, texto: String, opcoes: Array, ao_escolher: Callable) -> void:
+	fechar_dialogo()
+	var fundo := ColorRect.new(); fundo.color = Color(0, 0, 0, 0.45); fundo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fundo.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(fundo); _dialogo = fundo
+	var centro := CenterContainer.new(); centro.set_anchors_preset(Control.PRESET_FULL_RECT); fundo.add_child(centro)
+	var painel := PanelContainer.new(); painel.add_theme_stylebox_override("panel", E.painel(true))
+	painel.custom_minimum_size.x = 460; centro.add_child(painel)
+	var v := VBoxContainer.new(); v.add_theme_constant_override("separation", 10); painel.add_child(v)
+	v.add_child(E.rotulo(titulo, 18, E.OURO, "titulo"))
+	var t := RichTextLabel.new(); t.bbcode_enabled = true; t.fit_content = true; t.scroll_active = false
+	t.custom_minimum_size.x = 430; _fontes_rich(t, 14); t.text = texto; v.add_child(t)
+	var n := 0
+	for o in opcoes:
+		n += 1
+		var b := Button.new(); b.text = "%d. %s" % [n, str(o.texto)]; b.focus_mode = Control.FOCUS_NONE
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT; b.tooltip_text = str(o.get("dica", ""))
+		b.disabled = not bool(o.get("ativo", true))
+		b.add_theme_font_override("font", E.fonte("texto")); b.add_theme_font_size_override("font_size", 14)
+		var id := str(o.id)
+		b.pressed.connect(func(): fechar_dialogo(); ao_escolher.call(id))
+		v.add_child(b)
+		if o.has("dica") and str(o.dica) != "":
+			var d := E.rotulo("    " + str(o.dica), 12, E.TEXTO); d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			d.custom_minimum_size.x = 430; v.add_child(d)
+
+func fechar_dialogo() -> void:
+	if is_instance_valid(_dialogo): _dialogo.queue_free()
+	_dialogo = null
+
+func dialogo_aberto() -> bool:
+	return is_instance_valid(_dialogo)
 
 # ---------- balão de ação ----------
 

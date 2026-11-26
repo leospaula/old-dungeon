@@ -435,6 +435,9 @@ func _raio_caixa(o: Vector3, d: Vector3, a: Vector3, b: Vector3) -> float:
 
 func _andar_para(c: Vector2i) -> void:
 	if not grade.chao(c) or not visao.exploradas.has(c): return
+	if procurar.esta_no_fosso(agente()):
+		if not procurar.ocupado: procurar.dialogo_fosso(agente())
+		return
 	if not agrupado:   # desagrupado: só quem age anda (sem carta escolhida, quem leva a tocha)
 		_andar_sozinho(agente(), c); return
 	porta_alvo = {}
@@ -469,7 +472,7 @@ func _alternar_agrupado() -> void:
 
 ## Quem age passa a liderar a fila e leva a tocha.
 func _passar_lideranca(h: Node3D) -> void:
-	if h == heroi or combate.ativo or not h.vivo(): return
+	if h == heroi or combate.ativo or not h.vivo() or procurar.esta_no_fosso(h): return
 	for x in vivos(): x.parar()
 	porta_alvo = {}
 	heroi = h; grupo.erase(h); grupo.push_front(h); luz.alvo = h
@@ -478,8 +481,9 @@ func _passar_lideranca(h: Node3D) -> void:
 
 ## Todos voltam para a fila atrás de quem lidera (a ordem do grupo).
 func _reagrupar() -> void:
-	var sep := vivos().filter(func(h): return h.separado)
-	for h in vivos(): h.separado = false
+	var sep := vivos().filter(func(h): return h.separado and not procurar.esta_no_fosso(h))
+	for h in vivos():
+		if not procurar.esta_no_fosso(h): h.separado = false
 	if sep.is_empty() or (sep.size() == 1 and sep[0] == heroi):
 		_registrar("O grupo se junta atrás de %s." % heroi.nome); hud_ui.refazer(); return
 	var livres: Array = grade.alcance(heroi.celula, 9.0, {}, true, visao.exploradas).keys()
@@ -608,6 +612,9 @@ func agente() -> Node3D:
 	return selecionado if is_instance_valid(selecionado) and selecionado.vivo() else heroi
 
 func _selecionar(h) -> void:
+	if h != null and procurar.esta_no_fosso(h) and not combate.ativo:   # no fosso: volta à escolha (sair, ajudar, ficar)
+		if not procurar.ocupado: procurar.dialogo_fosso(h)
+		return
 	selecionado = h if h != selecionado else null
 	hud_ui.selecionado = selecionado; hud_ui.refazer()
 	if selecionado == null: return
@@ -1553,8 +1560,42 @@ func _linha_de_comando() -> void:
 		_alternar_mestre()
 		print("SEPARAR mestre marcas=", marca_mestre._celulas.size(), " tampa P02 visível=", get_node("Masmorra/Portas/P02").visible)
 		procurar.procurou.clear(); await procurar.procurar_sala()
-		for n in [3, 5, 6]: print("TEMPO sala 24 com %d: %d turnos · dobro: %d" % [n, maxi(1, ceili(procurar.metros2("24") / (36.0 * n))), maxi(1, ceili(2 * procurar.metros2("24") / (36.0 * n)))])
+		for nv in ["vazia", "pouca", "mobiliada", "abarrotada"]:
+			procurar.mobilia["24"] = nv
+			var linha := "TEMPO sala 24 %-10s" % nv
+			for n in [3, 5, 6]:
+				procurar.procurou.clear()
+				linha += " · %d pessoas: %d" % [n, maxi(1, ceili(procurar.metros2("24") * procurar.fator_mobilia("24") / (25.0 * n)))]
+			print(linha)
 		print("TEMPO corredor 23: %d m²" % procurar.metros2("23"))
+	elif teste == "fosso":
+		# Tessa cai no fosso (10,1); o grupo a ajuda. Lianne (1 PV) cai e morre; o Caco resgata o corpo.
+		var tessa: Node3D = grupo[0]; var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]
+		tessa.colocar(Vector2i(10, 1)); caco.colocar(Vector2i(8, 3)); lianne.colocar(Vector2i(7, 4)); _atualizar_visao()
+		var a: Dictionary = procurar.armadilhas[Vector2i(10, 1)]; a.visto = true
+		if OS.get_cmdline_user_args().has("--captura-fosso"):
+			hud_ui.visible = false; tessa.colocar(Vector2i(9, 1)); a.visto = false; procurar.desenhar()
+			camera.alvo = grade.centro(Vector2i(10, 1)); camera.distancia = 7.0; camera.inclinacao = 62.0; camera.guinada = 200.0
+			await get_tree().create_timer(1.0).timeout
+			get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/fosso-fechado.png")
+			tessa.colocar(Vector2i(10, 1)); a.visto = true
+		await procurar.cair(tessa, Vector2i(10, 1), a)
+		print("FOSSO Tessa y=", snappedf(tessa.position.y, 0.01), " no fosso=", procurar.esta_no_fosso(tessa), " PV=", tessa.pv, " diálogo=", hud_ui.dialogo_aberto(), " lidera=", heroi.nome)
+		if OS.get_cmdline_user_args().has("--captura-fosso"):
+			hud_ui.fechar_dialogo(); hud_ui.visible = false
+			camera.alvo = grade.centro(Vector2i(10, 1)); camera.distancia = 7.0; camera.inclinacao = 62.0; camera.guinada = 200.0
+			await get_tree().create_timer(1.0).timeout
+			get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/fosso.png")
+		hud_ui.fechar_dialogo()
+		var t0 := turno; var m0 := metros_no_turno
+		await procurar._escolha_fosso(tessa, "ajudar")
+		print("FOSSO ajudou: Tessa em ", tessa.celula, " y=", snappedf(tessa.position.y, 0.01), " no fosso=", procurar.esta_no_fosso(tessa), " tempo gasto=", snappedf((turno - t0) + (metros_no_turno - m0) / _taxa_turno(), 0.01), " turno")
+		lianne.pv = 1; lianne.colocar(Vector2i(10, 1))
+		await procurar.cair(lianne, Vector2i(10, 1), a)
+		print("FOSSO Lianne viva=", lianne.vivo(), " diálogo=", hud_ui.dialogo_aberto())
+		hud_ui.fechar_dialogo()
+		await procurar._escolha_fosso(lianne, "resgatar")
+		print("FOSSO corpo da Lianne em ", lianne.celula, " y=", snappedf(lianne.position.y, 0.01), " no fosso=", procurar.esta_no_fosso(lianne), " · Caco em ", caco.celula)
 	elif teste == "secreta":
 		# Captura da P02 vista do corredor 23: escondida (--revelar: depois de achada).
 		var p3: Dictionary = portas.por_id["P03"]; portas.de(p3).estado = "fechada"; _abrir_porta(p3, Vector2i(11, 5), "teste")
