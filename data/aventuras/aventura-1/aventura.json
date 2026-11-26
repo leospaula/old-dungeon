@@ -1,0 +1,33 @@
+{
+  "$schema": "../../esquemas/aventura.schema.json",
+  "id": "aventura-1",
+  "titulo": "Aventura 1 — Fuga da prisão",
+  "planta": "masmorra-base@3",
+  "nivel": [1, 1],
+  "gancho": "Vocês são gente comum da vila. Dois bandidos os pegaram na estrada, uma pancada na cabeça e mais nada.",
+  "notas_mestre": "Montada sala a sala, na ordem da aventura (vault: Aventura 1 - Fuga da Dungeon de Zastan). Parte I: cela (1), vestíbulo (2), corredor (3), sala dos guardas (4).",
+  "grupo": ["tessa", "durgo", "caco", "lianne", "mirela", "anselmo", "bento"],
+  "inicio": {"tipo": "capturados", "area": "1", "pos": "B3", "sem_equipamento": true,
+             "equipamento_em": {"area": "4", "pos": "F5", "prop": "pilha-armaduras"}},
+  "portas": {
+    "P17": {"estado": "trancada", "abre_com": "chaves", "inquebravel": true, "nota": "Grade da cela 1. O carcereiro tem as chaves."}
+  },
+  "areas": {
+    "1": {
+      "leitura": "Vocês acordam numa sala sombria. Chão e três paredes de rocha; a quarta parede são grossas barras de ferro. Estão presos.",
+      "luz": "penumbra",
+      "props": [
+        {"tipo": "catre", "pos": "A4"},
+        {"tipo": "catre", "pos": "D4"}
+      ]
+    },
+    "2": {"luz": "iluminado"},
+    "4": {
+      "luz": "iluminado",
+      "props": [
+        {"tipo": "mesa-carcereiro", "pos": "B2"},
+        {"tipo": "pilha-armaduras", "pos": "F5", "nome": "Pilha de equipamento"}
+      ]
+    }
+  }
+}

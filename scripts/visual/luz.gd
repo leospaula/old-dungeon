@@ -83,6 +83,16 @@ func tochas_automaticas(raiz: Node3D, layout_path: String, areas: Array, por_are
 			_tocha(raiz, pos, Vector3(0, 0, 1) if na_norte else Vector3(1, 0, 0))
 			tochas_cel.append(c)
 
+## Luz fraca e fria espalhada numa área em penumbra (luz que vaza de fora, por grades ou frestas).
+func penumbra(raiz: Node3D, celulas: Array) -> void:
+	if celulas.is_empty(): return
+	var soma := Vector2.ZERO
+	for c in celulas: soma += Vector2(c.x + 0.5, c.y + 0.5)
+	soma /= celulas.size()
+	var l := OmniLight3D.new(); l.position = Vector3(soma.x * CEL, 2.4, soma.y * CEL)
+	l.light_color = Color(0.62, 0.66, 0.8); l.light_energy = 0.55; l.omni_range = 6.0; l.omni_attenuation = 1.2
+	raiz.add_child(l)
+
 func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
 	var t := Node3D.new(); t.position = pos; raiz.add_child(t); tochas_nos.append(t)
 	var cabo := MeshInstance3D.new(); var cm := CylinderMesh.new(); cm.top_radius = 0.05; cm.bottom_radius = 0.035; cm.height = 0.5; cabo.mesh = cm

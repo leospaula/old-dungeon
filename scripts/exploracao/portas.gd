@@ -26,10 +26,15 @@ var ocupado := false
 func _init(explorar: Node) -> void:
 	ex = explorar
 	for ch in ex.grade.portas: por_id[ex.grade.portas[ch].id] = ex.grade.portas[ch]
-	var d = JSON.parse_string(FileAccess.get_file_as_string(ARQ))
+	var d: Dictionary = fonte()
 	for id in d.portas:
 		est[id] = (d.portas[id] as Dictionary).duplicate(true)
 		if por_id.has(id) and str(est[id].estado) in BARRAM: ex.grade.barrar_porta(por_id[id], true)
+
+## Estado inicial de portas e armadilhas: o da aventura carregada ou o de teste.
+func fonte() -> Dictionary:
+	if ex.get("aventura") != null: return ex.aventura.estado_portas()
+	return JSON.parse_string(FileAccess.get_file_as_string(ARQ))
 
 func de(pt: Dictionary) -> Dictionary:
 	if not est.has(pt.id): est[pt.id] = {"estado": "fechada"}
@@ -53,7 +58,10 @@ func opcoes(pt: Dictionary, q: Node) -> Array:
 		for o in [ouv, tod]: o.ativo = false; o.dica = "%s já ouviu nesta porta; tente de novo no próximo turno." % q.nome
 	out.append(ouv); out.append(tod)
 	if sabe in ["emperrada", "trancada", "pregada"]:
-		out.append({"id": "forcar", "texto": "Forçar · %d em 6 · 1 rodada" % _chance_forcar(e, f), "dica": "No ombro e no chute. Faz barulho: pode atrair monstros errantes.", "ativo": true})
+		var fo := {"id": "forcar", "texto": "Forçar · %d em 6 · 1 rodada" % _chance_forcar(e, f), "dica": "No ombro e no chute. Faz barulho: pode atrair monstros errantes.", "ativo": true}
+		if bool(e.get("inquebravel", false)):
+			fo.ativo = false; fo.texto = "Forçar · impossível"; fo.dica = "Barras grossas de ferro: não cedem. Só com a chave."
+		out.append(fo)
 	if sabe == "trancada":
 		var o := {"id": "fechadura", "texto": "Abrir fechadura · %d%% · 1 turno" % f.pct_fechadura(), "dica": "Ferramentas de ladrão. Se falhar, só no próximo nível.", "ativo": true}
 		if not f.ladrao(): o.ativo = false; o.dica = "Só o ladrão abre fechaduras."; o.texto = "Abrir fechadura · só ladrão"
@@ -134,7 +142,9 @@ func tentar_abrir(pt: Dictionary, q: Node3D) -> bool:
 		"emperrada", "trancada", "pregada":
 			e.sabe = str(e.estado)
 			var dica: String = {"emperrada": "dá para forçar", "trancada": "um ladrão pode abrir a fechadura, ou dá para forçar", "pregada": "só forçando"}[e.estado]
-			ex._registrar("%s empurra a porta %s: está [b]%s[/b] (%s)." % [q.nome, pt.id, e.estado, dica])
+			if bool(e.get("inquebravel", false)): dica = "barras grossas de ferro; só com a chave"
+			var oque := "a grade" if str(pt.get("tipo", "")) in ["grade", "cela"] else "a porta %s" % pt.id
+			ex._registrar("%s empurra %s: está [b]%s[/b] (%s)." % [q.nome, oque, e.estado, dica])
 			return false
 	_disparar(pt, q)   # a armadilha dispara quando a porta abre de fato
 	if not q.vivo(): return false

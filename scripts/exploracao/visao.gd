@@ -16,6 +16,7 @@ const LEMBRADO := 110         # valor da névoa para "já visto" (0–255)
 
 var grade: RefCounted
 var tochas_parede: Array = []   # Vector2i da célula de cada tocha de parede
+var penumbra: Array = []        # células sempre visíveis com pouca luz (áreas em penumbra da aventura)
 var exploradas := {}            # já vistas alguma vez
 var visiveis := {}              # à vista agora
 var _iluminadas := {}           # iluminadas pelas tochas de parede
@@ -33,6 +34,7 @@ func textura() -> ImageTexture:
 ## Recalcula a luz fixa (tochas de parede). Chamar ao abrir porta.
 func recalcular_luz_fixa() -> void:
 	_iluminadas.clear()
+	for c in penumbra: _iluminadas[c] = true
 	for t in tochas_parede:
 		for c in _perto(t, RAIO_TOCHA_PAREDE):
 			if grade.linha(t, c): _iluminadas[c] = true

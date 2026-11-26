@@ -27,7 +27,7 @@ var no_fosso := {}     # personagem -> casa do fosso onde estÃ¡ (caiu e ainda nÃ
 
 func _init(explorar: Node) -> void:
 	ex = explorar
-	var d = JSON.parse_string(FileAccess.get_file_as_string(ex.portas.ARQ))
+	var d: Dictionary = ex.portas.fonte()
 	for t in d.get("armadilhas", []):
 		var a: Dictionary = (t as Dictionary).duplicate(true); a.visto = false; a.fora = false
 		armadilhas[Vector2i(int(t.cel[0]), int(t.cel[1]))] = a

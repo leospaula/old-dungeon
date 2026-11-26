@@ -227,6 +227,7 @@ func refazer(alc: Dictionary, para: Vector2i) -> Array[Vector2i]:
 	return out
 
 func _montar_astar() -> void:
+	astar.clear(); astar_livre.clear()   # refeito quando a aventura põe obstáculos (props)
 	for c in area:
 		if not chao(c): continue
 		astar.add_point(_id(c), Vector2(c.x, c.y)); astar.set_point_disabled(_id(c), true)

@@ -101,7 +101,7 @@ func _carta(h: Node) -> Dictionary:
 	var info := VBoxContainer.new(); info.add_theme_constant_override("separation", 4); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE; linha.add_child(info)
 	var topo := HBoxContainer.new(); topo.mouse_filter = Control.MOUSE_FILTER_IGNORE; info.add_child(topo)
-	var nome := E.rotulo(str(f.nome).get_slice(" ", 0), 15, E.OURO, "titulo"); nome.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var nome := E.rotulo(str(f.p.get("nome_curto", str(f.nome).get_slice(" ", 0))), 15, E.OURO, "titulo"); nome.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	topo.add_child(nome)
 	var estado := E.rotulo("", 12, E.TEXTO); topo.add_child(estado)
 	var barra := E.Barra.new(); info.add_child(barra)

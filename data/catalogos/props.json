@@ -1,68 +1,736 @@
 {
-  "_doc": "Catálogo de props (objetos de cenário) que as aventuras podem colocar nas áreas. tamanho = [largura, altura] em células de 1,5 m, na orientação padrão (sem giro). bloqueia = impede passar pela célula. acoes = o que os jogadores podem fazer. Uma aventura pode girar o prop (\"giro\": 0, 90, 180, 270) e dar um nome próprio.",
-  "categorias": ["estrutura", "mobilia", "deposito", "religioso", "prisao", "mineracao", "caverna", "luz", "perigo", "decoracao"],
-  "props": {
-    "escada-entrada":   { "nome": "Escada de entrada",         "categoria": "estrutura",  "tamanho": [2, 2], "bloqueia": false, "acoes": ["subir"], "nota": "Marca a entrada da aventura. Sempre 2×2." },
-    "alcapao":          { "nome": "Alçapão",                   "categoria": "estrutura",  "tamanho": [1, 1], "bloqueia": false, "acoes": ["abrir", "descer"] },
-    "coluna":           { "nome": "Coluna de pedra",           "categoria": "estrutura",  "tamanho": [1, 1], "bloqueia": true,  "acoes": [] },
-    "escombros":        { "nome": "Escombros",                 "categoria": "estrutura",  "tamanho": [1, 1], "bloqueia": true,  "acoes": ["remover"], "nota": "Remover leva 1 turno de exploração." },
-    "alavanca":         { "nome": "Alavanca na parede",        "categoria": "estrutura",  "tamanho": [1, 1], "bloqueia": false, "acoes": ["puxar"] },
-
-    "mesa":             { "nome": "Mesa",                      "categoria": "mobilia",    "tamanho": [2, 1], "bloqueia": true,  "acoes": ["revistar"] },
-    "mesa-grande":      { "nome": "Mesa grande",               "categoria": "mobilia",    "tamanho": [3, 2], "bloqueia": true,  "acoes": ["revistar"] },
-    "cadeira":          { "nome": "Cadeira",                   "categoria": "mobilia",    "tamanho": [1, 1], "bloqueia": false, "acoes": [] },
-    "banco":            { "nome": "Banco comprido",            "categoria": "mobilia",    "tamanho": [2, 1], "bloqueia": false, "acoes": [] },
-    "cama":             { "nome": "Cama de palha",             "categoria": "mobilia",    "tamanho": [1, 2], "bloqueia": false, "acoes": ["revistar", "descansar"] },
-    "beliche":          { "nome": "Beliche",                   "categoria": "mobilia",    "tamanho": [1, 2], "bloqueia": true,  "acoes": ["revistar"] },
-    "saco-de-dormir":   { "nome": "Saco de dormir",            "categoria": "mobilia",    "tamanho": [1, 1], "bloqueia": false, "acoes": ["revistar"] },
-    "armario":          { "nome": "Armário",                   "categoria": "mobilia",    "tamanho": [1, 1], "bloqueia": true,  "acoes": ["abrir", "revistar"] },
-    "estante":          { "nome": "Estante de livros",         "categoria": "mobilia",    "tamanho": [2, 1], "bloqueia": true,  "acoes": ["revistar", "ler"] },
-    "trono":            { "nome": "Trono",                     "categoria": "mobilia",    "tamanho": [2, 2], "bloqueia": true,  "acoes": ["sentar", "revistar"] },
-    "tapete":           { "nome": "Tapete",                    "categoria": "mobilia",    "tamanho": [2, 3], "bloqueia": false, "acoes": ["levantar"], "nota": "Bom lugar para esconder um alçapão." },
-    "bancada-alquimia": { "nome": "Bancada de alquimia",       "categoria": "mobilia",    "tamanho": [2, 1], "bloqueia": true,  "acoes": ["revistar", "examinar"] },
-    "forja":            { "nome": "Forja com bigorna",         "categoria": "mobilia",    "tamanho": [2, 2], "bloqueia": true,  "acoes": ["usar"] },
-
-    "bau":              { "nome": "Baú",                       "categoria": "deposito",   "tamanho": [1, 1], "bloqueia": true,  "acoes": ["abrir", "arrombar", "revistar"] },
-    "barril":           { "nome": "Barril",                    "categoria": "deposito",   "tamanho": [1, 1], "bloqueia": true,  "acoes": ["abrir", "revistar"] },
-    "caixote":          { "nome": "Caixote",                   "categoria": "deposito",   "tamanho": [1, 1], "bloqueia": true,  "acoes": ["abrir", "revistar"] },
-    "pilha-caixotes":   { "nome": "Pilha de caixotes",         "categoria": "deposito",   "tamanho": [2, 2], "bloqueia": true,  "acoes": ["revistar", "escalar"] },
-    "sacos":            { "nome": "Sacos de mantimentos",      "categoria": "deposito",   "tamanho": [1, 1], "bloqueia": false, "acoes": ["revistar"] },
-    "prateleira":       { "nome": "Prateleira na parede",      "categoria": "deposito",   "tamanho": [2, 1], "bloqueia": false, "acoes": ["revistar"] },
-
-    "altar":            { "nome": "Altar",                     "categoria": "religioso",  "tamanho": [2, 1], "bloqueia": true,  "acoes": ["examinar", "rezar", "profanar"] },
-    "estatua":          { "nome": "Estátua",                   "categoria": "religioso",  "tamanho": [1, 1], "bloqueia": true,  "acoes": ["examinar"] },
-    "pia-agua-benta":   { "nome": "Pia de água benta",         "categoria": "religioso",  "tamanho": [1, 1], "bloqueia": true,  "acoes": ["examinar", "encher-frasco"] },
-    "sarcofago":        { "nome": "Sarcófago",                 "categoria": "religioso",  "tamanho": [1, 2], "bloqueia": true,  "acoes": ["abrir", "examinar"] },
-
-    "grilhoes":         { "nome": "Grilhões na parede",        "categoria": "prisao",     "tamanho": [1, 1], "bloqueia": false, "acoes": ["examinar", "soltar"] },
-    "gaiola":           { "nome": "Gaiola de ferro",           "categoria": "prisao",     "tamanho": [1, 1], "bloqueia": true,  "acoes": ["abrir", "arrombar"] },
-    "mesa-carcereiro":  { "nome": "Mesa do carcereiro",        "categoria": "prisao",     "tamanho": [2, 1], "bloqueia": true,  "acoes": ["revistar"] },
-    "chaveiro":         { "nome": "Chaveiro na parede",        "categoria": "prisao",     "tamanho": [1, 1], "bloqueia": false, "acoes": ["pegar"] },
-    "balde":            { "nome": "Balde",                     "categoria": "prisao",     "tamanho": [1, 1], "bloqueia": false, "acoes": [] },
-
-    "carrinho-mina":    { "nome": "Carrinho de mina",          "categoria": "mineracao",  "tamanho": [1, 2], "bloqueia": true,  "acoes": ["empurrar", "revistar"] },
-    "pilha-minerio":    { "nome": "Pilha de minério",          "categoria": "mineracao",  "tamanho": [1, 1], "bloqueia": true,  "acoes": ["revistar", "minerar"] },
-    "ferramentas-mina": { "nome": "Ferramentas de mineração",  "categoria": "mineracao",  "tamanho": [1, 1], "bloqueia": false, "acoes": ["pegar"] },
-    "veio-cristal":     { "nome": "Veio de cristal",           "categoria": "mineracao",  "tamanho": [1, 1], "bloqueia": true,  "acoes": ["examinar", "minerar"] },
-
-    "estalagmite":      { "nome": "Estalagmite",               "categoria": "caverna",    "tamanho": [1, 1], "bloqueia": true,  "acoes": [] },
-    "cogumelos":        { "nome": "Cogumelos",                 "categoria": "caverna",    "tamanho": [1, 1], "bloqueia": false, "acoes": ["examinar", "colher"] },
-    "poca":             { "nome": "Poça d'água",               "categoria": "caverna",    "tamanho": [2, 2], "bloqueia": false, "acoes": ["examinar"] },
-    "teia":             { "nome": "Teia",                      "categoria": "caverna",    "tamanho": [1, 1], "bloqueia": true,  "acoes": ["queimar", "cortar"], "nota": "Prende quem atravessa sem cortar." },
-    "ossos":            { "nome": "Pilha de ossos",            "categoria": "caverna",    "tamanho": [1, 1], "bloqueia": false, "acoes": ["revistar"] },
-
-    "tocha-parede":     { "nome": "Tocha na parede",           "categoria": "luz",        "tamanho": [1, 1], "bloqueia": false, "acoes": ["pegar", "apagar"], "luz_m": 9 },
-    "braseiro":         { "nome": "Braseiro",                  "categoria": "luz",        "tamanho": [1, 1], "bloqueia": true,  "acoes": ["apagar"], "luz_m": 9 },
-    "fogueira":         { "nome": "Fogueira",                  "categoria": "luz",        "tamanho": [1, 1], "bloqueia": true,  "acoes": ["apagar"], "luz_m": 9 },
-    "candelabro":       { "nome": "Candelabro",                "categoria": "luz",        "tamanho": [1, 1], "bloqueia": true,  "acoes": ["pegar", "apagar"], "luz_m": 6 },
-
-    "fosso":            { "nome": "Fosso (armadilha)",         "categoria": "perigo",     "tamanho": [1, 1], "bloqueia": false, "acoes": ["procurar", "desarmar", "pular"], "nota": "Escondido até ser achado; use com 'armadilhas' da aventura." },
-    "dardos-parede":    { "nome": "Dardos na parede",          "categoria": "perigo",     "tamanho": [1, 1], "bloqueia": false, "acoes": ["procurar", "desarmar"] },
-    "sino-alarme":      { "nome": "Sino de alarme",            "categoria": "perigo",     "tamanho": [1, 1], "bloqueia": false, "acoes": ["tocar", "abafar"] },
-
-    "estandarte":       { "nome": "Estandarte",                "categoria": "decoracao",  "tamanho": [1, 1], "bloqueia": false, "acoes": ["examinar"] },
-    "mosaico":          { "nome": "Mosaico no chão",           "categoria": "decoracao",  "tamanho": [2, 2], "bloqueia": false, "acoes": ["examinar"] },
-    "entalhe":          { "nome": "Entalhe na parede",         "categoria": "decoracao",  "tamanho": [1, 1], "bloqueia": false, "acoes": ["examinar", "ler"] },
-    "poco":             { "nome": "Poço",                      "categoria": "decoracao",  "tamanho": [2, 2], "bloqueia": true,  "acoes": ["examinar", "descer"] }
+ "_doc": "Catálogo de props (objetos de cenário) que as aventuras podem colocar nas áreas. tamanho = [largura, altura] em células de 1,5 m, na orientação padrão (sem giro). bloqueia = impede passar pela célula. acoes = o que os jogadores podem fazer. Uma aventura pode girar o prop (\"giro\": 0, 90, 180, 270) e dar um nome próprio. modelo3d = {arquivo, escala (sobre o .glb), giro_modelo (graus para alinhar o comprimento ao eixo y da grade)}.",
+ "categorias": [
+  "estrutura",
+  "mobilia",
+  "deposito",
+  "religioso",
+  "prisao",
+  "mineracao",
+  "caverna",
+  "luz",
+  "perigo",
+  "decoracao"
+ ],
+ "props": {
+  "escada-entrada": {
+   "nome": "Escada de entrada",
+   "categoria": "estrutura",
+   "tamanho": [
+    2,
+    2
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "subir"
+   ],
+   "nota": "Marca a entrada da aventura. Sempre 2×2."
+  },
+  "alcapao": {
+   "nome": "Alçapão",
+   "categoria": "estrutura",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "abrir",
+    "descer"
+   ]
+  },
+  "coluna": {
+   "nome": "Coluna de pedra",
+   "categoria": "estrutura",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": []
+  },
+  "escombros": {
+   "nome": "Escombros",
+   "categoria": "estrutura",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "remover"
+   ],
+   "nota": "Remover leva 1 turno de exploração."
+  },
+  "alavanca": {
+   "nome": "Alavanca na parede",
+   "categoria": "estrutura",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "puxar"
+   ]
+  },
+  "mesa": {
+   "nome": "Mesa",
+   "categoria": "mobilia",
+   "tamanho": [
+    2,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "revistar"
+   ]
+  },
+  "mesa-grande": {
+   "nome": "Mesa grande",
+   "categoria": "mobilia",
+   "tamanho": [
+    3,
+    2
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "revistar"
+   ]
+  },
+  "cadeira": {
+   "nome": "Cadeira",
+   "categoria": "mobilia",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": []
+  },
+  "banco": {
+   "nome": "Banco comprido",
+   "categoria": "mobilia",
+   "tamanho": [
+    2,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": []
+  },
+  "cama": {
+   "nome": "Cama de palha",
+   "categoria": "mobilia",
+   "tamanho": [
+    1,
+    2
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "revistar",
+    "descansar"
+   ]
+  },
+  "beliche": {
+   "nome": "Beliche",
+   "categoria": "mobilia",
+   "tamanho": [
+    1,
+    2
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "revistar"
+   ]
+  },
+  "saco-de-dormir": {
+   "nome": "Saco de dormir",
+   "categoria": "mobilia",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "revistar"
+   ]
+  },
+  "armario": {
+   "nome": "Armário",
+   "categoria": "mobilia",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "abrir",
+    "revistar"
+   ]
+  },
+  "estante": {
+   "nome": "Estante de livros",
+   "categoria": "mobilia",
+   "tamanho": [
+    2,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "revistar",
+    "ler"
+   ]
+  },
+  "trono": {
+   "nome": "Trono",
+   "categoria": "mobilia",
+   "tamanho": [
+    2,
+    2
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "sentar",
+    "revistar"
+   ]
+  },
+  "tapete": {
+   "nome": "Tapete",
+   "categoria": "mobilia",
+   "tamanho": [
+    2,
+    3
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "levantar"
+   ],
+   "nota": "Bom lugar para esconder um alçapão."
+  },
+  "bancada-alquimia": {
+   "nome": "Bancada de alquimia",
+   "categoria": "mobilia",
+   "tamanho": [
+    2,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "revistar",
+    "examinar"
+   ]
+  },
+  "forja": {
+   "nome": "Forja com bigorna",
+   "categoria": "mobilia",
+   "tamanho": [
+    2,
+    2
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "usar"
+   ]
+  },
+  "bau": {
+   "nome": "Baú",
+   "categoria": "deposito",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "abrir",
+    "arrombar",
+    "revistar"
+   ]
+  },
+  "barril": {
+   "nome": "Barril",
+   "categoria": "deposito",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "abrir",
+    "revistar"
+   ]
+  },
+  "caixote": {
+   "nome": "Caixote",
+   "categoria": "deposito",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "abrir",
+    "revistar"
+   ]
+  },
+  "pilha-caixotes": {
+   "nome": "Pilha de caixotes",
+   "categoria": "deposito",
+   "tamanho": [
+    2,
+    2
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "revistar",
+    "escalar"
+   ]
+  },
+  "sacos": {
+   "nome": "Sacos de mantimentos",
+   "categoria": "deposito",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "revistar"
+   ]
+  },
+  "prateleira": {
+   "nome": "Prateleira na parede",
+   "categoria": "deposito",
+   "tamanho": [
+    2,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "revistar"
+   ]
+  },
+  "altar": {
+   "nome": "Altar",
+   "categoria": "religioso",
+   "tamanho": [
+    2,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "examinar",
+    "rezar",
+    "profanar"
+   ]
+  },
+  "estatua": {
+   "nome": "Estátua",
+   "categoria": "religioso",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "examinar"
+   ]
+  },
+  "pia-agua-benta": {
+   "nome": "Pia de água benta",
+   "categoria": "religioso",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "examinar",
+    "encher-frasco"
+   ]
+  },
+  "sarcofago": {
+   "nome": "Sarcófago",
+   "categoria": "religioso",
+   "tamanho": [
+    1,
+    2
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "abrir",
+    "examinar"
+   ]
+  },
+  "grilhoes": {
+   "nome": "Grilhões na parede",
+   "categoria": "prisao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "examinar",
+    "soltar"
+   ]
+  },
+  "gaiola": {
+   "nome": "Gaiola de ferro",
+   "categoria": "prisao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "abrir",
+    "arrombar"
+   ]
+  },
+  "mesa-carcereiro": {
+   "nome": "Mesa do carcereiro",
+   "categoria": "prisao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "revistar"
+   ],
+   "modelo3d": {
+    "arquivo": "res://arte/final/3d/mesa-carcereiro.glb",
+    "escala": 1.35
+   }
+  },
+  "chaveiro": {
+   "nome": "Chaveiro na parede",
+   "categoria": "prisao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "pegar"
+   ]
+  },
+  "balde": {
+   "nome": "Balde",
+   "categoria": "prisao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": []
+  },
+  "carrinho-mina": {
+   "nome": "Carrinho de mina",
+   "categoria": "mineracao",
+   "tamanho": [
+    1,
+    2
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "empurrar",
+    "revistar"
+   ]
+  },
+  "pilha-minerio": {
+   "nome": "Pilha de minério",
+   "categoria": "mineracao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "revistar",
+    "minerar"
+   ]
+  },
+  "ferramentas-mina": {
+   "nome": "Ferramentas de mineração",
+   "categoria": "mineracao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "pegar"
+   ]
+  },
+  "veio-cristal": {
+   "nome": "Veio de cristal",
+   "categoria": "mineracao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "examinar",
+    "minerar"
+   ]
+  },
+  "estalagmite": {
+   "nome": "Estalagmite",
+   "categoria": "caverna",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": []
+  },
+  "cogumelos": {
+   "nome": "Cogumelos",
+   "categoria": "caverna",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "examinar",
+    "colher"
+   ]
+  },
+  "poca": {
+   "nome": "Poça d'água",
+   "categoria": "caverna",
+   "tamanho": [
+    2,
+    2
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "examinar"
+   ]
+  },
+  "teia": {
+   "nome": "Teia",
+   "categoria": "caverna",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "queimar",
+    "cortar"
+   ],
+   "nota": "Prende quem atravessa sem cortar."
+  },
+  "ossos": {
+   "nome": "Pilha de ossos",
+   "categoria": "caverna",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "revistar"
+   ]
+  },
+  "tocha-parede": {
+   "nome": "Tocha na parede",
+   "categoria": "luz",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "pegar",
+    "apagar"
+   ],
+   "luz_m": 9
+  },
+  "braseiro": {
+   "nome": "Braseiro",
+   "categoria": "luz",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "apagar"
+   ],
+   "luz_m": 9
+  },
+  "fogueira": {
+   "nome": "Fogueira",
+   "categoria": "luz",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "apagar"
+   ],
+   "luz_m": 9
+  },
+  "candelabro": {
+   "nome": "Candelabro",
+   "categoria": "luz",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "pegar",
+    "apagar"
+   ],
+   "luz_m": 6
+  },
+  "fosso": {
+   "nome": "Fosso (armadilha)",
+   "categoria": "perigo",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "procurar",
+    "desarmar",
+    "pular"
+   ],
+   "nota": "Escondido até ser achado; use com 'armadilhas' da aventura."
+  },
+  "dardos-parede": {
+   "nome": "Dardos na parede",
+   "categoria": "perigo",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "procurar",
+    "desarmar"
+   ]
+  },
+  "sino-alarme": {
+   "nome": "Sino de alarme",
+   "categoria": "perigo",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "tocar",
+    "abafar"
+   ]
+  },
+  "estandarte": {
+   "nome": "Estandarte",
+   "categoria": "decoracao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "examinar"
+   ]
+  },
+  "mosaico": {
+   "nome": "Mosaico no chão",
+   "categoria": "decoracao",
+   "tamanho": [
+    2,
+    2
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "examinar"
+   ]
+  },
+  "entalhe": {
+   "nome": "Entalhe na parede",
+   "categoria": "decoracao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "examinar",
+    "ler"
+   ]
+  },
+  "poco": {
+   "nome": "Poço",
+   "categoria": "decoracao",
+   "tamanho": [
+    2,
+    2
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "examinar",
+    "descer"
+   ]
+  },
+  "catre": {
+   "nome": "Catre",
+   "categoria": "prisao",
+   "tamanho": [
+    1,
+    2
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "revistar",
+    "descansar"
+   ],
+   "modelo3d": {
+    "arquivo": "res://arte/final/3d/catre.glb",
+    "escala": 1.9,
+    "giro_modelo": 90
+   }
+  },
+  "pilha-armaduras": {
+   "nome": "Pilha de armaduras",
+   "categoria": "prisao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": true,
+   "acoes": [
+    "revistar"
+   ],
+   "modelo3d": {
+    "arquivo": "res://arte/final/3d/pilha-armaduras.glb",
+    "escala": 1.2
+   }
+  },
+  "cesta-paes": {
+   "nome": "Cesta de pães",
+   "categoria": "prisao",
+   "tamanho": [
+    1,
+    1
+   ],
+   "bloqueia": false,
+   "acoes": [
+    "pegar"
+   ],
+   "modelo3d": {
+    "arquivo": "res://arte/final/3d/cesta-paes.glb",
+    "escala": 0.55
+   }
   }
+ }
 }

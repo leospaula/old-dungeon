@@ -133,6 +133,10 @@
           },
           "nota": {
             "type": "string"
+          },
+          "inquebravel": {
+            "type": "boolean",
+            "description": "Não dá para forçar (grade de ferro, porta reforçada): só abre com a chave ou a fechadura."
           }
         }
       }
@@ -328,6 +332,13 @@
           }
         }
       }
+    },
+    "grupo": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ids dos personagens prontos (data/personagens/grupo-inicial.json) que jogam esta aventura, na ordem de marcha."
     }
   },
   "$defs": {

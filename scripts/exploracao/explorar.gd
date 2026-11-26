@@ -29,6 +29,7 @@ const Livro = preload("res://scripts/interface/livro.gd")
 const Estilo = preload("res://scripts/interface/estilo.gd")
 const Portas = preload("res://scripts/exploracao/portas.gd")
 const Procurar = preload("res://scripts/exploracao/procurar.gd")
+const Aventura = preload("res://scripts/exploracao/aventura.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
@@ -107,6 +108,7 @@ var hud_ui: Control
 var livro: Control
 var diario: Array = []     # [{turno, tipo, texto}] — o diário automático do grupo
 var _area_antes := ""
+var aventura: RefCounted = null   # aventura carregada (scripts/exploracao/aventura.gd); null = masmorra de teste
 var hud_centro: Label
 
 func _ready() -> void:
@@ -115,13 +117,17 @@ func _ready() -> void:
 	MONSTROS = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/monstros.json"))
 	ENCONTROS = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/encontros.json"))
 	MOV = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/movimento.json"))
+	var av := _aventura_pedida()
+	if av != "": aventura = Aventura.new(grade, av); aventura.colocar_props(self)
 	_criar_grupo()
 	luz = Luz.new(); add_child(luz)
 	luz.configurar(self, $Masmorra, $Ambiente, heroi)
-	_acender(heroi)   # a primeira tocha já entra acesa, na mão de quem lidera
-	luz.tochas_automaticas(self, LAYOUT, ["24", "23", "21", "22", "15", "20", "14", "10", "12"], 2)
+	_acender(heroi)   # a primeira tocha já entra acesa, na mão de quem lidera (se tiver tocha)
+	luz.tochas_automaticas(self, LAYOUT, aventura.areas_iluminadas() if aventura else ["24", "23", "21", "22", "15", "20", "14", "10", "12"], 2)
 	visao = Visao.new(grade)
 	visao.tochas_parede = luz.tochas_cel.duplicate()
+	if aventura:
+		visao.penumbra = aventura.celulas_penumbra(); luz.penumbra(self, visao.penumbra)
 	visao.recalcular_luz_fixa()
 	_materiais_das_portas()
 	portas = Portas.new(self)
@@ -144,7 +150,10 @@ func _ready() -> void:
 	_mudar_modo("normal", false)
 	camera.alvo = heroi.position; camera.distancia = 15.0; camera.inclinacao = 55.0; camera.guinada = -30.0
 	_atualizar_visao()
-	_registrar("A Tessa desce a escada para a [b]%s[/b]. Clique no chão para andar; clique numa porta para ver as ações; clique numa carta para escolher quem age." % grade.nomes.get(grade.area_de(heroi.celula), ""))
+	if aventura:
+		_registrar("[b]%s[/b]. %s" % [aventura.d.get("titulo", ""), aventura.d.get("gancho", "")])
+	else:
+		_registrar("A Tessa desce a escada para a [b]%s[/b]. Clique no chão para andar; clique numa porta para ver as ações; clique numa carta para escolher quem age." % grade.nomes.get(grade.area_de(heroi.celula), ""))
 	_anotar_area()
 	_linha_de_comando()
 
@@ -157,27 +166,45 @@ const HEROIS := {
 	"caco": {"glb": "res://arte/final/3d/caco-biblioteca.glb", "escala": 0.9, "passo": 1.08, "mao": "mixamorig_RightHand"},
 	"lianne": {"glb": "res://arte/final/3d/lianne-biblioteca.glb", "escala": 0.86, "passo": 1.0, "mao": "mixamorig_LeftHand",
 		"distancia": "arco curto"},
+	"durgo": {"glb": "res://arte/final/3d/anao-biblioteca.glb", "escala": 0.9, "passo": 0.8, "mao": "mixamorig_RightHand"},
+	"mirela": {"glb": "res://arte/final/3d/maga-biblioteca.glb", "escala": 0.9, "passo": 1.0, "mao": "mixamorig_RightHand"},
+	"anselmo": {"glb": "res://arte/final/3d/clerigo-biblioteca.glb", "escala": 0.9, "passo": 1.08, "mao": "mixamorig_RightHand"},
+	"bento": {"glb": "res://arte/final/3d/halfling-biblioteca.glb", "escala": 0.9, "passo": 0.62, "mao": "mixamorig_RightHand"},
 }
 const GRUPO_EM_JOGO := ["tessa", "caco", "lianne"]
 
+## Aventura a carregar: --aventura=<id> na linha de comando; sem testes nem captura, a aventura 1.
+## --aventura=nenhuma (ou qualquer --teste) usa a masmorra de teste.
+func _aventura_pedida() -> String:
+	var args := OS.get_cmdline_user_args()
+	for a in args:
+		if a.begins_with("--aventura="):
+			var v := a.trim_prefix("--aventura=")
+			return v if Aventura.existe(v) else ""
+	for a in args:
+		if a.begins_with("--teste=") or a.begins_with("--captura"): return ""
+	return "aventura-1" if Aventura.existe("aventura-1") else ""
+
 func _criar_grupo() -> void:
 	var G: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/personagens/grupo-inicial.json"))
-	var lugares: Array[Vector2i] = [INICIO]
-	var alc: Dictionary = grade.alcance(INICIO, 6.0, {}, true)
-	var perto: Array = alc.keys().filter(func(c): return c != INICIO)
+	var ini: Vector2i = aventura.celula_inicio() if aventura else INICIO
+	var ids: Array = aventura.grupo_ids() if aventura and not aventura.grupo_ids().is_empty() else GRUPO_EM_JOGO
+	var lugares: Array[Vector2i] = [ini]
+	var alc: Dictionary = grade.alcance(ini, 9.0, {}, aventura == null)
+	var perto: Array = alc.keys().filter(func(c): return c != ini and (aventura == null or grade.area_de(c) == grade.area_de(ini)))
 	perto.sort_custom(func(a, b): return float(alc[a][0]) < float(alc[b][0]))
 	lugares.append_array(perto)
-	for k in GRUPO_EM_JOGO.size():
-		var id: String = GRUPO_EM_JOGO[k]
+	for k in ids.size():
+		var id: String = ids[k]
 		for x in G.personagens:
-			if x.id == id: grupo.append(_criar_heroi(x, HEROIS[id], lugares[k]))
+			if x.id == id: grupo.append(_criar_heroi(aventura.ficha_inicial(x) if aventura else x, HEROIS[id], lugares[k]))
 	heroi = grupo[0]
 	_recalcular_grupo()
 
 func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	fichas.append(p)
 	var a: Node3D = Ator.new(); herois_todos.append(a); a.grade = grade; a.lado = "grupo"
-	a.nome = str(p.nome).get_slice(" ", 0)
+	a.nome = str(p.get("nome_curto", str(p.nome).get_slice(" ", 0)))
 	a.ficha = Ficha.new(p, str(cfg.get("distancia", "")))
 	a.pv = int(p.pv); a.thac0 = int(p.thac0)
 	# Infravisão (B/X): elfos e anões enxergam no escuro até 18 m.
@@ -1098,6 +1125,9 @@ func _anotar_area() -> void:
 	var area: String = grade.nomes.get(grade.area_de(heroi.celula), "")
 	if area != "" and area != _area_antes:
 		_area_antes = area; _diario("lugar", area)
+		if aventura:
+			var t: String = aventura.leitura(grade.area_de(heroi.celula))
+			if t != "": _registrar("[i]%s[/i]" % t)
 
 func _diario(tipo: String, texto: String) -> void:
 	if tipo != "evento" and diario.any(func(x): return x.tipo == tipo and x.texto == texto): return
@@ -1227,6 +1257,9 @@ func _atualizar_hud() -> void:
 func _linha_de_comando() -> void:
 	var captura := ""; var teste := ""
 	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--camera="):   # distância,inclinação,guinada (capturas)
+			var v := a.trim_prefix("--camera=").split(",")
+			camera.distancia = float(v[0]); camera.inclinacao = float(v[1]); camera.guinada = float(v[2])
 		if a.begins_with("--captura="): captura = a.trim_prefix("--captura=")
 		if a.begins_with("--teste="): teste = a.trim_prefix("--teste=")
 	if captura == "" and teste == "": return
@@ -1849,6 +1882,18 @@ func _linha_de_comando() -> void:
 			for im in imgs:
 				im.save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
 			await get_tree().create_timer(1.8).timeout
+	elif teste == "cela":
+		# Aventura 1 (--aventura=aventura-1): grupo preso na cela 1, sem equipamento, grade trancada.
+		for h in grupo:
+			print("CELA ", h.nome, " ", h.celula, " área ", grade.area_de(h.celula), " itens ", h.ficha.mochila.size(), " arma ", h.arma, " pv ", h.pv)
+		var pt: Dictionary = portas.por_id["P17"]
+		print("CELA opções: ", portas.opcoes(pt, grupo[2]).map(func(o): return "%s%s" % [o.texto, "" if o.ativo else " (x)"]))
+		await portas.agir(pt, grupo[0], "abrir")
+		print("CELA estado P17: ", portas.de(pt).estado, " · aberta=", grade.porta_aberta.has("P17"))
+		var fora: Array = grade.caminho(grupo[0].celula, aventura.cel("2", "B1"))
+		print("CELA caminho até o vestíbulo: ", fora.size(), " casas")
+		print("CELA props: ", aventura.props_em_cena.map(func(p): return "%s@%s" % [p.tipo, p.celulas[0]]))
+		print("CELA tochas acesas: ", _acesas().size(), " · visíveis: ", visao.visiveis.size())
 	elif teste == "combate":
 		_surgir_errantes(true)
 		await get_tree().create_timer(3.0).timeout

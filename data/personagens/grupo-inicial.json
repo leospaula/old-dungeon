@@ -52,7 +52,7 @@
       "po": 14
     },
     {
-      "id": "anselmo", "nome": "Irmão Anselmo", "classe": "clerigo", "nivel": 1, "alinhamento": "ordeiro",
+      "id": "anselmo", "nome": "Irmão Anselmo", "nome_curto": "Anselmo", "classe": "clerigo", "nivel": 1, "alinhamento": "ordeiro",
       "atributos": { "for": 12, "int": 10, "sab": 16, "des": 9, "con": 13, "car": 11 },
       "pv": 7, "ca": 4, "thac0": 19,
       "protecao": { "morte": 11, "varinhas": 12, "paralisia": 14, "sopro": 16, "magias": 15 },
