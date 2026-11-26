@@ -133,6 +133,9 @@ func _ready() -> void:
 	combate.camera = camera
 	combate.visivel = func(a): return mestre or visao.visiveis.has(a.celula)
 	combate.abrir_porta = func(pt, _de): portas.tentar_abrir(pt, combate.vez)
+	combate.proibidas = func(): return procurar.vistas()
+	combate.no_fosso = func(h): return procurar.esta_no_fosso(h)
+	combate.turno_no_fosso = func(h): await procurar.turno_no_fosso(h)
 	combate.registro.connect(_registrar)
 	combate.terminou.connect(_fim_do_combate)
 	_montar_hud()
@@ -240,9 +243,19 @@ func _puxar_fila(de: Vector2i) -> void:
 		var atual: Vector2i = f.proxima_celula()
 		if atual != alvo:
 			var cam: Array[Vector2i] = grade.caminho(atual, alvo, _ocupadas_por(grupo))   # nunca através de monstros
-			if cam.size() > 3: cam = cam.slice(0, 3)
+			cam = _sem_parar_no_fosso(cam, 3)
 			f.seguir(cam)
 		alvo = atual
+
+## Corta o caminho em até `n` passos sem terminar em cima de armadilha vista (fosso): se o corte cair
+## nela, vai um passo além (pula); se ela for o fim, para antes.
+func _sem_parar_no_fosso(cam: Array[Vector2i], n: int) -> Array[Vector2i]:
+	var v: Dictionary = procurar.vistas()
+	var fim := mini(n, cam.size())
+	while fim > 0 and v.has(cam[fim - 1]):
+		if fim < cam.size(): fim += 1
+		else: fim -= 1
+	return cam.slice(0, fim)
 
 ## Casas ocupadas por seres vivos (onde estão e para onde já estão indo), menos os de `exceto`.
 func _ocupadas_por(exceto: Array = []) -> Dictionary:
@@ -258,6 +271,8 @@ func _caminho_lider(de: Vector2i, para: Vector2i, quem: Node3D = null) -> Array[
 	if quem == null: quem = heroi
 	var todos := _ocupadas_por([quem])
 	if todos.has(para): return []
+	if procurar.vistas().has(para):   # nunca para em cima do fosso / armadilha vista
+		_registrar("Não dá para parar em cima da armadilha: escolha uma casa ao lado."); return []
 	var desvio := todos.duplicate(); desvio.merge(procurar.vistas())   # desvia de armadilha já vista
 	var cam: Array[Vector2i] = grade.caminho(de, para, desvio)
 	if cam.is_empty(): cam = grade.caminho(de, para, todos)
@@ -488,7 +503,8 @@ func _reagrupar() -> void:
 		_registrar("O grupo se junta atrás de %s." % heroi.nome); hud_ui.refazer(); return
 	var livres: Array = grade.alcance(heroi.celula, 9.0, {}, true, visao.exploradas).keys()
 	var ocup := {heroi.celula: true}
-	livres = livres.filter(func(x): return x != heroi.celula and grade.chao(x))
+	var armad: Dictionary = procurar.vistas()
+	livres = livres.filter(func(x): return x != heroi.celula and grade.chao(x) and not armad.has(x))
 	livres.sort_custom(func(a, b): return grade.centro(a).distance_to(grade.centro(heroi.celula)) < grade.centro(b).distance_to(grade.centro(heroi.celula)))
 	for h in vivos():
 		if h == heroi: continue
@@ -567,6 +583,20 @@ func _ao_iniciar_passo(de: Vector2i, para: Vector2i, quem: Node3D) -> void:
 	var pt: Dictionary = grade.porta_entre(de, para)
 	if not pt.is_empty() and not grade.porta_aberta.has(pt.id): _abrir_porta(pt, de)
 	if quem == heroi and not combate.ativo: _puxar_fila(de)
+	if quem.lado == "grupo": _pulo(de, para, quem)
+
+## Atravessar armadilha vista: sobe ao entrar na casa dela e desce ao sair (arco do pulo).
+func _pulo(de: Vector2i, para: Vector2i, quem: Node3D) -> void:
+	var v: Dictionary = procurar.vistas()
+	if not (v.has(para) or v.has(de)) or quem.modelo == null or procurar.esta_no_fosso(quem): return
+	if not quem.has_meta("y0"): quem.set_meta("y0", quem.modelo.position.y)
+	var y0: float = quem.get_meta("y0")
+	var t: float = grade.custo(de, para) / maxf(0.5, quem.vel_atual())
+	var tw := quem.create_tween()
+	if v.has(para):
+		tw.tween_property(quem.modelo, "position:y", y0 + 0.55, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	else:
+		tw.tween_property(quem.modelo, "position:y", y0, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
 func _ao_chegar(_c: Vector2i, metros: float, quem: Node3D) -> void:
 	_atualizar_visao()
@@ -964,6 +994,8 @@ func _grupo_em_guarda() -> void:
 
 func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 	luz.set_grade(grade_forte)
+	for h in procurar.no_fosso:   # alguém ficou no fosso: volta a escolha (sair, ajudar, deixar)
+		if is_instance_valid(h): procurar.dialogo_fosso.call_deferred(h); break
 	if resultado == "vitoria":
 		xp_total += xp
 		var vivos_agora := vivos()
@@ -1590,12 +1622,41 @@ func _linha_de_comando() -> void:
 		var t0 := turno; var m0 := metros_no_turno
 		await procurar._escolha_fosso(tessa, "ajudar")
 		print("FOSSO ajudou: Tessa em ", tessa.celula, " y=", snappedf(tessa.position.y, 0.01), " no fosso=", procurar.esta_no_fosso(tessa), " tempo gasto=", snappedf((turno - t0) + (metros_no_turno - m0) / _taxa_turno(), 0.01), " turno")
+		print("FOSSO clicar em cima do fosso: caminho=", _caminho_lider(caco.celula, Vector2i(10, 1)))
+		var cf: Array[Vector2i] = _caminho_lider(Vector2i(9, 1), Vector2i(11, 0))
+		print("FOSSO (9,1)→(11,0) contorna=", not cf.has(Vector2i(10, 1)), " ", cf)
+		var corte: Array[Vector2i] = [Vector2i(9, 1), Vector2i(10, 1), Vector2i(11, 1), Vector2i(12, 1)]
+		print("FOSSO fila corta no fosso: ", _sem_parar_no_fosso(corte, 2), " · fosso no fim: ", _sem_parar_no_fosso(corte.slice(0, 2), 3))
+		# Combate: Tessa no fosso, na vez dela tenta sair.
+		tessa.colocar(Vector2i(10, 1)); procurar.no_fosso[tessa] = Vector2i(10, 1); tessa.position.y = -2.4
+		get_tree().create_timer(0.3).timeout.connect(func(): procurar.escolheu.emit("sair"))
+		await procurar.turno_no_fosso(tessa)
+		print("FOSSO combate: Tessa saiu=", not procurar.esta_no_fosso(tessa), " em ", tessa.celula)
+		hud_ui.fechar_dialogo()
 		lianne.pv = 1; lianne.colocar(Vector2i(10, 1))
 		await procurar.cair(lianne, Vector2i(10, 1), a)
 		print("FOSSO Lianne viva=", lianne.vivo(), " diálogo=", hud_ui.dialogo_aberto())
 		hud_ui.fechar_dialogo()
 		await procurar._escolha_fosso(lianne, "resgatar")
 		print("FOSSO corpo da Lianne em ", lianne.celula, " y=", snappedf(lianne.position.y, 0.01), " no fosso=", procurar.esta_no_fosso(lianne), " · Caco em ", caco.celula)
+	elif teste == "fosso_combate":
+		# Tessa no fosso quando o combate começa: na vez dela aparece a escolha (passa uma vez, depois tenta sair).
+		var tessa: Node3D = grupo[0]
+		procurar.fossos[Vector2i(10, 1)].abrir(false); procurar.armadilhas[Vector2i(10, 1)].visto = true
+		tessa.colocar(Vector2i(10, 1)); procurar.no_fosso[tessa] = Vector2i(10, 1); tessa.position.y = -2.4; tessa.separado = true
+		_passar_lideranca(grupo[1])
+		_brotar_goblin(true)
+		var vezes := 0
+		for k in 600:
+			await get_tree().create_timer(0.05).timeout
+			if hud_ui.dialogo_aberto() and combate.vez == tessa:
+				hud_ui.fechar_dialogo(); vezes += 1
+				procurar.escolheu.emit("passar" if vezes == 1 else "sair")
+				print("FOSSO_COMBATE vez da Tessa nº", vezes, " rodada ", combate.rodada)
+			elif combate.ativo and combate.vez != null and combate.vez.lado == "grupo" and combate.vez != tessa and not combate.ocupado:
+				combate.encerrar_turno()
+			if not procurar.esta_no_fosso(tessa) or not combate.ativo or vezes >= 6: break
+		print("FOSSO_COMBATE fim: Tessa no fosso=", procurar.esta_no_fosso(tessa), " vezes=", vezes, " combate ativo=", combate.ativo)
 	elif teste == "secreta":
 		# Captura da P02 vista do corredor 23: escondida (--revelar: depois de achada).
 		var p3: Dictionary = portas.por_id["P03"]; portas.de(p3).estado = "fechada"; _abrir_porta(p3, Vector2i(11, 5), "teste")

@@ -21,6 +21,9 @@ var marca_vez: Node
 var exploradas := {}       # o jogador só anda pelo que já viu (visao.gd)
 var visivel: Callable      # (ator) -> bool: o jogador está vendo esse ator?
 var abrir_porta: Callable  # (porta, de_celula) -> void
+var proibidas: Callable    # () -> {casa: true}: armadilhas vistas (fosso), onde herói não para (atravessa pulando)
+var no_fosso: Callable     # (ator) -> bool: caiu no fosso
+var turno_no_fosso: Callable  # (ator) -> await: a vez de quem está no fosso (sair ou passar)
 
 var ativo := false
 var ocupado := false
@@ -84,6 +87,13 @@ func _laco(rodada_de_surpresa: bool, grupo_surpreso: bool) -> void:
 func _turno_personagem(h: Node) -> void:
 	vez = h; restante = h.mov_combate_m
 	h.set_meta("trocou", false)
+	if no_fosso.is_valid() and no_fosso.call(h):
+		marca_alcance.limpar(); marca_vez.limpar(); marca_vez.por([h.celula], Color(1.0, 0.8, 0.3, 0.45), 0.02)
+		mudou.emit()
+		ocupado = true
+		await turno_no_fosso.call(h)
+		ocupado = false
+		return
 	_mostrar_alcance()
 	mudou.emit()
 	await _fim_de_turno
@@ -202,6 +212,8 @@ func _mostrar_alcance() -> void:
 	_alc = _alc_todo.duplicate()
 	for x in grupo:
 		if is_instance_valid(x) and x != vez and x.vivo(): _alc.erase(x.celula); _alc.erase(x.proxima_celula())
+	if vez.lado == "grupo" and proibidas.is_valid():
+		for c in proibidas.call(): _alc.erase(c)
 	marca_alcance.limpar()
 	var cels: Array = _alc.keys().filter(func(k): return k != vez.celula)
 	marca_alcance.por(cels, Color(0.35, 0.65, 1.0, 0.28))

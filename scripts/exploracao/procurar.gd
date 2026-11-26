@@ -229,8 +229,12 @@ func pisou(h: Node3D, c: Vector2i) -> void:
 # ---------- fosso: queda e saída ----------
 
 ## Caiu no fosso: o alçapão abre, cai, sofre o dano, levanta lá no fundo e o jogador escolhe o que fazer.
+signal escolheu(id: String)
+
 func cair(h: Node3D, c: Vector2i, a: Dictionary) -> void:
+	var andava: bool = h.andando()
 	h._caminho.clear()
+	if andava: h.parou.emit()   # quem esperava o passo (combate) segue
 	h.position = ex.grade.centro(c)
 	no_fosso[h] = c; h.set_meta("no_fosso", true)
 	h.separado = true
@@ -261,6 +265,24 @@ func cair(h: Node3D, c: Vector2i, a: Dictionary) -> void:
 		await h.get_tree().create_timer(0.6).timeout
 	if h == ex.heroi and h.vivo(): _liderar_quem_esta_fora()
 	if not ex.combate.ativo and not ex.fim: dialogo_fosso(h)
+
+## Combate: na vez de quem está no fosso, tentar sair (teste; passou, sai e a vez acaba) ou passar a vez.
+func turno_no_fosso(h: Node3D) -> void:
+	if not h.vivo(): return
+	var ch := chance_sair(h)
+	ex.hud_ui.dialogo("Fosso · vez de %s" % h.nome, "%s está no fundo do fosso, no meio do combate." % h.nome, [
+		{"id": "sair", "texto": "Tentar sair do fosso", "dica": "Precisa de %s. Passou: sai e a vez acaba. Falhou: a vez acaba e tenta de novo na próxima." % ch[0]},
+		{"id": "passar", "texto": "Passar a vez", "dica": "Fica no fundo do fosso até a próxima vez."}],
+		func(id): escolheu.emit(id))
+	var id: String = await escolheu
+	if id != "sair":
+		ex._registrar("%s espera no fundo do fosso." % h.nome); return
+	var r := Dados.d(100) if ch[1] == "%" else Dados.d(6)
+	var ok := r <= int(ch[2])
+	await ex.portas._animar(h, "ajoelhar", 0.8, 0.9)
+	ex._registrar("%s tenta escalar a parede do fosso (%s): [b]%d[/b] → %s" % [h.nome, ch[0], r, "[color=#ffcf6a]consegue![/color]" if ok else "escorrega de volta."])
+	if ok: await _subir(h, _casa_ao_lado(no_fosso[h], []))
+	else: h.tocar("parado", 0.4)
 
 ## Quem está no fosso não leva a fila: a liderança (e a tocha) passa para o primeiro que está fora.
 func _liderar_quem_esta_fora() -> void:
@@ -337,10 +359,13 @@ func _ajudar(h: Node3D) -> void:
 	if borda == ex.SEM_CELULA:
 		ex._registrar("%s não consegue chegar à borda do fosso." % quem.nome); ocupado = false; return
 	quem.olhar_para(ex.grade.centro(c))
+	var perto: Vector3 = ex.grade.centro(borda).lerp(ex.grade.centro(c), 0.3)   # abaixa na beirada
+	var tb := quem.create_tween(); tb.tween_property(quem, "position", perto, 0.3)
 	ex.portas._animar(quem, "ajoelhar", 1.4, 0.8)
 	ex._gastar_tempo(0.5)
 	ex._registrar("%s se debruça na borda e puxa %s para fora do fosso." % [quem.nome, h.nome])
 	await _subir(h, _casa_ao_lado(c, [borda]))
+	quem.create_tween().tween_property(quem, "position", ex.grade.centro(borda), 0.3)
 	quem.tocar("parado", 0.4)
 	ocupado = false
 
@@ -352,7 +377,9 @@ func _resgatar(h: Node3D) -> void:
 	if borda == ex.SEM_CELULA:
 		ex._registrar("%s não consegue chegar à borda do fosso." % l.nome); ocupado = false; return
 	l.olhar_para(ex.grade.centro(c))
+	var tb := l.create_tween(); tb.tween_property(l, "position", ex.grade.centro(borda).lerp(ex.grade.centro(c), 0.3), 0.3)
 	await ex.portas._animar(l, "ajoelhar", 1.2, 0.8)
+	l.create_tween().tween_property(l, "position", ex.grade.centro(borda), 0.3)
 	ex._gastar_tempo(1.0)
 	var destino := _casa_ao_lado(c, [borda])
 	no_fosso.erase(h); h.set_meta("no_fosso", false)
