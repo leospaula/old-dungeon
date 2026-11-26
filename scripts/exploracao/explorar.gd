@@ -11,8 +11,8 @@ extends Node3D
 ## Névoa de guerra: nunca visto = preto · já visto = lembrança apagada, sem criaturas · à vista = normal.
 ## Combate: na vez do personagem, o alcance fica destacado; clique para andar, num inimigo para atacar,
 ## numa porta para abrir. Espaço encerra a vez.
-## Teclas: F foca · M modo mestre (vê tudo, rolagens ocultas no registro, marca o escondido) · J reagrupa ·
-## Shift+clique: só quem age anda (separa do grupo) · G grade · K força um encontro · R recomeça.
+## Teclas: F foca · M modo mestre (vê tudo, rolagens ocultas no registro, marca o escondido) ·
+## J agrupa/desagrupa (agrupado: quem age lidera a fila e leva a tocha; desagrupado: só quem age anda) · G grade · K força um encontro · R recomeça.
 ## Linha de comando: -- --captura=arquivo.png [--teste=andar|frente|longe|porta|errantes|combate|auto]
 
 const Luz = preload("res://scripts/visual/luz.gd")
@@ -70,6 +70,7 @@ var portas: RefCounted     # ações e estado das portas (scripts/exploracao/por
 var procurar: RefCounted   # portas secretas e armadilhas de sala (scripts/exploracao/procurar.gd)
 var marca_armadilhas: Node
 var marca_mestre: Node       # modo mestre: armadilhas e portas secretas escondidas
+var agrupado := true        # J alterna. Agrupado: quem age lidera a fila. Desagrupado: cada um anda sozinho.
 var bonus_silencio_ate := -1   # até este turno o grupo se move em silêncio com bônus (ouviu monstros antes)
 var _porta_menu := {}      # porta do balão aberto
 var monstros: Array = []   # todos os monstros vivos em cena
@@ -300,7 +301,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_R: get_tree().reload_current_scene(); return
 			KEY_F: camera.alvo = heroi.global_position; camera.distancia = 14.0
 			KEY_M: _alternar_mestre()
-			KEY_J: if not combate.ativo: _reagrupar()
+			KEY_J: if not combate.ativo and not fim: _alternar_agrupado()
 			KEY_G: grade_forte = not grade_forte; luz.set_grade(grade_forte or combate.ativo)
 			KEY_K: if not combate.ativo and not fim: _surgir_errantes(true)
 			KEY_B: if not fim: _brotar_goblin()
@@ -320,7 +321,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			if combate.ativo: combate.clicar_porta(mira[2])
 			else: _menu_da_porta(mira[2], e.position)
 		elif combate.ativo: combate.clicar(mira[0], mira[1])
-		else: _andar_para(mira[0], e.shift_pressed)
+		else: _andar_para(mira[0])
 	elif e is InputEventMouseMotion:
 		var mira := _mira(e.position)
 		var id_porta: String = str(mira[2].id) if not mira[2].is_empty() else ""
@@ -432,12 +433,10 @@ func _raio_caixa(o: Vector3, d: Vector3, a: Vector3, b: Vector3) -> float:
 
 # ---------- exploração ----------
 
-func _andar_para(c: Vector2i, so_ele := false) -> void:
+func _andar_para(c: Vector2i) -> void:
 	if not grade.chao(c) or not visao.exploradas.has(c): return
-	# Quem age (carta escolhida) não é quem lidera, ou Shift+clique: só ele anda e sai da fila.
-	var q := agente()
-	if q != heroi or so_ele:
-		_andar_sozinho(q, c); return
+	if not agrupado:   # desagrupado: só quem age anda (sem carta escolhida, quem leva a tocha)
+		_andar_sozinho(agente(), c); return
 	porta_alvo = {}
 	var de: Vector2i = heroi.proxima_celula()
 	var cam: Array[Vector2i] = _caminho_lider(de, c)
@@ -453,22 +452,36 @@ func _andar_sozinho(q: Node3D, c: Vector2i) -> void:
 	var cam: Array[Vector2i] = _caminho_lider(de, c, q)
 	if cam.is_empty(): return
 	if q.andando(): cam.push_front(de)
-	if not q.separado:
-		q.separado = true
-		_registrar("%s se separa do grupo%s. [i](J reagrupa)[/i]" % [q.nome, "" if q != heroi else " e leva a tocha"])
-		if q == heroi:   # quem lidera saiu sozinho: os outros ficam onde estão
-			for h in vivos():
-				if h != heroi: h.separado = true
-		hud_ui.refazer()
+	q.separado = true
 	marca_caminho.limpar(); marca_caminho.por([c], Color(0.7, 0.85, 1.0, 0.35), 0.15)
 	q.seguir(cam)
+
+## J: desagrupa (cada um anda sozinho) ou agrupa (todos voltam para a fila atrás de quem age).
+func _alternar_agrupado() -> void:
+	agrupado = not agrupado
+	if not agrupado:
+		for h in vivos(): h.separado = true
+		_registrar("O grupo se separa: escolha a carta de quem vai andar. [i](J agrupa)[/i]")
+		hud_ui.refazer(); return
+	var q := agente()
+	if q != heroi: _passar_lideranca(q)
+	_reagrupar()
+
+## Quem age passa a liderar a fila e leva a tocha.
+func _passar_lideranca(h: Node3D) -> void:
+	if h == heroi or combate.ativo or not h.vivo(): return
+	for x in vivos(): x.parar()
+	porta_alvo = {}
+	heroi = h; grupo.erase(h); grupo.push_front(h); luz.alvo = h
+	_registrar("%s passa a liderar o grupo e leva a tocha." % h.nome)
+	_atualizar_visao()
 
 ## Todos voltam para a fila atrás de quem lidera (a ordem do grupo).
 func _reagrupar() -> void:
 	var sep := vivos().filter(func(h): return h.separado)
 	for h in vivos(): h.separado = false
 	if sep.is_empty() or (sep.size() == 1 and sep[0] == heroi):
-		_registrar("O grupo já está junto."); hud_ui.refazer(); return
+		_registrar("O grupo se junta atrás de %s." % heroi.nome); hud_ui.refazer(); return
 	var livres: Array = grade.alcance(heroi.celula, 9.0, {}, true, visao.exploradas).keys()
 	var ocup := {heroi.celula: true}
 	livres = livres.filter(func(x): return x != heroi.celula and grade.chao(x))
@@ -483,7 +496,7 @@ func _reagrupar() -> void:
 			ocup[x] = true
 			if not cam.is_empty(): h.seguir(cam)
 			break
-	_registrar("O grupo se reagrupa atrás de %s." % heroi.nome)
+	_registrar("O grupo se junta atrás de %s. [i](J separa)[/i]" % heroi.nome)
 	hud_ui.refazer()
 
 func _ir_abrir_porta(pt: Dictionary) -> void:
@@ -597,7 +610,9 @@ func agente() -> Node3D:
 func _selecionar(h) -> void:
 	selecionado = h if h != selecionado else null
 	hud_ui.selecionado = selecionado; hud_ui.refazer()
-	if selecionado: _registrar("[i]%s vai agir nas ações de exploração.[/i]" % selecionado.nome)
+	if selecionado == null: return
+	if agrupado and not combate.ativo and selecionado != heroi: _passar_lideranca(selecionado)
+	elif not agrupado: _registrar("[i]%s age e anda sozinho.[/i]" % selecionado.nome)
 
 ## Clique numa porta fechada fora do combate: balão com as ações de quem age.
 func _menu_da_porta(pt: Dictionary, onde: Vector2) -> void:
@@ -1518,24 +1533,23 @@ func _linha_de_comando() -> void:
 			if f2.visto: caiu = true; break
 		print("PROCURAR pisou no fosso escondido: disparou=", caiu, " Tessa PV=", grupo[0].pv)
 	elif teste == "separar":
-		# Caco (escolhido) anda sozinho; quem lidera anda e só a Lianne segue; J reagrupa. Modo mestre marca o escondido.
-		var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]
-		_selecionar(caco); _andar_para(Vector2i(6, 1))
+		# Agrupado: escolher o Caco o põe na liderança (fila e tocha). J desagrupa: só quem age anda. J agrupa de novo.
+		var tessa: Node3D = grupo[0]; var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]
+		_selecionar(caco)
+		print("SEPARAR agrupado: lidera ", heroi.nome, " · ordem ", grupo.map(func(h): return h.nome), " · luz em ", luz.alvo.nome)
+		_andar_para(Vector2i(9, 5))
 		await get_tree().create_timer(0.2).timeout
-		while caco.andando(): await get_tree().process_frame
-		print("SEPARAR Caco em ", caco.celula, " separado=", caco.separado, " metros=", snappedf(metros_no_turno, 0.1))
-		_selecionar(null); _andar_para(Vector2i(10, 5))
+		while heroi.andando() or tessa.andando() or lianne.andando(): await get_tree().process_frame
+		print("SEPARAR fila: Caco ", caco.celula, " Tessa ", tessa.celula, " Lianne ", lianne.celula)
+		_alternar_agrupado()
+		_selecionar(lianne); _andar_para(Vector2i(6, 1))
 		await get_tree().create_timer(0.2).timeout
-		while heroi.andando() or lianne.andando(): await get_tree().process_frame
-		print("SEPARAR Tessa em ", heroi.celula, " · Caco ficou em ", caco.celula, " · Lianne seguiu para ", lianne.celula)
-		_reagrupar()
+		while lianne.andando(): await get_tree().process_frame
+		print("SEPARAR desagrupado: Lianne foi a ", lianne.celula, " · Caco ficou ", caco.celula, " · Tessa ficou ", tessa.celula, " · lidera ", heroi.nome)
+		_alternar_agrupado()
 		await get_tree().create_timer(0.2).timeout
-		while caco.andando() or lianne.andando(): await get_tree().process_frame
-		print("SEPARAR reagrupou: Caco em ", caco.celula, " separado=", caco.separado, " dist=", grade.centro(caco.celula).distance_to(grade.centro(heroi.celula)))
-		_andar_para(Vector2i(6, 5), true)   # Shift: quem lidera sai sozinho
-		await get_tree().create_timer(0.2).timeout
-		while heroi.andando(): await get_tree().process_frame
-		print("SEPARAR Tessa sozinha: outros separados=", vivos().filter(func(h): return h != heroi).map(func(h): return h.separado))
+		while caco.andando() or tessa.andando() or heroi.andando(): await get_tree().process_frame
+		print("SEPARAR agrupou: lidera ", heroi.nome, " em ", heroi.celula, " · Caco ", caco.celula, " · Tessa ", tessa.celula, " separados=", vivos().map(func(h): return h.separado))
 		_alternar_mestre()
 		print("SEPARAR mestre marcas=", marca_mestre._celulas.size(), " tampa P02 visível=", get_node("Masmorra/Portas/P02").visible)
 		procurar.procurou.clear(); await procurar.procurar_sala()
