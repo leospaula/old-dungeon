@@ -285,7 +285,7 @@ def main():
 
     # Título, escala e norte
     titulo = layout["nome"] if not aventura else aventura["titulo"]
-    sub = "Planta padrão — vale para todas as aventuras" if not aventura else "Aventura 1 — conteúdo das salas sobre a planta padrão"
+    sub = "Planta padrão — vale para todas as aventuras" if not aventura else "Aventura 2 (Monte Corvo) — conteúdo das salas sobre a planta padrão"
     d.text((M, M - 6), titulo, font=f(22, True), fill=TINTA, anchor="lt")
     d.text((M, M + 20), sub, font=f(13), fill=SUAVE, anchor="lt")
     yb = M + 40 + G["altura"] * C + 22
