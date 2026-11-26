@@ -1620,7 +1620,21 @@ func _linha_de_comando() -> void:
 			get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/fosso.png")
 		hud_ui.fechar_dialogo()
 		var t0 := turno; var m0 := metros_no_turno
-		await procurar._escolha_fosso(tessa, "ajudar")
+		var t_ini := Time.get_ticks_msec()
+		var marcos := {}
+		procurar._escolha_fosso(tessa, "ajudar")
+		while procurar.ocupado or not marcos.has("ini"):
+			if not marcos.has("ini") and procurar.ocupado: marcos["ini"] = true
+			if caco.player and not caco.player.is_playing() and not marcos.has("agachado"): marcos["agachado"] = Time.get_ticks_msec() - t_ini
+			if tessa.position.y > -2.35 and not marcos.has("sobe"): marcos["sobe"] = Time.get_ticks_msec() - t_ini
+			if tessa.position.y > -1.0 and not marcos.has("meio"):
+				marcos["meio"] = Time.get_ticks_msec() - t_ini
+				if OS.get_cmdline_user_args().has("--captura-fosso"):
+					hud_ui.visible = false
+					get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/fosso-ajuda.png")
+			if not procurar.esta_no_fosso(tessa) and not marcos.has("fora"): marcos["fora"] = Time.get_ticks_msec() - t_ini; marcos["caco_parado_ao_sair"] = not caco.player.is_playing()
+			await get_tree().process_frame
+		print("FOSSO tempos (ms): ", marcos)
 		print("FOSSO ajudou: Tessa em ", tessa.celula, " y=", snappedf(tessa.position.y, 0.01), " no fosso=", procurar.esta_no_fosso(tessa), " tempo gasto=", snappedf((turno - t0) + (metros_no_turno - m0) / _taxa_turno(), 0.01), " turno")
 		print("FOSSO clicar em cima do fosso: caminho=", _caminho_lider(caco.celula, Vector2i(10, 1)))
 		var cf: Array[Vector2i] = _caminho_lider(Vector2i(9, 1), Vector2i(11, 0))

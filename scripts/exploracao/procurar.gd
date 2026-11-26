@@ -260,11 +260,29 @@ func cair(h: Node3D, c: Vector2i, a: Dictionary) -> void:
 		ex._registrar(txt)
 		h.animar_dano(); ex._ficha_mudou(h)
 		await h.get_tree().create_timer(0.9).timeout
-		await ex.portas._animar(h, "ajoelhar", 1.2, 0.8)   # no chão do fosso, levanta
-		h.tocar("parado", 0.5)
-		await h.get_tree().create_timer(0.6).timeout
+		# no chão do fosso, levanta: começa agachado (fim do "ajoelhar") e o toca de trás para a frente
+		if h.player and h.player.has_animation("ajoelhar"):
+			h.tocar_anim("ajoelhar", 0.3); h.player.seek(h.player.get_animation("ajoelhar").length, true)
+			await h.get_tree().create_timer(0.4).timeout
+		await _levantar(h)
 	if h == ex.heroi and h.vivo(): _liderar_quem_esta_fora()
 	if not ex.combate.ativo and not ex.fim: dialogo_fosso(h)
+
+## Abaixa na beirada ("ajoelhar" inteiro: termina agachado, quadril a 0,36 m) e segura a pose.
+func _agachar(q: Node3D, ritmo := 1.2) -> void:
+	var t: float = q.tocar_anim("ajoelhar", 0.2)
+	if q.player == null: return
+	q.player.speed_scale = ritmo
+	await q.get_tree().create_timer(t / ritmo).timeout
+	q.player.pause()
+
+## Levanta: o "ajoelhar" de trás para a frente (a parte em pé do começo fica de fora).
+func _levantar(q: Node3D) -> void:
+	if q.player == null or not q.player.has_animation("ajoelhar"):
+		q.tocar("parado", 0.4); return
+	q.player.play_backwards("ajoelhar", 0.1); q.player.speed_scale = 1.3
+	await q.get_tree().create_timer(2.0 / 1.3).timeout   # de 2,77 s até ~0,8 s: o quadril já subiu
+	q.tocar("parado", 0.4)
 
 ## Combate: na vez de quem está no fosso, tentar sair (teste; passou, sai e a vez acaba) ou passar a vez.
 func turno_no_fosso(h: Node3D) -> void:
@@ -361,12 +379,12 @@ func _ajudar(h: Node3D) -> void:
 	quem.olhar_para(ex.grade.centro(c))
 	var perto: Vector3 = ex.grade.centro(borda).lerp(ex.grade.centro(c), 0.3)   # abaixa na beirada
 	var tb := quem.create_tween(); tb.tween_property(quem, "position", perto, 0.3)
-	ex.portas._animar(quem, "ajoelhar", 1.4, 0.8)
+	await _agachar(quem)   # a saída só começa com quem ajuda já agachado na beirada
 	ex._gastar_tempo(0.5)
 	ex._registrar("%s se debruça na borda e puxa %s para fora do fosso." % [quem.nome, h.nome])
 	await _subir(h, _casa_ao_lado(c, [borda]))
+	await _levantar(quem)   # fica agachado até ela sair de todo
 	quem.create_tween().tween_property(quem, "position", ex.grade.centro(borda), 0.3)
-	quem.tocar("parado", 0.4)
 	ocupado = false
 
 func _resgatar(h: Node3D) -> void:
@@ -378,8 +396,7 @@ func _resgatar(h: Node3D) -> void:
 		ex._registrar("%s não consegue chegar à borda do fosso." % l.nome); ocupado = false; return
 	l.olhar_para(ex.grade.centro(c))
 	var tb := l.create_tween(); tb.tween_property(l, "position", ex.grade.centro(borda).lerp(ex.grade.centro(c), 0.3), 0.3)
-	await ex.portas._animar(l, "ajoelhar", 1.2, 0.8)
-	l.create_tween().tween_property(l, "position", ex.grade.centro(borda), 0.3)
+	await _agachar(l)
 	ex._gastar_tempo(1.0)
 	var destino := _casa_ao_lado(c, [borda])
 	no_fosso.erase(h); h.set_meta("no_fosso", false)
@@ -387,7 +404,8 @@ func _resgatar(h: Node3D) -> void:
 	var t := h.create_tween()
 	t.tween_property(h, "position", ex.grade.centro(destino), 0.8).set_trans(Tween.TRANS_SINE)
 	await t.finished
-	l.tocar("parado", 0.4)
+	await _levantar(l)
+	l.create_tween().tween_property(l, "position", ex.grade.centro(borda), 0.3)
 	ex._registrar("%s desce no fosso, amarra o corpo de %s e o traz para cima." % [l.nome, h.nome])
 	ex._diario("evento", "%s resgatou o corpo de %s do fosso." % [l.nome, h.nome])
 	ocupado = false
@@ -395,7 +413,7 @@ func _resgatar(h: Node3D) -> void:
 ## Sobe do fundo para uma casa ao lado (animação "sair-do-buraco" se houver na biblioteca).
 func _subir(h: Node3D, destino: Vector2i) -> void:
 	h.olhar_para(ex.grade.centro(destino))
-	var dur := 1.2
+	var dur := 2.2   # sem a animação de subida: escala devagar
 	if h.player and h.player.has_animation("sair-do-buraco"): dur = h.tocar_anim("sair-do-buraco")
 	else: h.tocar_anim("ajoelhar")
 	var t := h.create_tween()
