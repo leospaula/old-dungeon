@@ -150,8 +150,9 @@ func procurar_sala() -> void:
 		if h.andando(): await h.parou
 	ex._registrar("%s procura%s aqui, %s (%d m² de chão e paredes%s): %d turno%s." % [", ".join(quem.map(func(h): return h.nome)),
 		"m" if quem.size() > 1 else "", nome_area, roundi(metros2(area)), "" if fator_mobilia(area) == 1.0 else ", " + str(mobilia[area]), turnos, "s" if turnos > 1 else ""])
-	for h in quem: h.tocar_anim("ajoelhar"); h.player.speed_scale = 0.6
-	await ex.get_tree().create_timer(4.0).timeout
+	var dur := 4.0
+	for h in quem: dur = maxf(dur, h.tocar_anim("olhar-em-volta", 0.3) if h.player and h.player.has_animation("olhar-em-volta") else 4.0)
+	await ex.get_tree().create_timer(dur).timeout
 	if not procurou.has(area): procurou[area] = {}
 	for h in quem: procurou[area][h.nome] = true
 	var achou := false
@@ -206,8 +207,7 @@ func pisou(h: Node3D, c: Vector2i) -> void:
 	if not armadilhas.has(c): return
 	var a: Dictionary = armadilhas[c]
 	if a.fora: return
-	if a.visto:
-		ex._registrar("%s pula por cima do %s." % [h.nome, str(a.tipo)]); return
+	if a.visto: return   # vista: o caminho desvia ou pula (explorar._pulo)
 	var r := Dados.d(6)
 	ex._secreto("%s pisa na armadilha escondida %s: d6 %d contra 2 → %s" % [h.nome, c, r, "dispara" if r <= 2 else "não dispara"])
 	if r > 2: return
@@ -260,11 +260,13 @@ func cair(h: Node3D, c: Vector2i, a: Dictionary) -> void:
 		ex._registrar(txt)
 		h.animar_dano(); ex._ficha_mudou(h)
 		await h.get_tree().create_timer(0.9).timeout
-		# no chão do fosso, levanta: começa agachado (fim do "ajoelhar") e o toca de trás para a frente
-		if h.player and h.player.has_animation("ajoelhar"):
-			h.tocar_anim("ajoelhar", 0.3); h.player.seek(h.player.get_animation("ajoelhar").length, true)
-			await h.get_tree().create_timer(0.4).timeout
-		await _levantar(h)
+		# caído no fundo, levanta ("levantar": do chão até em pé em ~4,3 s)
+		if h.player and h.player.has_animation("levantar"):
+			h.tocar_anim("levantar", 0.3)
+			await h.get_tree().create_timer(4.3).timeout
+			h.tocar("parado", 0.4)
+		else:
+			await _levantar(h)
 	if h == ex.heroi and h.vivo(): _liderar_quem_esta_fora()
 	if not ex.combate.ativo and not ex.fim: dialogo_fosso(h)
 
@@ -382,7 +384,7 @@ func _ajudar(h: Node3D) -> void:
 	await _agachar(quem)   # a saída só começa com quem ajuda já agachado na beirada
 	ex._gastar_tempo(0.5)
 	ex._registrar("%s se debruça na borda e puxa %s para fora do fosso." % [quem.nome, h.nome])
-	await _subir(h, _casa_ao_lado(c, [borda]))
+	await _subir(h, _saida_perto(c, borda))
 	await _levantar(quem)   # fica agachado até ela sair de todo
 	quem.create_tween().tween_property(quem, "position", ex.grade.centro(borda), 0.3)
 	ocupado = false
@@ -410,15 +412,44 @@ func _resgatar(h: Node3D) -> void:
 	ex._diario("evento", "%s resgatou o corpo de %s do fosso." % [l.nome, h.nome])
 	ocupado = false
 
-## Sobe do fundo para uma casa ao lado (animação "sair-do-buraco" se houver na biblioteca).
+## Quanto uma animação desloca o quadril no mundo (do começo ao fim), medido no próprio modelo.
+func _desloc_anim(h: Node3D, nome: String) -> Vector3:
+	var sks: Array = h.modelo.find_children("*", "Skeleton3D", true, false) if h.modelo else []
+	if sks.is_empty() or h.player == null: return Vector3.ZERO
+	var sk: Skeleton3D = sks[0]; var i := sk.find_bone("mixamorig_Hips")
+	if i < 0: return Vector3.ZERO
+	h.player.play(nome, 0.0); h.player.seek(0.0, true); h.player.advance(0)
+	var a: Vector3 = sk.global_transform * sk.get_bone_global_pose(i).origin
+	h.player.seek(h.player.get_animation(nome).length, true); h.player.advance(0)
+	var b: Vector3 = sk.global_transform * sk.get_bone_global_pose(i).origin
+	h.player.seek(0.0, true); h.player.advance(0)
+	return b - a
+
+## Sobe do fundo para uma casa ao lado. Com "sair-do-buraco": mede quanto a animação sobe e avança
+## neste modelo; o ator sobe o que falta durante a pegada e, no fim, passa para a pose em pé na beirada.
 func _subir(h: Node3D, destino: Vector2i) -> void:
+	var c: Vector2i = no_fosso.get(h, h.celula)
+	var centro: Vector3 = ex.grade.centro(c)
 	h.olhar_para(ex.grade.centro(destino))
-	var dur := 2.2   # sem a animação de subida: escala devagar
-	if h.player and h.player.has_animation("sair-do-buraco"): dur = h.tocar_anim("sair-do-buraco")
-	else: h.tocar_anim("ajoelhar")
-	var t := h.create_tween()
-	t.tween_property(h, "position:y", 0.0, dur * 0.6).set_trans(Tween.TRANS_SINE)
-	t.tween_property(h, "position", ex.grade.centro(destino), dur * 0.4)
+	var t: Tween
+	if h.player and h.player.has_animation("sair-do-buraco"):
+		h.tocar_anim("sair-do-buraco", 0.0)   # já com o giro da animação
+		var d := _desloc_anim(h, "sair-do-buraco")
+		var sobe := d.y; var dh := Vector3(d.x, 0, d.z)
+		var dur: float = h.tocar_anim("sair-do-buraco", 0.2)
+		var tw := h.create_tween()
+		tw.tween_property(h, "position:y", minf(-sobe, 0.0), dur * 0.4).set_trans(Tween.TRANS_SINE)
+		await h.get_tree().create_timer(dur).timeout
+		h.position = centro + dh; h.position.y = 0.0   # a pose final em pé fica na beirada
+		h.tocar("andar", 0.1)
+		t = h.create_tween()
+		t.tween_property(h, "position", ex.grade.centro(destino), maxf(0.2, ex.grade.centro(destino).distance_to(h.position) / 1.5))
+	else:
+		var dur := 2.2   # sem a animação de subida: escala devagar
+		h.tocar_anim("ajoelhar")
+		t = h.create_tween()
+		t.tween_property(h, "position:y", 0.0, dur * 0.6).set_trans(Tween.TRANS_SINE)
+		t.tween_property(h, "position", ex.grade.centro(destino), dur * 0.4)
 	await t.finished
 	h.celula = destino; h._de = destino
 	no_fosso.erase(h); h.set_meta("no_fosso", false)
@@ -442,6 +473,17 @@ func _ir_para_borda(q: Node3D, c: Vector2i) -> Vector2i:
 	if q.andando(): await q.parou
 	q.seguir(melhor); await q.parou
 	return alvo
+
+## Saída do lado de quem puxa: casa ao lado do fosso, livre, a mais perto de quem está na borda.
+func _saida_perto(c: Vector2i, borda: Vector2i) -> Vector2i:
+	var ocup: Dictionary = ex._ocupadas_por(no_fosso.keys())
+	var melhor := Vector2i(-999, -999); var menor := INF
+	for v in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		var n: Vector2i = c + v
+		if n == borda or ocup.has(n) or armadilhas.has(n) or not ex.grade.chao(n) or not ex.grade.passa_reto(c, n): continue
+		var d := Vector2(n - borda).length()
+		if d < menor: menor = d; melhor = n
+	return melhor if melhor.x > -999 else _casa_ao_lado(c, [borda])
 
 ## Casa do chão ao lado do fosso, livre (sem ninguém), sem parede no meio.
 func _casa_ao_lado(c: Vector2i, evitar: Array) -> Vector2i:

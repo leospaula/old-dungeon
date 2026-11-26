@@ -52,7 +52,12 @@
   "haste-bloquear": "arte/animacoes/mixamo/haste-bloquear.fbx",
   "arco-bloquear": "arte/animacoes/mixamo/arco-bloquear.fbx",
   "besta-disparo": "arte/animacoes/mixamo/besta-disparo.fbx",
-  "faca-estocada": "arte/animacoes/mixamo/faca-estocada.fbx"
+  "faca-estocada": "arte/animacoes/mixamo/faca-estocada.fbx",
+  "pular": "arte/animacoes/mixamo/pular.fbx",
+  "examinar-ajoelhado": "arte/animacoes/mixamo/examinar-ajoelhado.fbx",
+  "olhar-em-volta": "arte/animacoes/mixamo/olhar-em-volta.fbx",
+  "sair-do-buraco": "arte/animacoes/mixamo/sair-do-buraco.fbx",
+  "levantar": "arte/animacoes/mixamo/levantar.fbx"
  },
  "angulo": 35,
  "no_lugar": [
@@ -83,7 +88,8 @@
   "haste-estocada",
   "impacto-de-cima",
   "impacto-horizontal",
-  "impacto-reves"
+  "impacto-reves",
+  "pular"
  ],
  "_escala_no_jogo": 0.9,
  "cortes": {

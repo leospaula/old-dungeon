@@ -35,6 +35,7 @@ var fugindo := false
 var no_combate := false   # ligado pelo combate enquanto ele dura
 var perto_de_inimigo: Callable   # (ator) -> bool, dado pelo combate: até 3 casas de um inimigo vivo
 var infravisao_m := 0.0
+var anim_especial_ate := 0   # ms: até lá o andar não troca a animação (pulo por cima do fosso)
 var separado := false     # grupo: saiu da fila (anda sozinho; a fila de quem lidera não o puxa)
 const VEL_BASE := 2.0     # m/s andando na tela (ritmo normal)
 var velocidade := VEL_BASE
@@ -222,8 +223,8 @@ func seguir(cam: Array[Vector2i]) -> void:
 	_caminho = cam.duplicate()
 	if not estava:
 		_de = celula
-		passo_iniciado.emit(_de, _caminho[0])
 		tocar(_papel_desloc())
+		passo_iniciado.emit(_de, _caminho[0])   # depois do andar: quem ouve pode trocar a animação (pulo)
 
 ## Para na próxima célula (não fica entre duas).
 func parar() -> void:
@@ -248,8 +249,9 @@ func _process(dt: float) -> void:
 	var passo := vel_atual() * dt
 	if player:
 		var pd := _papel_desloc()
-		if player.current_animation != anim.get(pd, ""): tocar(pd)   # trocou de modo no meio do caminho
-		player.speed_scale = _ritmo(pd)
+		if Time.get_ticks_msec() >= anim_especial_ate:   # pulo etc.: não troca pela de andar enquanto toca
+			if player.current_animation != anim.get(pd, ""): tocar(pd)   # trocou de modo no meio do caminho
+			player.speed_scale = _ritmo(pd)
 	if player == null and modelo:
 		_passo += dt * 12.0; modelo.position.y = absf(sin(_passo)) * 0.06
 	if d.length() <= passo:

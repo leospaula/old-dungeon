@@ -222,7 +222,7 @@ func _fechadura(pt: Dictionary, q: Node3D) -> void:
 
 func _procurar(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt); var f = q.ficha
-	await _animar(q, "ajoelhar", 0.0, 0.7)
+	await _examinar(q)
 	ex._gastar_tempo(1.0)
 	if not e.has("procurou"): e.procurou = {}
 	e.procurou[q.nome] = true
@@ -240,7 +240,7 @@ func _procurar(pt: Dictionary, q: Node3D) -> void:
 
 func _desarmar(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt); var f = q.ficha
-	await _animar(q, "ajoelhar", 0.0, 0.7)
+	await _examinar(q)
 	ex._gastar_tempo(1.0)
 	var pct := int(f.p.habilidades_ladrao.armadilhas); var r := Dados.d(100)
 	if r <= pct:
@@ -282,6 +282,15 @@ func _disparar(pt: Dictionary, q: Node3D) -> void:
 	ex._ficha_mudou(q)
 
 ## Toca a animação inteira (ritmo < 1 = mais lenta, para o trabalho demorado não ficar truncado).
+## Examinar de perto (armadilha na porta, desarmar): ajoelha, examina ajoelhado e levanta.
+func _examinar(q: Node3D) -> void:
+	if q.player == null or not q.player.has_animation("examinar-ajoelhado"):
+		await _animar(q, "ajoelhar", 0.0, 0.7); return
+	await ex.procurar._agachar(q)
+	var t: float = q.tocar_anim("examinar-ajoelhado", 0.3)
+	await q.get_tree().create_timer(t).timeout
+	await ex.procurar._levantar(q)
+
 func _animar(q: Node3D, nome: String, ate := 0.0, ritmo := 1.0) -> void:
 	var t: float = q.tocar_anim(nome)
 	if q.player: q.player.speed_scale = ritmo

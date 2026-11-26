@@ -43,6 +43,7 @@ const TESSA_GIRO := {"parado-espada-escudo": 76.0, "parado": 45.0, "andar": 90.0
 	"duas-maos-guarda": 89.0, "duas-maos-golpe": 85.0, "aparar": 99.0, "haste-estocada": 84.0, "haste-guarda": 84.0, "cajado-golpe": 91.0,
 	"besta-mirar": 88.0, "arco-guarda": 89.0, "arco-espera": 85.0, "arco-andar": 88.0, "atirar-flecha": 80.0, "arremessar": 93.0,
 	"arremessar-faca": 101.0, "arremessar-frasco": 94.0, "chutar-porta": 73.0, "ajoelhar": 91.0, "beber": 96.0,
+	"pular": 68.0, "examinar-ajoelhado": 65.0, "olhar-em-volta": 95.0, "sair-do-buraco": 90.0, "levantar": 90.0,
 	"faca-guarda": 74.0, "faca-estocada": 81.0, "besta-guarda": 88.0, "besta-disparo": 89.0, "machado-guarda": 76.0,
 	"haste-bloquear": 91.0, "arco-bloquear": 85.0}
 const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
@@ -586,18 +587,16 @@ func _ao_iniciar_passo(de: Vector2i, para: Vector2i, quem: Node3D) -> void:
 	if quem == heroi and not combate.ativo: _puxar_fila(de)
 	if quem.lado == "grupo": _pulo(de, para, quem)
 
-## Atravessar armadilha vista: sobe ao entrar na casa dela e desce ao sair (arco do pulo).
+## Atravessar armadilha vista: ao entrar na casa dela, pula (animação "pular", no lugar; o ator anda
+## por baixo). Começa do agachar (0,3 s) e dura o tempo de cruzar as duas casas.
 func _pulo(de: Vector2i, para: Vector2i, quem: Node3D) -> void:
-	var v: Dictionary = procurar.vistas()
-	if not (v.has(para) or v.has(de)) or quem.modelo == null or procurar.esta_no_fosso(quem): return
-	if not quem.has_meta("y0"): quem.set_meta("y0", quem.modelo.position.y)
-	var y0: float = quem.get_meta("y0")
-	var t: float = grade.custo(de, para) / maxf(0.5, quem.vel_atual())
-	var tw := quem.create_tween()
-	if v.has(para):
-		tw.tween_property(quem.modelo, "position:y", y0 + 0.55, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	else:
-		tw.tween_property(quem.modelo, "position:y", y0, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	if not procurar.vistas().has(para) or quem.player == null or procurar.esta_no_fosso(quem): return
+	if not quem.player.has_animation("pular"): return
+	var t: float = 2.0 * grade.custo(de, para) / maxf(0.5, quem.vel_atual())
+	quem.tocar_anim("pular", 0.1); quem.player.seek(0.3, true)
+	quem.player.speed_scale = (quem.player.get_animation("pular").length - 0.3) / t
+	quem.anim_especial_ate = Time.get_ticks_msec() + int(t * 1000)
+	_registrar("%s pula por cima do fosso." % quem.nome)
 
 func _ao_chegar(_c: Vector2i, metros: float, quem: Node3D) -> void:
 	_atualizar_visao()
@@ -1630,13 +1629,28 @@ func _linha_de_comando() -> void:
 			if tessa.position.y > -2.35 and not marcos.has("sobe"): marcos["sobe"] = Time.get_ticks_msec() - t_ini
 			if tessa.position.y > -1.0 and not marcos.has("meio"):
 				marcos["meio"] = Time.get_ticks_msec() - t_ini
-				if OS.get_cmdline_user_args().has("--captura-fosso"):
-					hud_ui.visible = false
-					get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/fosso-ajuda.png")
+				print("FOSSO subida: desloc=", procurar._desloc_anim(tessa, "sair-do-buraco").snappedf(0.01)) if false else null
+			for fr in [0.25, 0.5, 0.75, 0.97]:
+				var k := "foto%d" % int(fr * 100)
+				if not marcos.has(k) and marcos.has("sobe") and Time.get_ticks_msec() - t_ini > int(marcos["sobe"]) + int(4000 * fr):
+					marcos[k] = tessa.global_position.snappedf(0.01)
+					if OS.get_cmdline_user_args().has("--captura-fosso"):
+						hud_ui.visible = false
+						get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/subida-%d.png" % int(fr * 100))
 			if not procurar.esta_no_fosso(tessa) and not marcos.has("fora"): marcos["fora"] = Time.get_ticks_msec() - t_ini; marcos["caco_parado_ao_sair"] = not caco.player.is_playing()
 			await get_tree().process_frame
 		print("FOSSO tempos (ms): ", marcos)
 		print("FOSSO ajudou: Tessa em ", tessa.celula, " y=", snappedf(tessa.position.y, 0.01), " no fosso=", procurar.esta_no_fosso(tessa), " tempo gasto=", snappedf((turno - t0) + (metros_no_turno - m0) / _taxa_turno(), 0.01), " turno")
+		# Pulo: o Caco atravessa o fosso aberto (caminho forçado por cima).
+		caco.colocar(Vector2i(9, 1)); await get_tree().process_frame
+		var cp: Array[Vector2i] = [Vector2i(10, 1), Vector2i(11, 1)]
+		caco.seguir(cp)
+		await get_tree().create_timer(0.75).timeout
+		print("FOSSO pulo: anim=", caco.player.current_animation, " pos=", caco.position.snappedf(0.01))
+		if OS.get_cmdline_user_args().has("--captura-fosso"):
+			get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/fosso-pulo.png")
+		while caco.andando(): await get_tree().process_frame
+		print("FOSSO pulo: chegou em ", caco.celula)
 		print("FOSSO clicar em cima do fosso: caminho=", _caminho_lider(caco.celula, Vector2i(10, 1)))
 		var cf: Array[Vector2i] = _caminho_lider(Vector2i(9, 1), Vector2i(11, 0))
 		print("FOSSO (9,1)→(11,0) contorna=", not cf.has(Vector2i(10, 1)), " ", cf)
