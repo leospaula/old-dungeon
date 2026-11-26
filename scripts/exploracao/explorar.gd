@@ -271,8 +271,7 @@ func _caminho_lider(de: Vector2i, para: Vector2i, quem: Node3D = null) -> Array[
 	if quem == null: quem = heroi
 	var todos := _ocupadas_por([quem])
 	if todos.has(para): return []
-	if procurar.vistas().has(para):   # nunca para em cima do fosso / armadilha vista
-		_registrar("Não dá para parar em cima da armadilha: escolha uma casa ao lado."); return []
+	if procurar.vistas().has(para): return []   # nunca para em cima do fosso / armadilha vista
 	var desvio := todos.duplicate(); desvio.merge(procurar.vistas())   # desvia de armadilha já vista
 	var cam: Array[Vector2i] = grade.caminho(de, para, desvio)
 	if cam.is_empty(): cam = grade.caminho(de, para, todos)
@@ -450,6 +449,8 @@ func _raio_caixa(o: Vector3, d: Vector3, a: Vector3, b: Vector3) -> float:
 
 func _andar_para(c: Vector2i) -> void:
 	if not grade.chao(c) or not visao.exploradas.has(c): return
+	if procurar.vistas().has(c):   # só no clique (a prévia do mouse também calcula caminho)
+		_registrar("Não dá para parar em cima da armadilha: escolha uma casa ao lado."); return
 	if procurar.esta_no_fosso(agente()):
 		if not procurar.ocupado: procurar.dialogo_fosso(agente())
 		return
