@@ -24,7 +24,7 @@ var _TOCHA_APAGADA: Texture2D = load("res://arte/final/interface/icones/tocha-ap
 const NOME_CARGA := {"leve": "leve", "media": "média", "pesada": "pesada"}
 
 var _cartas_caixa: VBoxContainer
-var _cartas := {}            # heroi -> {margem, painel, retrato, nome, estado, barra, pv, ca, t0, linha, extra}
+var _cartas := {}            # heroi -> {margem, painel, retrato, nome, estado, barra, pv, ca, t0, linha, cond, tocha}
 var _barra: HBoxContainer
 var _barra_titulo: Label
 var _canto: PanelContainer
@@ -85,13 +85,19 @@ func _carta(h: Node) -> Dictionary:
 	_cartas_caixa.add_child(margem)
 	var painel := PanelContainer.new(); painel.add_theme_stylebox_override("panel", E.painel())
 	painel.mouse_filter = Control.MOUSE_FILTER_STOP; painel.custom_minimum_size.x = 252
-	painel.tooltip_text = "Clique: escolhe quem age (portas, procurar…; clicar no chão o leva sozinho) · de novo: mais detalhes · duplo clique: ficha · Esc: volta a quem lidera"
+	painel.tooltip_text = "Clique: escolhe quem age (portas, procurar…; clicar no chão o leva sozinho) · duplo clique: ficha · Esc: volta a quem lidera"
 	margem.add_child(painel)
 	var v := VBoxContainer.new(); v.add_theme_constant_override("separation", 6); v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	painel.add_child(v)
 	var linha := HBoxContainer.new(); linha.add_theme_constant_override("separation", 10); linha.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(linha)
-	var ret := E.Retrato.new(f.id, 54, f.nome); linha.add_child(ret)
+	# Coluna da esquerda: retrato e, embaixo dele, as condições (no fosso, envenenado…).
+	var esq := VBoxContainer.new(); esq.add_theme_constant_override("separation", 4); esq.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	linha.add_child(esq)
+	var ret := E.Retrato.new(f.id, 54, f.nome); esq.add_child(ret)
+	var cond := E.rotulo("", 10, Color("#ff9a6a")); cond.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cond.custom_minimum_size.x = 54; cond.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; cond.mouse_filter = Control.MOUSE_FILTER_PASS
+	esq.add_child(cond)
 	var info := VBoxContainer.new(); info.add_theme_constant_override("separation", 4); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE; linha.add_child(info)
 	var topo := HBoxContainer.new(); topo.mouse_filter = Control.MOUSE_FILTER_IGNORE; info.add_child(topo)
@@ -105,7 +111,6 @@ func _carta(h: Node) -> Dictionary:
 	pv.tooltip_text = "Pontos de vida"; ca.tooltip_text = "Classe de armadura (menor é melhor)"; t0.tooltip_text = "THAC0: precisa tirar THAC0 − CA do alvo no d20"
 	for c in [pv, ca, t0]: chips.add_child(c)
 	var lin := E.rotulo("", 12, E.TEXTO); lin.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; info.add_child(lin)
-	var extra := VBoxContainer.new(); extra.visible = false; extra.add_theme_constant_override("separation", 3); v.add_child(extra)
 	# Tocha (canto de baixo, à direita): só para quem tem tocha; clique acende/apaga.
 	var camada := Control.new(); camada.mouse_filter = Control.MOUSE_FILTER_IGNORE; painel.add_child(camada)
 	var tocha := TextureButton.new(); tocha.ignore_texture_size = true; tocha.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
@@ -116,35 +121,18 @@ func _carta(h: Node) -> Dictionary:
 	tocha.pressed.connect(func(): tocha_clicada.emit(h))
 	camada.add_child(tocha)
 	var d := {"margem": margem, "painel": painel, "retrato": ret, "nome": nome, "estado": estado, "barra": barra,
-		"pv": pv, "ca": ca, "t0": t0, "linha": lin, "extra": extra, "tocha": tocha}
+		"pv": pv, "ca": ca, "t0": t0, "linha": lin, "cond": cond, "tocha": tocha}
 	painel.gui_input.connect(func(e):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			if e.double_click: ficha_pedida.emit(h)
-			elif h != selecionado and (h.vivo() or h.get_meta("no_fosso", false)): carta_escolhida.emit(h)   # 1º clique: escolhe quem age
-			else:
-				extra.visible = not extra.visible
-				if extra.visible: _preencher_extra(h, extra))
+			elif h != selecionado and (h.vivo() or h.get_meta("no_fosso", false)): carta_escolhida.emit(h))   # escolhe quem age
 	return d
 
-func _preencher_extra(h: Node, caixa: VBoxContainer) -> void:
-	for c in caixa.get_children(): c.queue_free()
-	var f = h.ficha
-	var linha := ColorRect.new(); linha.color = E.FILETE_FRACO; linha.custom_minimum_size = Vector2(0, 1); caixa.add_child(linha)
-	caixa.add_child(_texto_carta("Carga %s · %d de %d espaços · %d m por turno" % [NOME_CARGA[f.carga()], f.espacos_usados(), f.espacos_max(), int(f.movimento_m())]))
-	var eq: Array[String] = []
-	for par in [["mão dir.", f.mao_d], ["mão esq.", f.mao_e], ["corpo", f.corpo]]:
-		if par[1] != null: eq.append("%s: %s" % [par[0], Ficha.info(par[1]).nome])
-	var cin: Array[String] = []
-	for it in f.cinto:
-		if it != null: cin.append("%s%s" % [Ficha.info(it).nome, (" ×%d" % it.qtd) if it.qtd > 1 else ""])
-	caixa.add_child(_texto_carta("Equipado: %s\nCinto: %s" % [", ".join(eq), ", ".join(cin) if not cin.is_empty() else "vazio"]))
-	var hab: Array[String] = []
-	for x in f.habilidades_exploracao(): hab.append("%s %s" % [x[0], x[1]])
-	caixa.add_child(_texto_carta("Exploração: " + " · ".join(hab)))
-
-func _texto_carta(txt: String) -> Label:
-	var l := E.rotulo(txt, 12, E.TEXTO); l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	return l
+## Condições do personagem para a carta: [[rótulo curto, explicação]]. Novas condições entram aqui.
+static func condicoes(h: Node) -> Array:
+	var out := []
+	if h.get_meta("no_fosso", false): out.append(["no fosso", "Caiu no fosso: precisa sair (sozinho, com ajuda) antes de andar"])
+	return out
 
 ## estados: heroi -> texto curto à direita do nome ("sua vez", "já agiu"…); vez: quem age agora.
 func _atualizar_cartas(vez: Node, lider: Node, luz_txt: String, estados: Dictionary) -> void:
@@ -153,7 +141,7 @@ func _atualizar_cartas(vez: Node, lider: Node, luz_txt: String, estados: Diction
 		var d: Dictionary = _cartas[h]; var f = h.ficha
 		d.pv.get_child(0).text = "PV %d/%d" % [maxi(h.pv, 0), h.pv_max]
 		d.ca.get_child(0).text = "CA %d" % h.ca
-		d.t0.get_child(0).text = "T0 %d" % f.thac0()
+		d.t0.get_child(0).text = "THAC0 %d" % f.thac0()
 		d.barra.definir(float(maxi(h.pv, 0)) / maxf(1.0, h.pv_max))
 		var a = f.arma()
 		var txt := "%s %s" % [Ficha.info(a).nome, Ficha.info(a).get("dano", "")] if a != null else "desarmado"
@@ -161,6 +149,9 @@ func _atualizar_cartas(vez: Node, lider: Node, luz_txt: String, estados: Diction
 		if h == lider and vez == null and luz_txt != "": txt += " · " + luz_txt
 		if not h.vivo(): txt = "caído"
 		d.linha.text = txt
+		var conds := condicoes(h)
+		d.cond.text = "\n".join(conds.map(func(c): return c[0]))
+		d.cond.tooltip_text = "\n".join(conds.map(func(c): return c[1]))
 		var tem: bool = h.vivo() and (h.tocha_acesa or h.tocha_resto > 0 or f.contar("tocha") > 0)
 		d.tocha.visible = tem
 		if tem:

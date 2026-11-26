@@ -1655,7 +1655,11 @@ func _linha_de_comando() -> void:
 		for k in 5: _passar_turno()
 		print("TOCHA depois de 6 turnos: ", _acesas().map(func(h): return [h.nome, h.tocha_resto]), " reserva=", _tochas_reserva())
 		await foto.call("4-duas")
-		if cap: get_tree().quit()
+		if cap:   # condição embaixo do retrato (só para a foto)
+			caco.set_meta("no_fosso", true); hud_ui.refazer()
+			await foto.call("5-condicao")
+			caco.set_meta("no_fosso", false)
+			get_tree().quit()
 	elif teste == "separar":
 		# Agrupado: escolher o Caco o põe na liderança (fila e tocha). J desagrupa: só quem age anda. J agrupa de novo.
 		var tessa: Node3D = grupo[0]; var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]
