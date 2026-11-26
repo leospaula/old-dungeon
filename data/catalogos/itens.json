@@ -40,6 +40,11 @@
     "besta":                 {"nome": "Besta", "tipo": "arma", "dano": "1d6", "distancia": [24.0, 48.0, 72.0], "municao": "virotes", "maos": 2, "espacos": 2, "icone": "besta", "preco": 30, "estilo": "besta", "modelo3d": {"arquivo": "res://arte/final/3d/besta.glb", "comprimento": 0.65, "pega": [0.5, 0.3, 0.5], "rotacao": [0, 90, 90], "subir": ["besta-guarda", 1.0, 0.12]}},
     "flechas de prata":      {"nome": "Flechas de prata", "tipo": "municao", "prata": true, "espacos": 1, "pilha": 20, "icone": "flechas-prata", "dica": "fere licantropos", "preco": 100},
     "virotes":               {"nome": "Virotes", "tipo": "municao", "espacos": 1, "pilha": 30, "icone": "virotes", "preco": 10},
+    "espada de prata":       {"nome": "Espada de prata", "tipo": "arma", "dano": "1d6", "prata": true, "espacos": 1, "icone": "espada-prata", "dica": "fere licantropos e outras criaturas que só a prata atinge", "preco": 70, "estilo": "espada", "modelo3d": {"arquivo": "res://arte/final/3d/espada-curta.glb", "comprimento": 0.6, "pega": [0.5, 0.18, 0.5]}},
+    "chicote":               {"nome": "Chicote", "tipo": "arma", "dano": "1d2", "espacos": 1, "icone": "chicote", "preco": 1, "estilo": "impacto"},
+    "pão":                   {"nome": "Pão", "tipo": "consumivel", "espacos": 1, "pilha": 6, "icone": "pao", "dica": "comida simples", "preco": 0},
+    "chaves":                {"nome": "Molho de chaves", "tipo": "ferramenta", "espacos": 1, "icone": "chaves", "dica": "abre fechaduras da masmorra", "preco": 0},
+    "algemas":               {"nome": "Algemas", "tipo": "ferramenta", "espacos": 1, "icone": "algemas", "dica": "prende os pulsos de alguém", "preco": 2},
     "saco grande":           {"nome": "Saco grande", "tipo": "ferramenta", "espacos": 1, "icone": "saco-grande", "dica": "+4 espaços para carregar tesouro", "preco": 2},
     "mochila":               {"nome": "Mochila", "tipo": "ferramenta", "espacos": 0, "icone": "mochila", "dica": "dá os espaços da mochila", "preco": 5}
   }
