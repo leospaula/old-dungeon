@@ -36,6 +36,8 @@ var no_combate := false   # ligado pelo combate enquanto ele dura
 var perto_de_inimigo: Callable   # (ator) -> bool, dado pelo combate: até 3 casas de um inimigo vivo
 var infravisao_m := 0.0
 var anim_especial_ate := 0   # ms: até lá o andar não troca a animação (pulo por cima do fosso)
+var tocha_acesa := false   # está com uma tocha acesa na mão (luz própria)
+var tocha_resto := 0        # turnos que faltam na tocha em uso (apagada, guarda o que sobrou)
 var separado := false     # grupo: saiu da fila (anda sozinho; a fila de quem lidera não o puxa)
 const VEL_BASE := 2.0     # m/s andando na tela (ritmo normal)
 var velocidade := VEL_BASE

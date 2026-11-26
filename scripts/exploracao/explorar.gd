@@ -99,7 +99,7 @@ var porta_alvo := {}       # porta que a Tessa vai abrir quando chegar
 var taxa_m := 36.0
 var turno := 0
 var metros_no_turno := 0.0
-var tocha_turnos := TURNOS_POR_TOCHA
+var herois_todos: Array = []   # vivos e caídos (a tocha de quem cai apaga)
 var xp_total := 0
 
 # Tela
@@ -118,6 +118,7 @@ func _ready() -> void:
 	_criar_grupo()
 	luz = Luz.new(); add_child(luz)
 	luz.configurar(self, $Masmorra, $Ambiente, heroi)
+	_acender(heroi)   # a primeira tocha já entra acesa, na mão de quem lidera
 	luz.tochas_automaticas(self, LAYOUT, ["24", "23", "21", "22", "15", "20", "14", "10", "12"], 2)
 	visao = Visao.new(grade)
 	visao.tochas_parede = luz.tochas_cel.duplicate()
@@ -172,11 +173,10 @@ func _criar_grupo() -> void:
 			if x.id == id: grupo.append(_criar_heroi(x, HEROIS[id], lugares[k]))
 	heroi = grupo[0]
 	_recalcular_grupo()
-	_gastar_tocha()   # a primeira tocha já entra acesa
 
 func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	fichas.append(p)
-	var a: Node3D = Ator.new(); a.grade = grade; a.lado = "grupo"
+	var a: Node3D = Ator.new(); herois_todos.append(a); a.grade = grade; a.lado = "grupo"
 	a.nome = str(p.nome).get_slice(" ", 0)
 	a.ficha = Ficha.new(p, str(cfg.get("distancia", "")))
 	a.pv = int(p.pv); a.thac0 = int(p.thac0)
@@ -230,11 +230,36 @@ func _tochas_reserva() -> int:
 	for h in vivos(): n += h.ficha.contar("tocha")
 	return n
 
-## Acende uma tocha nova: sai do inventário de quem lidera (ou de quem ainda tiver).
-func _gastar_tocha() -> String:
-	for h in [heroi] + vivos():
-		if h.ficha.gastar("tocha"): return h.nome
-	return ""
+## Tochas: cada personagem acende e apaga a própria (ícone na carta). Cada tocha acesa ilumina em
+## volta de quem a leva e queima 1 turno por turno: duas acesas gastam o dobro.
+func _acesas() -> Array:
+	return herois_todos.filter(func(h): return is_instance_valid(h) and h.tocha_acesa)
+
+func _acender(h: Node3D) -> bool:
+	if h.tocha_acesa: return true
+	if h.tocha_resto <= 0:
+		if not h.ficha.gastar("tocha"): return false
+		h.tocha_resto = TURNOS_POR_TOCHA
+	h.tocha_acesa = true; luz.set_tocha(h, true)
+	return true
+
+func _apagar(h: Node3D) -> void:
+	h.tocha_acesa = false; luz.set_tocha(h, false)
+
+## Clique no ícone da tocha na carta.
+func _alternar_tocha(h: Node3D) -> void:
+	if not h.vivo(): return
+	if h.tocha_acesa:
+		_apagar(h)
+		_registrar("%s apaga a tocha (sobra%s %d turno%s nela)." % [h.nome, "m" if h.tocha_resto > 1 else "", h.tocha_resto, "s" if h.tocha_resto > 1 else ""])
+	elif _acender(h):
+		_registrar("%s acende a tocha (%d turno%s de luz)." % [h.nome, h.tocha_resto, "s" if h.tocha_resto > 1 else ""])
+	else:
+		_registrar("%s não tem tocha." % h.nome); return
+	var n := _acesas().size()
+	if n == 0: _registrar("[i]Nenhuma tocha acesa: só se vê o que as tochas das paredes iluminam ou a visão no escuro de quem lidera.[/i]")
+	elif n > 1: _registrar("[i]%d tochas acesas: o grupo gasta %d turnos de tocha por turno.[/i]" % [n, n])
+	_ficha_mudou(h); _atualizar_visao(); hud_ui.refazer()
 
 ## Fila: quando quem lidera dá um passo, cada um vai para onde estava o da frente.
 func _puxar_fila(de: Vector2i) -> void:
@@ -493,7 +518,7 @@ func _passar_lideranca(h: Node3D) -> void:
 	for x in vivos(): x.parar()
 	porta_alvo = {}
 	heroi = h; grupo.erase(h); grupo.push_front(h); luz.alvo = h
-	_registrar("%s passa a liderar o grupo e leva a tocha." % h.nome)
+	_registrar("%s passa a liderar o grupo." % h.nome)
 	_atualizar_visao()
 
 ## Todos voltam para a fila atrás de quem lidera (a ordem do grupo).
@@ -719,23 +744,27 @@ func _heroi_caiu_fora(h: Node3D) -> void:
 	grupo = vivos()
 	if heroi != grupo[0]:
 		heroi = grupo[0]; luz.alvo = heroi
-		_registrar("%s passa a liderar o grupo e pega a tocha." % heroi.nome)
+		_registrar("%s passa a liderar o grupo." % heroi.nome)
 	hud_ui.refazer()
 
 func _passar_turno() -> void:
 	turno += 1
-	tocha_turnos -= 1
 	var txt := "Passa o turno %d (%s de exploração)." % [turno, _hora()]
-	if tocha_turnos == 1: txt += " A tocha está no fim."
-	if tocha_turnos <= 0:
-		var quem := _gastar_tocha()
-		if quem != "":
-			tocha_turnos = TURNOS_POR_TOCHA
-			txt += " A tocha apaga e %s acende outra (restam %d)." % [quem, _tochas_reserva()]
-		else:
-			tocha_turnos = 0; luz.luz_grupo.visible = false
-			txt += " [color=#ff7a5a]A última tocha apagou.[/color]"
-			_atualizar_visao()
+	var apagou := false
+	for h in _acesas():
+		h.tocha_resto -= 1
+		if h.tocha_resto == 1: txt += " A tocha de %s está no fim." % h.nome
+		if h.tocha_resto <= 0:
+			if h.ficha.gastar("tocha"):
+				h.tocha_resto = TURNOS_POR_TOCHA
+				txt += " A tocha de %s se acaba; %s acende outra (restam %d no grupo)." % [h.nome, h.nome, _tochas_reserva()]
+			else:
+				_apagar(h); apagou = true
+				txt += " [color=#ff7a5a]A tocha de %s se acaba e não há outra com %s.[/color]" % [h.nome, h.nome]
+		_ficha_mudou(h)
+	if apagou:
+		if _acesas().is_empty(): txt += " [color=#ff7a5a]Nenhuma tocha acesa.[/color]"
+		_atualizar_visao()
 	_registrar(txt)
 	if turno % 2 == 0:
 		var m: Dictionary = MOV.modos[modo]
@@ -831,8 +860,11 @@ func _hora() -> String:
 
 func _atualizar_visao() -> void:
 	var olhos: Array = []
-	for h in vivos(): olhos.append([h.celula, float(h.infravisao_m)])
-	visao.atualizar_grupo(olhos, heroi.celula, tocha_turnos > 0)
+	for h in herois_todos:   # quem cai com a tocha acesa: ela apaga (guarda o que sobrou)
+		if is_instance_valid(h) and not h.vivo() and h.tocha_acesa: _apagar(h)
+	# Cada um vê o que está iluminado; a visão no escuro que vale é a de quem lidera.
+	for h in vivos(): olhos.append([h.celula, float(h.infravisao_m) if h == heroi else 0.0])
+	visao.atualizar_grupo(olhos, _acesas().map(func(h): return h.celula))
 	visao.atualizar_textura(mestre)
 	luz.atualizar_tochas(visao.exploradas, mestre)
 	_atualizar_monstros_visiveis()
@@ -947,7 +979,7 @@ func _checar_avistamento() -> void:
 		if not is_instance_valid(m) or not m.vivo(): continue
 		if visao.visiveis.has(m.celula): grupo_ve = true
 		for h in vivos():
-			if visao.monstro_ve(m.celula, m.frente_vetor(), m.infravisao_m, h.celula, h == heroi and tocha_turnos > 0): monstros_veem = true
+			if visao.monstro_ve(m.celula, m.frente_vetor(), m.infravisao_m, h.celula, h.tocha_acesa): monstros_veem = true
 	if grupo_ve or monstros_veem: _comecar_combate(grupo_ve, monstros_veem)
 
 func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
@@ -1015,7 +1047,7 @@ func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 		grupo = vivos(); heroi = grupo[0]
 		if heroi != lider_antes:
 			luz.alvo = heroi
-			_registrar("%s passa a liderar o grupo e pega a tocha." % heroi.nome)
+			_registrar("%s passa a liderar o grupo." % heroi.nome)
 		await get_tree().create_timer(2.5).timeout
 		if not combate.ativo:
 			for h in vivos():
@@ -1036,6 +1068,7 @@ func _montar_hud() -> void:
 	hud_ui.acao_pedida.connect(_acao_hud)
 	hud_ui.acao_escolhida.connect(_acao_porta)
 	hud_ui.carta_escolhida.connect(_selecionar)
+	hud_ui.tocha_clicada.connect(_alternar_tocha)
 	hud_ui.trocar_arma.connect(_trocar_arma)
 	hud_ui.usar_item.connect(_usar_item)
 	hud_ui.ficha_pedida.connect(_abrir_ficha)
@@ -1120,10 +1153,10 @@ func _usar_item(h: Node3D, item) -> void:
 	var inf := Ficha.info(item)
 	match str(item.id):
 		"tocha":
-			if h.ficha.gastar("tocha"):
-				tocha_turnos = TURNOS_POR_TOCHA; luz.luz_grupo.visible = true
+			if h.tocha_acesa and h.ficha.gastar("tocha"):   # troca a que está acesa por uma nova
+				h.tocha_resto = TURNOS_POR_TOCHA
 				_registrar("%s acende uma tocha nova (6 turnos de luz)." % h.nome)
-				_atualizar_visao()
+			elif not h.tocha_acesa: _alternar_tocha(h); return
 		"rações":
 			if h.ficha.gastar("rações"): _registrar("%s come uma ração (restam %d)." % [h.nome, h.ficha.contar("rações")])
 		_:
@@ -1153,12 +1186,13 @@ func _fora_da_tela(p: Vector3) -> bool:
 
 func _atualizar_hud() -> void:
 	if hud_ui == null: return
-	var luz_txt := ("tocha %d de %d turnos" % [tocha_turnos, TURNOS_POR_TOCHA]) if tocha_turnos > 0 else "sem luz"
+	var luz_txt := ""
+	var acesas := _acesas().map(func(h): return [h.nome, h.tocha_resto])
 	if not combate.ativo:
 		var area: String = grade.nomes.get(grade.area_de(heroi.celula), "")
 		var prox := turno + (2 - turno % 2)
 		hud_ui.atualizar_exploracao(MOV.modos, modo, {"area": area, "turno": turno, "hora": _hora(), "andado": metros_no_turno,
-			"taxa": _taxa_turno(), "errantes": prox, "xp": xp_total, "tocha": tocha_turnos, "tocha_max": TURNOS_POR_TOCHA,
+			"taxa": _taxa_turno(), "errantes": prox, "xp": xp_total, "acesas": acesas, "tocha_max": TURNOS_POR_TOCHA,
 			"reserva": _tochas_reserva()}, heroi, luz_txt)
 		return
 	var v: Node = combate.vez
@@ -1595,6 +1629,33 @@ func _linha_de_comando() -> void:
 			procurar.pisou(grupo[0], Vector2i(10, 1))
 			if f2.visto: caiu = true; break
 		print("PROCURAR pisou no fosso escondido: disparou=", caiu, " Tessa PV=", grupo[0].pv)
+	elif teste == "tocha":
+		# Tocha por personagem: acesa ilumina; apagada no escuro só se vê com tocha de parede ou a visão
+		# no escuro de quem lidera; duas acesas gastam o dobro.
+		var tessa: Node3D = grupo[0]; var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]
+		var cap := OS.get_cmdline_user_args().has("--captura-tocha")
+		var foto := func(nome: String) -> void:
+			if not cap: return
+			camera.alvo = heroi.global_position; camera.distancia = 16.0
+			await get_tree().create_timer(1.2).timeout
+			get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/tocha-%s.png" % nome)
+		print("TOCHA início: acesas=", _acesas().map(func(h): return h.nome), " Tessa resto=", tessa.tocha_resto, " visíveis=", visao.visiveis.size(), " reserva=", _tochas_reserva())
+		await foto.call("1-acesa")
+		_alternar_tocha(tessa)
+		print("TOCHA apagada (Tessa lidera, sem visão no escuro): visíveis=", visao.visiveis.size(), " Tessa resto=", tessa.tocha_resto, " infra Tessa=", tessa.infravisao_m, " Lianne=", lianne.infravisao_m)
+		await foto.call("2-escuro")
+		_passar_lideranca(lianne)
+		print("TOCHA escuro com Lianne liderando: visíveis=", visao.visiveis.size())
+		await foto.call("3-lianne")
+		_passar_lideranca(tessa)
+		_alternar_tocha(tessa); _alternar_tocha(caco)
+		print("TOCHA duas acesas: ", _acesas().map(func(h): return [h.nome, h.tocha_resto]), " reserva=", _tochas_reserva(), " visíveis=", visao.visiveis.size())
+		_passar_turno()
+		print("TOCHA depois de 1 turno: ", _acesas().map(func(h): return [h.nome, h.tocha_resto]))
+		for k in 5: _passar_turno()
+		print("TOCHA depois de 6 turnos: ", _acesas().map(func(h): return [h.nome, h.tocha_resto]), " reserva=", _tochas_reserva())
+		await foto.call("4-duas")
+		if cap: get_tree().quit()
 	elif teste == "separar":
 		# Agrupado: escolher o Caco o põe na liderança (fila e tocha). J desagrupa: só quem age anda. J agrupa de novo.
 		var tessa: Node3D = grupo[0]; var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]

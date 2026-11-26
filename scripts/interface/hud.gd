@@ -8,6 +8,7 @@ signal acao_pedida(acao: String)          # "atacar", "encerrar", "brotar", "fic
 signal trocar_arma(heroi: Node, item)     # item da ficha
 signal usar_item(heroi: Node, item)
 signal ficha_pedida(heroi: Node)
+signal tocha_clicada(heroi: Node)        # ícone da tocha na carta: acende/apaga
 signal carta_escolhida(heroi: Node)      # clique na carta: quem age nas ações de exploração
 signal acao_escolhida(id: String)        # opção do balão de ações (porta...)
 
@@ -18,6 +19,8 @@ var _acoes_ids: Array = []
 const Ficha = preload("res://scripts/regras/ficha.gd")
 const E = preload("res://scripts/interface/estilo.gd")
 const ICONES := "res://arte/final/interface/icones/%s.png"
+var _TOCHA_ACESA: Texture2D = load("res://arte/final/interface/icones/tocha.png")
+var _TOCHA_APAGADA: Texture2D = load("res://arte/final/interface/icones/tocha-apagada.png")
 const NOME_CARGA := {"leve": "leve", "media": "média", "pesada": "pesada"}
 
 var _cartas_caixa: VBoxContainer
@@ -103,8 +106,17 @@ func _carta(h: Node) -> Dictionary:
 	for c in [pv, ca, t0]: chips.add_child(c)
 	var lin := E.rotulo("", 12, E.TEXTO); lin.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; info.add_child(lin)
 	var extra := VBoxContainer.new(); extra.visible = false; extra.add_theme_constant_override("separation", 3); v.add_child(extra)
+	# Tocha (canto de baixo, à direita): só para quem tem tocha; clique acende/apaga.
+	var camada := Control.new(); camada.mouse_filter = Control.MOUSE_FILTER_IGNORE; painel.add_child(camada)
+	var tocha := TextureButton.new(); tocha.ignore_texture_size = true; tocha.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	tocha.custom_minimum_size = Vector2(32, 32); tocha.size = Vector2(32, 32)
+	tocha.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT); tocha.offset_left = -26; tocha.offset_top = -28
+	tocha.offset_right = 6; tocha.offset_bottom = 4
+	tocha.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	tocha.pressed.connect(func(): tocha_clicada.emit(h))
+	camada.add_child(tocha)
 	var d := {"margem": margem, "painel": painel, "retrato": ret, "nome": nome, "estado": estado, "barra": barra,
-		"pv": pv, "ca": ca, "t0": t0, "linha": lin, "extra": extra}
+		"pv": pv, "ca": ca, "t0": t0, "linha": lin, "extra": extra, "tocha": tocha}
 	painel.gui_input.connect(func(e):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			if e.double_click: ficha_pedida.emit(h)
@@ -146,9 +158,17 @@ func _atualizar_cartas(vez: Node, lider: Node, luz_txt: String, estados: Diction
 		var a = f.arma()
 		var txt := "%s %s" % [Ficha.info(a).nome, Ficha.info(a).get("dano", "")] if a != null else "desarmado"
 		if a != null and Ficha.info(a).has("municao"): txt += " · %d %s" % [f.municao_de(a), str(Ficha.info(a).municao)]
-		if h == lider and vez == null: txt += " · " + luz_txt
+		if h == lider and vez == null and luz_txt != "": txt += " · " + luz_txt
 		if not h.vivo(): txt = "caído"
 		d.linha.text = txt
+		var tem: bool = h.vivo() and (h.tocha_acesa or h.tocha_resto > 0 or f.contar("tocha") > 0)
+		d.tocha.visible = tem
+		if tem:
+			d.tocha.texture_normal = _TOCHA_ACESA if h.tocha_acesa else _TOCHA_APAGADA
+			d.tocha.modulate = Color(1.35, 1.15, 0.9) if h.tocha_acesa else Color(0.55, 0.52, 0.5, 0.85)
+			var reserva := "%d tocha%s na mochila" % [f.contar("tocha"), "s" if f.contar("tocha") != 1 else ""]
+			d.tocha.tooltip_text = ("Tocha acesa: %d de %d turnos · %s\nClique para apagar" % [h.tocha_resto, 6, reserva]) if h.tocha_acesa \
+				else ("Tocha apagada%s · %s\nClique para acender" % [(" (sobram %d turnos nela)" % h.tocha_resto) if h.tocha_resto > 0 else "", reserva])
 		var ativo: bool = h == vez or (vez == null and h == selecionado)
 		var estado: String = estados.get(h, "%s %d" % [f.classe(), int(f.p.nivel)])
 		if not h.vivo(): estado = "caído"
@@ -419,7 +439,7 @@ func _limpar_canto() -> void:
 	for c in _canto_caixa.get_children(): c.queue_free()
 	_canto.reset_size()
 
-## r: {area, turno, hora, andado, taxa, errantes, xp, tocha, tocha_max, reserva}
+## r: {area, turno, hora, andado, taxa, errantes, xp, acesas: [[nome, turnos]], tocha_max, reserva}
 func _canto_relogio(r: Dictionary) -> void:
 	var chave := "rel:" + str(r)
 	if chave == _canto_chave: return
@@ -436,13 +456,26 @@ func _canto_relogio(r: Dictionary) -> void:
 	_canto_caixa.add_child(luz)
 	var ic := TextureRect.new(); ic.texture = load(ICONES % "tocha"); ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; ic.custom_minimum_size = Vector2(18, 18); luz.add_child(ic)
+	# Barras: a tocha acesa que acaba primeiro. Texto: quantas queimam ao mesmo tempo e quanto dura a luz.
+	var acesas: Array = r.acesas
+	var menor := 0
+	var soma := 0
+	for a in acesas:
+		soma += int(a[1]); menor = int(a[1]) if menor == 0 else mini(menor, int(a[1]))
 	for i in int(r.tocha_max):
 		var s := Panel.new(); s.custom_minimum_size = Vector2(16, 7); s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var sb := StyleBoxFlat.new(); sb.set_corner_radius_all(2)
-		sb.bg_color = Color("#e8a33a") if i < int(r.tocha) else Color(0.77, 0.6, 0.32, 0.2)
+		sb.bg_color = (Color("#ff6a2a") if acesas.size() > 1 else Color("#e8a33a")) if i < menor else Color(0.77, 0.6, 0.32, 0.2)
 		s.add_theme_stylebox_override("panel", sb); s.mouse_filter = Control.MOUSE_FILTER_IGNORE; luz.add_child(s)
-	luz.add_child(E.rotulo("  +%d tochas" % int(r.reserva) if int(r.tocha) > 0 else "  sem luz · +%d tochas" % int(r.reserva), 12, E.TEXTO))
-	luz.tooltip_text = "Tocha acesa: %d de %d turnos" % [int(r.tocha), int(r.tocha_max)]
+	luz.add_child(E.rotulo("  +%d tochas" % int(r.reserva), 12, E.TEXTO))
+	var n := acesas.size()
+	var linha_luz: String
+	if n == 0: linha_luz = "Sem luz: nenhuma tocha acesa"
+	else:
+		var dura := (soma + int(r.reserva) * int(r.tocha_max)) / n
+		linha_luz = "%d acesa%s · gasta %d por turno · luz para ~%d turno%s" % [n, "s" if n > 1 else "", n, dura, "s" if dura != 1 else ""]
+	var ll := E.rotulo(linha_luz, 12, Color("#ff9a6a") if n != 1 else E.TEXTO); _canto_caixa.add_child(ll)
+	luz.tooltip_text = "\n".join(acesas.map(func(a): return "%s: %d de %d turnos" % [a[0], int(a[1]), int(r.tocha_max)])) if n > 0 else "Nenhuma tocha acesa"
 	_canto_caixa.add_child(E.rotulo("Teste de errantes no turno %d · XP do grupo %d" % [int(r.errantes), int(r.xp)], 12, E.TEXTO))
 
 ## ordem: [{nome, lado, vivo, retrato, vez, agiu}]

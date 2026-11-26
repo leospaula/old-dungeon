@@ -11,7 +11,8 @@ var tochas_nos: Array[Node3D] = []
 var tochas_cel: Array[Vector2i] = []
 var materiais: Array[ShaderMaterial] = []
 var pedra_mat: ShaderMaterial   # material das paredes (portas secretas usam para se disfarçar)
-var luz_grupo: OmniLight3D
+var luzes_tocha := {}           # ator -> OmniLight3D da tocha na mão dele
+var _raiz: Node3D
 var chao_mat: ShaderMaterial
 var env: Environment
 var preenchimento: DirectionalLight3D
@@ -43,8 +44,7 @@ func configurar(raiz: Node3D, masmorra: Node3D, ambiente: WorldEnvironment, carr
 	masmorra.get_node("Cristais").material_override = _objeto(0.0, 0.2, Color(0.4, 0.7, 1.0), 0.8)
 	if masmorra.has_node("Rotulos"): masmorra.get_node("Rotulos").visible = false
 
-	luz_grupo = OmniLight3D.new(); luz_grupo.light_color = Color(1.0, 0.72, 0.42); luz_grupo.light_energy = 0.9
-	luz_grupo.omni_range = 9.0; luz_grupo.omni_attenuation = 1.5; raiz.add_child(luz_grupo)
+	_raiz = raiz
 	preenchimento = DirectionalLight3D.new(); preenchimento.rotation_degrees = Vector3(-60, 30, 0)
 	preenchimento.light_color = Color(0.55, 0.6, 0.85); preenchimento.light_energy = 0.35; raiz.add_child(preenchimento)
 
@@ -133,13 +133,23 @@ func set_mestre(v: bool) -> void:
 	preenchimento.light_energy = 1.6 if v else 0.35
 	env.fog_enabled = not v
 
+## Tocha na mão de um personagem: luz quente de 9 m que o acompanha.
+func set_tocha(a: Node3D, acesa: bool) -> void:
+	if not luzes_tocha.has(a):
+		var l := OmniLight3D.new(); l.light_color = Color(1.0, 0.72, 0.42); l.light_energy = 0.9
+		l.omni_range = 9.0; l.omni_attenuation = 1.5; _raiz.add_child(l)
+		luzes_tocha[a] = l
+	luzes_tocha[a].visible = acesa
+	if acesa: luzes_tocha[a].global_position = a.global_position + Vector3(0.4, 1.6, 0.3)
+
 func set_grade(combate: bool) -> void:
 	chao_mat.set_shader_parameter("grade_forca", 0.6 if combate else 0.12)
 
 func _process(_dt: float) -> void:
 	if alvo == null: return
 	var p := alvo.global_position
-	luz_grupo.global_position = p + Vector3(0.4, 1.6, 0.3)
+	for a in luzes_tocha:
+		if is_instance_valid(a): luzes_tocha[a].global_position = a.global_position + Vector3(0.4, 1.6, 0.3)
 	# Orçamento de sombras: só as tochas mais próximas
 	var ordem := tochas.filter(func(l): return l.is_visible_in_tree())
 	ordem.sort_custom(func(a, b): return a.global_position.distance_squared_to(p) < b.global_position.distance_squared_to(p))

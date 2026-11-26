@@ -41,15 +41,17 @@ func iluminada_fixa(c: Vector2i) -> bool:
 	return _iluminadas.has(c)
 
 func atualizar_jogador(origem: Vector2i, tocha_acesa: bool, infra_m := 0.0) -> void:
-	atualizar_grupo([[origem, infra_m]], origem, tocha_acesa)
+	atualizar_grupo([[origem, infra_m]], [origem] if tocha_acesa else [])
 
-## Visão do grupo: cada um vê, da própria casa, o que está iluminado (tochas de parede ou a tocha de
-## quem lidera, cuja luz também precisa alcançar a casa) ou dentro da própria visão no escuro.
-## olhos: [[célula, infravisão_m], ...]
-func atualizar_grupo(olhos: Array, tocha: Vector2i, tocha_acesa: bool) -> void:
+## Visão do grupo: cada um vê, da própria casa, o que está iluminado (tochas de parede ou as tochas
+## acesas na mão de alguém, cuja luz também precisa alcançar a casa) ou dentro da visão no escuro dada.
+## olhos: [[célula, infravisão_m], ...]; tochas: células de quem está com tocha acesa.
+var _luz_tochas := {}
+func atualizar_grupo(olhos: Array, tochas: Array) -> void:
 	visiveis.clear()
-	var luz_tocha := {}
-	if tocha_acesa:
+	_luz_tochas.clear()
+	var luz_tocha := _luz_tochas
+	for tocha in tochas:
 		for c in _perto(tocha, RAIO_TOCHA):
 			if grade.linha(tocha, c): luz_tocha[c] = true
 	for o in olhos:
@@ -73,7 +75,7 @@ func monstro_ve(de: Vector2i, frente: Vector3, infra_m: float, alvo: Vector2i, a
 	if d > 1.6:
 		var f := Vector2(frente.x, frente.z)
 		if f.length() > 0.01 and rad_to_deg(absf(f.angle_to(dv))) > MEIO_CONE: return false
-	var luz := alvo_com_tocha or _iluminadas.has(alvo) or d <= infra_m
+	var luz := alvo_com_tocha or _iluminadas.has(alvo) or _luz_tochas.has(alvo) or d <= infra_m
 	return luz and grade.linha(de, alvo)
 
 func atualizar_textura(mestre: bool) -> void:
