@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d0ycg5ai2j6rq"
-path="res://.godot/imported/anao_Color_2cd8ae41-963a-4947-819e-83a824626f76.jpg-d66806fc2bdaa9950123b5bc25937d22.ctex"
+path.s3tc="res://.godot/imported/anao_Color_2cd8ae41-963a-4947-819e-83a824626f76.jpg-d66806fc2bdaa9950123b5bc25937d22.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "46a5c3e0d94978d8639ffebf4b0dc3d7"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/anao_Color_2cd8ae41-963a-4947-819e-83a824626f76.jpg"
-dest_files=["res://.godot/imported/anao_Color_2cd8ae41-963a-4947-819e-83a824626f76.jpg-d66806fc2bdaa9950123b5bc25937d22.ctex"]
+dest_files=["res://.godot/imported/anao_Color_2cd8ae41-963a-4947-819e-83a824626f76.jpg-d66806fc2bdaa9950123b5bc25937d22.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=1024
 detect_3d/compress_to=1

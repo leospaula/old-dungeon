@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bb3iv73x7tkxy"
-path="res://.godot/imported/clerigo-biblioteca_Color_4bc815c5-9f6b-4d20-86dd-b00627576416.jpg-f2f5620865c6cd8f5f31c710e0f28613.ctex"
+path.s3tc="res://.godot/imported/clerigo-biblioteca_Color_4bc815c5-9f6b-4d20-86dd-b00627576416.jpg-f2f5620865c6cd8f5f31c710e0f28613.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "4f68f1880e8ba62d47d32cfdc9f8c1a2"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/clerigo-biblioteca_Color_4bc815c5-9f6b-4d20-86dd-b00627576416.jpg"
-dest_files=["res://.godot/imported/clerigo-biblioteca_Color_4bc815c5-9f6b-4d20-86dd-b00627576416.jpg-f2f5620865c6cd8f5f31c710e0f28613.ctex"]
+dest_files=["res://.godot/imported/clerigo-biblioteca_Color_4bc815c5-9f6b-4d20-86dd-b00627576416.jpg-f2f5620865c6cd8f5f31c710e0f28613.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=1024
 detect_3d/compress_to=1

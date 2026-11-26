@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b28hyrmb7bjga"
-path="res://.godot/imported/halfling-biblioteca_Color_d689472e-1cc9-48a8-a70d-bebe1d8e786e.jpg-57a7f0b6143fb2b3f07fac3e4ca40156.ctex"
+path.s3tc="res://.godot/imported/halfling-biblioteca_Color_d689472e-1cc9-48a8-a70d-bebe1d8e786e.jpg-57a7f0b6143fb2b3f07fac3e4ca40156.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "b3aa6fe920226aa228f5174c1c4b211d"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/halfling-biblioteca_Color_d689472e-1cc9-48a8-a70d-bebe1d8e786e.jpg"
-dest_files=["res://.godot/imported/halfling-biblioteca_Color_d689472e-1cc9-48a8-a70d-bebe1d8e786e.jpg-57a7f0b6143fb2b3f07fac3e4ca40156.ctex"]
+dest_files=["res://.godot/imported/halfling-biblioteca_Color_d689472e-1cc9-48a8-a70d-bebe1d8e786e.jpg-57a7f0b6143fb2b3f07fac3e4ca40156.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=1024
 detect_3d/compress_to=1

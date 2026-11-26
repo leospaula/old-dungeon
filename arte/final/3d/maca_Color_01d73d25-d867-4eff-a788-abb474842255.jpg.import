@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bwjieq7vwkqxi"
-path="res://.godot/imported/maca_Color_01d73d25-d867-4eff-a788-abb474842255.jpg-ea07b4a80f4bf21633e8534c6c771f7b.ctex"
+path.s3tc="res://.godot/imported/maca_Color_01d73d25-d867-4eff-a788-abb474842255.jpg-ea07b4a80f4bf21633e8534c6c771f7b.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "ec91326212a58534609ff3ed1999e202"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/maca_Color_01d73d25-d867-4eff-a788-abb474842255.jpg"
-dest_files=["res://.godot/imported/maca_Color_01d73d25-d867-4eff-a788-abb474842255.jpg-ea07b4a80f4bf21633e8534c6c771f7b.ctex"]
+dest_files=["res://.godot/imported/maca_Color_01d73d25-d867-4eff-a788-abb474842255.jpg-ea07b4a80f4bf21633e8534c6c771f7b.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1

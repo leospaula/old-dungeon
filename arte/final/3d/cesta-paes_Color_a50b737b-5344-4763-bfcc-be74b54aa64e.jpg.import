@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://drtpa0ephuro6"
-path="res://.godot/imported/cesta-paes_Color_a50b737b-5344-4763-bfcc-be74b54aa64e.jpg-89fa4bb4c7790fecffe86f47e0ddfb23.ctex"
+path.s3tc="res://.godot/imported/cesta-paes_Color_a50b737b-5344-4763-bfcc-be74b54aa64e.jpg-89fa4bb4c7790fecffe86f47e0ddfb23.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "1dcc291cafde5dd9bad91575efc2136d"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/cesta-paes_Color_a50b737b-5344-4763-bfcc-be74b54aa64e.jpg"
-dest_files=["res://.godot/imported/cesta-paes_Color_a50b737b-5344-4763-bfcc-be74b54aa64e.jpg-89fa4bb4c7790fecffe86f47e0ddfb23.ctex"]
+dest_files=["res://.godot/imported/cesta-paes_Color_a50b737b-5344-4763-bfcc-be74b54aa64e.jpg-89fa4bb4c7790fecffe86f47e0ddfb23.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1

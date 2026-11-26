@@ -392,11 +392,38 @@ func animar_morte() -> void:
 			await get_tree().create_timer(DANO_ANTES_DE_CAIR).timeout
 		tocar("morrer", 0.3)
 		if _tem("morrer"): player.seek(MORRER_INICIO, false)
+		if lado != "grupo":
+			var resta: float = player.get_animation(anim.get("morrer", "")).length - MORRER_INICIO if _tem("morrer") else 1.5
+			await get_tree().create_timer(maxf(resta, 0.5) + 0.2).timeout
+			if is_instance_valid(self) and not vivo(): congelar_corpo()
 	else:
 		var t := create_tween()
 		t.tween_property(modelo, "rotation:x", -PI / 2, 0.45).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 		t.tween_interval(1.5)
 		t.tween_property(modelo, "position:y", -0.6, 1.2)
+
+## Corpo de monstro: depois de cair, o modelo vira uma malha parada na pose final (sem esqueleto e sem
+## animação). Fica mais leve na cena e não depende mais da biblioteca de animações da criatura.
+func congelar_corpo() -> void:
+	if modelo == null or player == null: return
+	player.pause()
+	var corpo := Node3D.new(); corpo.name = "Corpo"; add_child(corpo)
+	for n in modelo.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.skin == null and mi.get_node_or_null(mi.skeleton) == null:
+			continue
+		var malha: ArrayMesh = mi.bake_mesh_from_current_skeleton_pose()
+		if malha == null: continue
+		var est := MeshInstance3D.new(); est.mesh = malha
+		for i in malha.get_surface_count(): est.set_surface_override_material(i, mi.get_active_material(i))
+		corpo.add_child(est); est.global_transform = mi.global_transform
+	# Armas presas aos ossos ficam onde estão.
+	for b in modelo.find_children("*", "BoneAttachment3D", true, false):
+		for c in b.get_children(): c.reparent(corpo, true)
+	if corpo.get_child_count() == 0:
+		corpo.queue_free(); return
+	modelo.queue_free()
+	modelo = corpo; player = null
 
 func sumir() -> void:
 	var t := create_tween()

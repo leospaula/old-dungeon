@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ba3qpgfkvir4l"
-path="res://.godot/imported/mesa-carcereiro_Color_4a65d866-d4d0-4b2c-bcb1-eb7b7b84e9e3.jpg-e07149b1d52b73bac4b562de45efd2d1.ctex"
+path.s3tc="res://.godot/imported/mesa-carcereiro_Color_4a65d866-d4d0-4b2c-bcb1-eb7b7b84e9e3.jpg-e07149b1d52b73bac4b562de45efd2d1.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "dc4d1b5b379880c24608390eb429ba26"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/mesa-carcereiro_Color_4a65d866-d4d0-4b2c-bcb1-eb7b7b84e9e3.jpg"
-dest_files=["res://.godot/imported/mesa-carcereiro_Color_4a65d866-d4d0-4b2c-bcb1-eb7b7b84e9e3.jpg-e07149b1d52b73bac4b562de45efd2d1.ctex"]
+dest_files=["res://.godot/imported/mesa-carcereiro_Color_4a65d866-d4d0-4b2c-bcb1-eb7b7b84e9e3.jpg-e07149b1d52b73bac4b562de45efd2d1.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1

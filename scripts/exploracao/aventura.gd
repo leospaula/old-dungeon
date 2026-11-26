@@ -13,6 +13,7 @@ var props_cat: Dictionary = {}
 var equipamento_guardado := {}   # id do personagem -> {armas, equipamento, po} tirados no início
 var leituras_feitas := {}        # área -> true
 var props_em_cena: Array = []    # [{tipo, area, celulas, no}]
+var parte_atual := ""            # id da parte em que o grupo está (pacote de download)
 var escolhidos: Array = []       # ids escolhidos na tela de escolha, na ordem de marcha
 
 func _init(g: RefCounted, aventura_id: String) -> void:
@@ -33,6 +34,17 @@ func cel(area: String, pos: String) -> Vector2i:
 func inicio() -> Dictionary: return d.get("inicio", {})
 func celula_inicio() -> Vector2i: return cel(str(inicio().area), str(inicio().pos))
 func grupo_ids() -> Array: return d.get("grupo", [])
+## Parte da aventura que contém a área (cada parte vira um pacote de download).
+func parte_de_area(area: String) -> String:
+	for p in d.get("partes", []):
+		if area in p.get("areas", []): return str(p.id)
+	return ""
+
+func nome_parte(id: String) -> String:
+	for p in d.get("partes", []):
+		if str(p.id) == id: return str(p.get("nome", id))
+	return id
+
 func tamanho_grupo() -> int: return int(d.get("tamanho_grupo", 0))
 
 ## Ficha do personagem como começa a aventura. Capturados sem equipamento: armas, mochila e moedas

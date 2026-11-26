@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b4am5bmv36sph"
-path="res://.godot/imported/hobgoblin_Color_bfb0736c-5faf-4215-b33b-d64fbfb03169.jpg-816c11a31dfe6e6f5925986119e971bc.ctex"
+path.s3tc="res://.godot/imported/hobgoblin_Color_bfb0736c-5faf-4215-b33b-d64fbfb03169.jpg-816c11a31dfe6e6f5925986119e971bc.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "7f532c5dd91b3ea88a6ea4bde6af9fb9"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/hobgoblin_Color_bfb0736c-5faf-4215-b33b-d64fbfb03169.jpg"
-dest_files=["res://.godot/imported/hobgoblin_Color_bfb0736c-5faf-4215-b33b-d64fbfb03169.jpg-816c11a31dfe6e6f5925986119e971bc.ctex"]
+dest_files=["res://.godot/imported/hobgoblin_Color_bfb0736c-5faf-4215-b33b-d64fbfb03169.jpg-816c11a31dfe6e6f5925986119e971bc.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=1024
 detect_3d/compress_to=1

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c67lxt2aan7jx"
-path="res://.godot/imported/pilha-armaduras_Color_337f573d-2e87-4c55-91a2-0bf82eec06fe.jpg-2bbcabd5a91a4f31952672277b3e8786.ctex"
+path.s3tc="res://.godot/imported/pilha-armaduras_Color_337f573d-2e87-4c55-91a2-0bf82eec06fe.jpg-2bbcabd5a91a4f31952672277b3e8786.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "1b26918e8397b368e30c1a63251b8503"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/pilha-armaduras_Color_337f573d-2e87-4c55-91a2-0bf82eec06fe.jpg"
-dest_files=["res://.godot/imported/pilha-armaduras_Color_337f573d-2e87-4c55-91a2-0bf82eec06fe.jpg-2bbcabd5a91a4f31952672277b3e8786.ctex"]
+dest_files=["res://.godot/imported/pilha-armaduras_Color_337f573d-2e87-4c55-91a2-0bf82eec06fe.jpg-2bbcabd5a91a4f31952672277b3e8786.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1

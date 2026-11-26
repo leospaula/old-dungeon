@@ -21,9 +21,8 @@ var mestre := false
 
 func configurar(raiz: Node3D, masmorra: Node3D, ambiente: WorldEnvironment, carregador: Node3D) -> void:
 	alvo = carregador
-	var tex := func(c: String) -> Texture2D:
-		var img := Image.load_from_file(ProjectSettings.globalize_path(c)); img.generate_mipmaps()
-		return ImageTexture.create_from_image(img)
+	# Textura importada (com mipmaps): o PNG original não existe no jogo exportado (navegador).
+	var tex := func(c: String) -> Texture2D: return load(c)
 	var laje: Texture2D = tex.call("res://arte/texturas/laje_cor.png")
 	var laje_n: Texture2D = tex.call("res://arte/texturas/laje_normal.png")
 	var parede: Texture2D = tex.call("res://arte/texturas/parede_cor.png")

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cxvpmmtucdu23"
-path="res://.godot/imported/martelo-guerra_Color_e323ae5b-8015-4f8f-8232-617da2879a65.jpg-adca7fe44da3b05c04e872c2737631e0.ctex"
+path.s3tc="res://.godot/imported/martelo-guerra_Color_e323ae5b-8015-4f8f-8232-617da2879a65.jpg-adca7fe44da3b05c04e872c2737631e0.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "d9623516ddcd5b32f53278975699091b"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/martelo-guerra_Color_e323ae5b-8015-4f8f-8232-617da2879a65.jpg"
-dest_files=["res://.godot/imported/martelo-guerra_Color_e323ae5b-8015-4f8f-8232-617da2879a65.jpg-adca7fe44da3b05c04e872c2737631e0.ctex"]
+dest_files=["res://.godot/imported/martelo-guerra_Color_e323ae5b-8015-4f8f-8232-617da2879a65.jpg-adca7fe44da3b05c04e872c2737631e0.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1

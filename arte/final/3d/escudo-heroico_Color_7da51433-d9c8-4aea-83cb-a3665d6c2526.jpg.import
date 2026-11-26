@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://qqjakncyc7id"
-path="res://.godot/imported/escudo-heroico_Color_7da51433-d9c8-4aea-83cb-a3665d6c2526.jpg-4e3188bd5def01a938375198d96edf6b.ctex"
+path.s3tc="res://.godot/imported/escudo-heroico_Color_7da51433-d9c8-4aea-83cb-a3665d6c2526.jpg-4e3188bd5def01a938375198d96edf6b.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "583db535ffeb26363713efadc50a249d"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/escudo-heroico_Color_7da51433-d9c8-4aea-83cb-a3665d6c2526.jpg"
-dest_files=["res://.godot/imported/escudo-heroico_Color_7da51433-d9c8-4aea-83cb-a3665d6c2526.jpg-4e3188bd5def01a938375198d96edf6b.ctex"]
+dest_files=["res://.godot/imported/escudo-heroico_Color_7da51433-d9c8-4aea-83cb-a3665d6c2526.jpg-4e3188bd5def01a938375198d96edf6b.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1

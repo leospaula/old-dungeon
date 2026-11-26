@@ -31,6 +31,7 @@ const Portas = preload("res://scripts/exploracao/portas.gd")
 const Procurar = preload("res://scripts/exploracao/procurar.gd")
 const Aventura = preload("res://scripts/exploracao/aventura.gd")
 const EscolherGrupo = preload("res://scripts/interface/escolher_grupo.gd")
+const Pacotes = preload("res://scripts/exploracao/pacotes.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
@@ -109,6 +110,7 @@ var hud_ui: Control
 var livro: Control
 var diario: Array = []     # [{turno, tipo, texto}] — o diário automático do grupo
 var _area_antes := ""
+var pacotes: Node              # downloads por parte da aventura (scripts/exploracao/pacotes.gd)
 var aventura: RefCounted = null   # aventura carregada (scripts/exploracao/aventura.gd); null = masmorra de teste
 var hud_centro: Label
 
@@ -119,10 +121,16 @@ func _ready() -> void:
 	ENCONTROS = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/encontros.json"))
 	MOV = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/movimento.json"))
 	var av := _aventura_pedida()
-	if av != "": aventura = Aventura.new(grade, av); aventura.colocar_props(self)
+	pacotes = Pacotes.new(); add_child(pacotes)
+	if av != "": aventura = Aventura.new(grade, av)
 	if aventura:
 		set_process(false); set_process_unhandled_input(false)
+		var parte: String = aventura.parte_de_area(str(aventura.inicio().area))
+		if parte != "": pacotes.preparar(parte)   # baixa no fundo enquanto o jogador escolhe o grupo
 		await _escolher_grupo()
+		if parte != "": await _esperar_pacote(parte)
+		aventura.parte_atual = parte
+		aventura.colocar_props(self)
 		set_process(true); set_process_unhandled_input(true)
 	_criar_grupo()
 	luz = Luz.new(); add_child(luz)
@@ -133,6 +141,13 @@ func _ready() -> void:
 	visao.tochas_parede = luz.tochas_cel.duplicate()
 	if aventura:
 		visao.penumbra = aventura.celulas_penumbra(); luz.penumbra(self, visao.penumbra)
+		# Tochas de parede que se veem de onde o grupo começa (pela grade da cela) já começam vistas:
+		# é delas que vem a luz da penumbra.
+		var ini_area := str(aventura.inicio().area)
+		for c in luz.tochas_cel:
+			for x in grade.area:
+				if grade.area[x] == ini_area and grade.linha(c, x):
+					visao.exploradas[c] = true; break
 	visao.recalcular_luz_fixa()
 	_materiais_das_portas()
 	portas = Portas.new(self)
@@ -180,8 +195,19 @@ const GRUPO_EM_JOGO := ["tessa", "caco", "lianne"]
 
 ## Aventura a carregar: --aventura=<id> na linha de comando; sem testes nem captura, a aventura 1.
 ## --aventura=nenhuma (ou qualquer --teste) usa a masmorra de teste.
+## Argumentos da linha de comando; no navegador, também os da URL (?args=--grupo=a,b%20--teste=x).
+static var _args_cache: PackedStringArray
+static func _args() -> PackedStringArray:
+	if not _args_cache.is_empty(): return _args_cache
+	var a := OS.get_cmdline_user_args()
+	if OS.has_feature("web"):
+		var q := str(JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('args') || ''", true))
+		for x in q.split(" ", false): a.append(x)
+	_args_cache = a if not a.is_empty() else PackedStringArray([""])
+	return _args_cache
+
 func _aventura_pedida() -> String:
-	var args := OS.get_cmdline_user_args()
+	var args := _args()
 	for a in args:
 		if a.begins_with("--aventura="):
 			var v := a.trim_prefix("--aventura=")
@@ -195,7 +221,7 @@ func _aventura_pedida() -> String:
 ## fotografa a tela vazia e com a escolha feita.
 func _escolher_grupo() -> void:
 	var disp: Array = aventura.grupo_ids(); var n: int = aventura.tamanho_grupo()
-	var args := OS.get_cmdline_user_args()
+	var args := _args()
 	var foto := ""
 	for a in args:
 		if a.begins_with("--grupo="): aventura.escolhidos = Array(a.trim_prefix("--grupo=").split(",")); return
@@ -221,6 +247,24 @@ func _escolher_grupo() -> void:
 	var ids: Array = await tela.escolhido
 	tela.queue_free()
 	aventura.escolhidos = ids
+
+## Tela de "carregando" enquanto o pacote da parte não chega (só no navegador).
+func _esperar_pacote(parte: String) -> void:
+	if pacotes.pronto(parte): return
+	var veu := ColorRect.new(); veu.color = Color(0.035, 0.025, 0.018, 0.97); veu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	$HUD.add_child(veu)
+	var txt := Estilo.rotulo("", 18, Estilo.OURO, "titulo"); txt.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	txt.grow_horizontal = Control.GROW_DIRECTION_BOTH; txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	veu.add_child(txt)
+	var nome: String = aventura.nome_parte(parte)
+	var mostrar := func(_id, f): txt.text = "Carregando %s… %d%%" % [nome, roundi(f * 100)]
+	pacotes.progresso.connect(mostrar)
+	mostrar.call(parte, 0.0)
+	while not await pacotes.preparar(parte):
+		txt.text = "Não deu para baixar %s. Tentando de novo…" % nome
+		await get_tree().create_timer(3.0).timeout
+	pacotes.progresso.disconnect(mostrar)
+	veu.queue_free()
 
 func _criar_grupo() -> void:
 	var G: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/personagens/grupo-inicial.json"))
@@ -1294,7 +1338,7 @@ func _atualizar_hud() -> void:
 
 func _linha_de_comando() -> void:
 	var captura := ""; var teste := ""
-	for a in OS.get_cmdline_user_args():
+	for a in _args():
 		if a.begins_with("--camera="):   # distância,inclinação,guinada (capturas)
 			var v := a.trim_prefix("--camera=").split(",")
 			camera.distancia = float(v[0]); camera.inclinacao = float(v[1]); camera.guinada = float(v[2])
@@ -1305,9 +1349,9 @@ func _linha_de_comando() -> void:
 		camera.alvo = heroi.position + Vector3(0, 1, 0); camera.distancia = 4.0; camera.inclinacao = 15.0; camera.guinada = 180.0
 		heroi.olhar_para(heroi.position + Vector3(0, 0, -5))
 		var papel := "andar"
-		for x in OS.get_cmdline_user_args():
+		for x in _args():
 			if x.begins_with("--papel="): papel = x.get_slice("=", 1)
-		if not OS.get_cmdline_user_args().has("--parado"): heroi.tocar(papel)
+		if not _args().has("--parado"): heroi.tocar(papel)
 		for _f in 40: await get_tree().process_frame
 	elif teste == "modos":
 		for k in ["devagar", "rapido"]:
@@ -1454,10 +1498,10 @@ func _linha_de_comando() -> void:
 			print("OLHAR %s %-20s t=%.2f giro %4.0f  olhar %4.0f°  mão %4.0f°  mãoD→mãoE %4.0f°" % [eu.nome, caso[1], caso[2], gi, rad_to_deg(alvo.signed_angle_to(ol, Vector3.UP)), rad_to_deg(alvo.signed_angle_to(hm, Vector3.UP)), rad_to_deg(alvo.signed_angle_to(corda, Vector3.UP))])
 	elif teste == "livro":
 		var aba := "ficha"
-		for x in OS.get_cmdline_user_args():
+		for x in _args():
 			if x.begins_with("--aba="): aba = x.get_slice("=", 1)
 		var quem := 0
-		for x in OS.get_cmdline_user_args():
+		for x in _args():
 			if x.begins_with("--heroi="): quem = int(x.get_slice("=", 1))
 		livro.grupo = grupo; livro.mostrar(grupo[quem], aba)
 		await get_tree().create_timer(0.5).timeout
@@ -1532,7 +1576,7 @@ func _linha_de_comando() -> void:
 	elif teste == "estilo":
 		# Close de um herói usando o estilo da arma: --heroi=N --arma=<item> (opcional). Golpe (ou disparo) num goblin.
 		var quem := 0; var arma_id := ""
-		for x in OS.get_cmdline_user_args():
+		for x in _args():
 			if x.begins_with("--heroi="): quem = int(x.get_slice("=", 1))
 			if x.begins_with("--arma="): arma_id = x.get_slice("=", 1)
 		var eu: Node3D = grupo[quem]
@@ -1563,7 +1607,7 @@ func _linha_de_comando() -> void:
 			get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-%d.png" % k)); k += 1
 		await get_tree().create_timer(1.5).timeout
 	elif teste == "besta":
-		for x in OS.get_cmdline_user_args():
+		for x in _args():
 			if x.begins_with("--heroi="): heroi = grupo[int(x.get_slice("=", 1))]
 		_brotar_goblin(true)
 		await get_tree().create_timer(1.5).timeout
@@ -1651,7 +1695,7 @@ func _linha_de_comando() -> void:
 			if errantes.any(func(x): return x.has_meta("ouvido")): break
 		print("OUVIR marcados=", errantes.filter(func(x): return x.has_meta("ouvido")).size(), " bônus até turno ", bonus_silencio_ate, " turno=", turno)
 		var p3: Dictionary = portas.por_id["P03"]
-		if OS.get_cmdline_user_args().has("--captura-ouvir"):
+		if _args().has("--captura-ouvir"):
 			hud_ui.visible = false
 			portas.agir(p3, agente(), "ouvir_todos")
 			var ag: Node3D = agente()
@@ -1704,7 +1748,7 @@ func _linha_de_comando() -> void:
 		# Tocha por personagem: acesa ilumina; apagada no escuro só se vê com tocha de parede ou a visão
 		# no escuro de quem lidera; duas acesas gastam o dobro.
 		var tessa: Node3D = grupo[0]; var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]
-		var cap := OS.get_cmdline_user_args().has("--captura-tocha")
+		var cap := _args().has("--captura-tocha")
 		var foto := func(nome: String) -> void:
 			if not cap: return
 			camera.alvo = heroi.global_position; camera.distancia = 16.0
@@ -1765,7 +1809,7 @@ func _linha_de_comando() -> void:
 		var tessa: Node3D = grupo[0]; var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]
 		tessa.colocar(Vector2i(10, 1)); caco.colocar(Vector2i(8, 3)); lianne.colocar(Vector2i(7, 4)); _atualizar_visao()
 		var a: Dictionary = procurar.armadilhas[Vector2i(10, 1)]; a.visto = true
-		if OS.get_cmdline_user_args().has("--captura-fosso"):
+		if _args().has("--captura-fosso"):
 			hud_ui.visible = false; tessa.colocar(Vector2i(9, 1)); a.visto = false; procurar.desenhar()
 			camera.alvo = grade.centro(Vector2i(10, 1)); camera.distancia = 7.0; camera.inclinacao = 62.0; camera.guinada = 200.0
 			await get_tree().create_timer(1.0).timeout
@@ -1773,7 +1817,7 @@ func _linha_de_comando() -> void:
 			tessa.colocar(Vector2i(10, 1)); a.visto = true
 		await procurar.cair(tessa, Vector2i(10, 1), a)
 		print("FOSSO Tessa y=", snappedf(tessa.position.y, 0.01), " no fosso=", procurar.esta_no_fosso(tessa), " PV=", tessa.pv, " diálogo=", hud_ui.dialogo_aberto(), " lidera=", heroi.nome)
-		if OS.get_cmdline_user_args().has("--captura-fosso"):
+		if _args().has("--captura-fosso"):
 			hud_ui.fechar_dialogo(); hud_ui.visible = false
 			camera.alvo = grade.centro(Vector2i(10, 1)); camera.distancia = 7.0; camera.inclinacao = 62.0; camera.guinada = 200.0
 			await get_tree().create_timer(1.0).timeout
@@ -1794,7 +1838,7 @@ func _linha_de_comando() -> void:
 				var k := "foto%d" % int(fr * 100)
 				if not marcos.has(k) and marcos.has("sobe") and Time.get_ticks_msec() - t_ini > int(marcos["sobe"]) + int(4000 * fr):
 					marcos[k] = tessa.global_position.snappedf(0.01)
-					if OS.get_cmdline_user_args().has("--captura-fosso"):
+					if _args().has("--captura-fosso"):
 						hud_ui.visible = false
 						get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/subida-%d.png" % int(fr * 100))
 			if not procurar.esta_no_fosso(tessa) and not marcos.has("fora"): marcos["fora"] = Time.get_ticks_msec() - t_ini; marcos["caco_parado_ao_sair"] = not caco.player.is_playing()
@@ -1807,7 +1851,7 @@ func _linha_de_comando() -> void:
 		caco.seguir(cp)
 		await get_tree().create_timer(0.75).timeout
 		print("FOSSO pulo: anim=", caco.player.current_animation, " pos=", caco.position.snappedf(0.01))
-		if OS.get_cmdline_user_args().has("--captura-fosso"):
+		if _args().has("--captura-fosso"):
 			get_viewport().get_texture().get_image().save_png("/tmp/claude-1001/-home-leonardo-spaula-pipefy-workspace/76d42e8d-2cb2-420e-94b4-ccd968ffce30/scratchpad/fosso-pulo.png")
 		while caco.andando(): await get_tree().process_frame
 		print("FOSSO pulo: chegou em ", caco.celula)
@@ -1850,7 +1894,7 @@ func _linha_de_comando() -> void:
 		# Captura da P02 vista do corredor 23: escondida (--revelar: depois de achada).
 		var p3: Dictionary = portas.por_id["P03"]; portas.de(p3).estado = "fechada"; _abrir_porta(p3, Vector2i(11, 5), "teste")
 		for i in 3: grupo[i].colocar(Vector2i(13 + i, 6))
-		if OS.get_cmdline_user_args().has("--revelar"): procurar.revelar(portas.por_id["P02"], "teste")
+		if _args().has("--revelar"): procurar.revelar(portas.por_id["P02"], "teste")
 		_atualizar_visao()
 		camera.alvo = grade.centro(Vector2i(12, 4)); camera.distancia = 8.0; camera.guinada = -20.0; camera.inclinacao = 40.0
 		await get_tree().create_timer(1.0).timeout
@@ -1898,7 +1942,7 @@ func _linha_de_comando() -> void:
 			await get_tree().create_timer(1.6).timeout
 	elif teste == "defesa":
 		# Erros forçados, vistos por trás de quem ataca: o defensor deve aparecer de frente. --arma=<item> troca a arma da Tessa.
-		for x in OS.get_cmdline_user_args():
+		for x in _args():
 			if x.begins_with("--arma="): heroi.ficha.empunhar({"id": x.get_slice("=", 1).replace("_", " "), "qtd": 1}); _aplicar_ficha(heroi)
 		_brotar_goblin(true)
 		await get_tree().create_timer(1.5).timeout
@@ -1920,6 +1964,18 @@ func _linha_de_comando() -> void:
 			for im in imgs:
 				im.save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
 			await get_tree().create_timer(1.8).timeout
+	elif teste == "corpo":
+		# Monstro morto vira malha parada (sem esqueleto): ator.congelar_corpo().
+		_brotar_goblin(true)
+		await get_tree().create_timer(1.0).timeout
+		var g: Node3D = monstros[0]
+		print("CORPO antes: esqueletos=", g.find_children("*", "Skeleton3D", true, false).size(), " player=", g.player != null)
+		g.pv = 0; g.animar_morte()
+		await get_tree().create_timer(5.0).timeout
+		print("CORPO depois: esqueletos=", g.find_children("*", "Skeleton3D", true, false).size(), " player=", g.player != null,
+			" malhas=", g.find_children("*", "MeshInstance3D", true, false).size(), " modelo=", g.modelo.name)
+		camera.alvo = g.position; camera.distancia = 4.0; camera.inclinacao = 40.0
+		await get_tree().create_timer(0.8).timeout
 	elif teste == "cela":
 		# Aventura 1 (--aventura=aventura-1): grupo preso na cela 1, sem equipamento, grade trancada.
 		for h in grupo:
@@ -1931,17 +1987,17 @@ func _linha_de_comando() -> void:
 		var fora: Array = grade.caminho(grupo[0].celula, aventura.cel("2", "B1"))
 		print("CELA caminho até o vestíbulo: ", fora.size(), " casas")
 		print("CELA props: ", aventura.props_em_cena.map(func(p): return "%s@%s" % [p.tipo, p.celulas[0]]))
-		print("CELA tochas acesas: ", _acesas().size(), " · visíveis: ", visao.visiveis.size())
+		print("CELA tochas acesas: ", _acesas().size(), " · visíveis: ", visao.visiveis.size(), " · tochas de parede: ", luz.tochas_cel, " luzes=", luz.tochas.size())
 	elif teste == "combate":
 		_surgir_errantes(true)
 		await get_tree().create_timer(3.0).timeout
 	for _f in 30: await get_tree().process_frame
-	if OS.get_cmdline_user_args().has("--sem-hud"):
+	if _args().has("--sem-hud"):
 		$HUD.visible = false
 		for _f in 3: await get_tree().process_frame
-	if OS.get_cmdline_user_args().has("--depurar-hud"):
+	if _args().has("--depurar-hud"):
 		print("HUD ", hud_ui.size, " vis=", hud_ui.visible, " filhos=", hud_ui.get_child_count(), " layer_vis=", $HUD.visible)
 		for c in hud_ui.get_children(): print("  ", c.get_class(), " ", c.position, " ", c.size, " vis=", c.visible, " mod=", c.modulate)
 	if captura != "":
 		get_viewport().get_texture().get_image().save_png(captura)
-	get_tree().quit()
+	if not OS.has_feature("web"): get_tree().quit()

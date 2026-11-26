@@ -344,6 +344,40 @@
       "type": "integer",
       "minimum": 1,
       "description": "Quantos o jogador escolhe entre os de 'grupo' antes de começar (a ordem da escolha é a ordem de marcha). Sem isto, jogam todos."
+    },
+    "partes": {
+      "type": "array",
+      "description": "Partes da aventura. Cada parte vira um pacote de download (props das suas áreas e as criaturas), baixado quando o grupo chega nela e guardado no navegador (o grupo pode voltar).",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "areas"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "criaturas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Modelos arte/final/3d/<id>-biblioteca.glb usados na parte."
+          }
+        }
+      }
     }
   },
   "$defs": {

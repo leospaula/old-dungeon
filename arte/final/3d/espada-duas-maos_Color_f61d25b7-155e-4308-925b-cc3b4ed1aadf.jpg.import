@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bd8yvl0u4o3pd"
-path="res://.godot/imported/espada-duas-maos_Color_f61d25b7-155e-4308-925b-cc3b4ed1aadf.jpg-1273c8e637154ad56aa317dba0ba1629.ctex"
+path.s3tc="res://.godot/imported/espada-duas-maos_Color_f61d25b7-155e-4308-925b-cc3b4ed1aadf.jpg-1273c8e637154ad56aa317dba0ba1629.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "95e75336337e775771447d825813c2ea"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/espada-duas-maos_Color_f61d25b7-155e-4308-925b-cc3b4ed1aadf.jpg"
-dest_files=["res://.godot/imported/espada-duas-maos_Color_f61d25b7-155e-4308-925b-cc3b4ed1aadf.jpg-1273c8e637154ad56aa317dba0ba1629.ctex"]
+dest_files=["res://.godot/imported/espada-duas-maos_Color_f61d25b7-155e-4308-925b-cc3b4ed1aadf.jpg-1273c8e637154ad56aa317dba0ba1629.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1

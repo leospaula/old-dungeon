@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ddxcowktf0alr"
-path="res://.godot/imported/espada-longa-heroica_Color_70f5d257-f7bf-45fb-815a-fe829908407b.jpg-dd62f7ac57b80960da3e424c79d84054.ctex"
+path.s3tc="res://.godot/imported/espada-longa-heroica_Color_70f5d257-f7bf-45fb-815a-fe829908407b.jpg-dd62f7ac57b80960da3e424c79d84054.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "5f7d347dbcff3a8840d5d72f0548ff97"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/espada-longa-heroica_Color_70f5d257-f7bf-45fb-815a-fe829908407b.jpg"
-dest_files=["res://.godot/imported/espada-longa-heroica_Color_70f5d257-f7bf-45fb-815a-fe829908407b.jpg-dd62f7ac57b80960da3e424c79d84054.ctex"]
+dest_files=["res://.godot/imported/espada-longa-heroica_Color_70f5d257-f7bf-45fb-815a-fe829908407b.jpg-dd62f7ac57b80960da3e424c79d84054.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1

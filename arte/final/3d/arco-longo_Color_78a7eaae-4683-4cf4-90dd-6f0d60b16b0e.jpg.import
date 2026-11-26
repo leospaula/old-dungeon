@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bdhpcjvudwyx7"
-path="res://.godot/imported/arco-longo_Color_78a7eaae-4683-4cf4-90dd-6f0d60b16b0e.jpg-57a17d8ca21baa0e33e92731297f6a65.ctex"
+path.s3tc="res://.godot/imported/arco-longo_Color_78a7eaae-4683-4cf4-90dd-6f0d60b16b0e.jpg-57a17d8ca21baa0e33e92731297f6a65.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "1a3c361554a5c84f53ae08ae41a96369"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://arte/final/3d/arco-longo_Color_78a7eaae-4683-4cf4-90dd-6f0d60b16b0e.jpg"
-dest_files=["res://.godot/imported/arco-longo_Color_78a7eaae-4683-4cf4-90dd-6f0d60b16b0e.jpg-57a17d8ca21baa0e33e92731297f6a65.ctex"]
+dest_files=["res://.godot/imported/arco-longo_Color_78a7eaae-4683-4cf4-90dd-6f0d60b16b0e.jpg-57a17d8ca21baa0e33e92731297f6a65.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1
