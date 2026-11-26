@@ -188,7 +188,7 @@ func pairar(c: Vector2i, alvo: Node) -> void:
 	if alvo and _faixa(vez, alvo) >= 0:
 		# Disparo: sem caminho; a cor diz a faixa (curta +1 · média · longa −1).
 		var fx := _faixa(vez, alvo)
-		marca_caminho.por([alvo.celula], [Color(0.95, 0.3, 0.1, 0.6), Color(0.95, 0.55, 0.1, 0.55), Color(0.95, 0.8, 0.2, 0.5)][fx], 0.05)
+		marca_caminho.alvo(alvo.celula, [Color(0.95, 0.3, 0.1, 0.85), Color(0.95, 0.55, 0.1, 0.8), Color(0.95, 0.8, 0.2, 0.75)][fx], 0.55)
 		mudou.emit()
 		return
 	if alvo:
@@ -196,13 +196,13 @@ func pairar(c: Vector2i, alvo: Node) -> void:
 			var lado := _melhor_vizinha(alvo)
 			if lado == Vector2i(-999, -999): lado = _rumo(_alc, vez, alvo)
 			if lado != vez.celula:
-				marca_caminho.por(grade.refazer(_alc_todo, lado), Color(1, 0.95, 0.8, 0.45), 0.5)
+				marca_caminho.pontos(grade.refazer(_alc_todo, lado), Color(1, 0.95, 0.8, 0.7))
 				previa_m = float(_alc[lado][0])
-		marca_caminho.por([alvo.celula], Color(0.9, 0.15, 0.1, 0.55), 0.05)
+		marca_caminho.alvo(alvo.celula, Color(0.9, 0.2, 0.12, 0.85), 0.55)
 	elif _alc.has(c) and c != vez.celula:
 		var cam: Array[Vector2i] = grade.refazer(_alc_todo, c)
-		marca_caminho.por(cam.slice(0, cam.size() - 1), Color(1, 0.95, 0.8, 0.45), 0.5)
-		marca_caminho.por([c], Color(1, 0.95, 0.8, 0.5), 0.1)
+		marca_caminho.pontos(cam.slice(0, cam.size() - 1), Color(1, 0.95, 0.8, 0.7))
+		marca_caminho.alvo(c, Color(1, 0.92, 0.7, 0.8))
 		previa_m = float(_alc[c][0])
 	mudou.emit()
 

@@ -26,7 +26,7 @@ void fragment() {
 	c *= mix(0.6, 1.0, smoothstep(0.0, 1.0, w.y));                      // sombra de contato na base
 	float v = nevoa(w, n);
 	ALBEDO = lembranca(c, v);
-	if (v < 0.2) { SPECULAR = 0.0; }
+	SPECULAR = 0.5 * smoothstep(0.08, 0.43, v);
 	NORMAL_MAP = texture(normal_tex, uv).rgb;
 	NORMAL_MAP_DEPTH = natural ? 0.8 : 1.4;
 	ROUGHNESS = 0.92;

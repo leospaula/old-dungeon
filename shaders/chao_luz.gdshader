@@ -34,7 +34,7 @@ void fragment() {
 	c = mix(c, vec3(0.05, 0.04, 0.03), (1.0 - smoothstep(0.0, largura, min(g.x, g.y))) * min(grade_forca * 1.4, 0.95));
 	float v = nevoa(w, normalize(n_mundo));
 	ALBEDO = lembranca(c, v);
-	if (v < 0.2) { SPECULAR = 0.0; }
+	SPECULAR = 0.5 * smoothstep(0.08, 0.43, v);
 	NORMAL_MAP = texture(normal_tex, uv).rgb;
 	NORMAL_MAP_DEPTH = 1.3;
 	ROUGHNESS = 0.88;

@@ -141,13 +141,6 @@ func _ready() -> void:
 	visao.tochas_parede = luz.tochas_cel.duplicate()
 	if aventura:
 		visao.penumbra = aventura.celulas_penumbra(); luz.penumbra(self, visao.penumbra)
-		# Tochas de parede que se veem de onde o grupo começa (pela grade da cela) já começam vistas:
-		# é delas que vem a luz da penumbra.
-		var ini_area := str(aventura.inicio().area)
-		for c in luz.tochas_cel:
-			for x in grade.area:
-				if grade.area[x] == ini_area and grade.linha(c, x):
-					visao.exploradas[c] = true; break
 	visao.recalcular_luz_fixa()
 	_materiais_das_portas()
 	portas = Portas.new(self)
@@ -597,7 +590,7 @@ func _andar_para(c: Vector2i) -> void:
 	if cam.is_empty() and de == c and not heroi.andando(): return
 	if cam.is_empty() and de != c: return
 	if heroi.andando(): cam.push_front(de)
-	marca_caminho.limpar(); marca_caminho.por([c], Color(1, 0.9, 0.6, 0.35), 0.15)
+	marca_caminho.limpar(); marca_caminho.alvo(c, Color(1, 0.9, 0.6, 0.8))
 	heroi.seguir(cam)
 
 ## Separa um do grupo: anda sozinho até a casa e fica lá (a fila não o puxa) até reagrupar (J).
@@ -607,7 +600,7 @@ func _andar_sozinho(q: Node3D, c: Vector2i) -> void:
 	if cam.is_empty(): return
 	if q.andando(): cam.push_front(de)
 	q.separado = true
-	marca_caminho.limpar(); marca_caminho.por([c], Color(0.7, 0.85, 1.0, 0.35), 0.15)
+	marca_caminho.limpar(); marca_caminho.alvo(c, Color(0.7, 0.85, 1.0, 0.8))
 	q.seguir(cam)
 
 ## J: desagrupa (cada um anda sozinho) ou agrupa (todos voltam para a fila atrás de quem age).
@@ -711,8 +704,8 @@ func _previa(c: Vector2i, porta: Dictionary) -> void:
 	if not grade.chao(c) or c == heroi.celula or not visao.exploradas.has(c): return
 	var cam: Array[Vector2i] = _caminho_lider(heroi.celula, c)
 	if cam.is_empty(): return
-	marca_caminho.por(cam.slice(0, cam.size() - 1), Color(1, 0.95, 0.8, 0.18), 0.55)
-	marca_caminho.por([c], Color(1, 0.95, 0.8, 0.3), 0.15)
+	marca_caminho.pontos(cam.slice(0, cam.size() - 1), Color(1, 0.95, 0.8, 0.55))
+	marca_caminho.alvo(c, Color(1, 0.95, 0.8, 0.75))
 
 ## Monstros (que não estão na vista de ninguém) abrem portas ao passar.
 func _ao_iniciar_passo(de: Vector2i, para: Vector2i, quem: Node3D) -> void:
@@ -1964,6 +1957,14 @@ func _linha_de_comando() -> void:
 			for im in imgs:
 				im.save_png(captura.replace(".png", "-%02d.png" % k)); k += 1
 			await get_tree().create_timer(1.8).timeout
+	elif teste == "marcas":
+		# Prévia do caminho (pontinhos) e alvo (anel).
+		var alvo_c: Vector2i = heroi.celula
+		for c in visao.exploradas:
+			if grade.chao(c) and (c - heroi.celula).length() > (alvo_c - heroi.celula).length() and (c - heroi.celula).length() < 5.0: alvo_c = c
+		_previa(alvo_c, {})
+		camera.distancia = 7.0; camera.inclinacao = 55.0
+		await get_tree().create_timer(0.5).timeout
 	elif teste == "corpo":
 		# Monstro morto vira malha parada (sem esqueleto): ator.congelar_corpo().
 		_brotar_goblin(true)

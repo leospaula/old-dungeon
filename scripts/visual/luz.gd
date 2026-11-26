@@ -92,6 +92,12 @@ func penumbra(raiz: Node3D, celulas: Array) -> void:
 	l.light_color = Color(0.62, 0.66, 0.8); l.light_energy = 0.55; l.omni_range = 6.0; l.omni_attenuation = 1.2
 	raiz.add_child(l)
 
+## Sombra de tocha lisa: cubo (mais preciso que o paraboloide), borda desfocada e viés contra o serrilhado.
+func _sombra_suave(l: OmniLight3D) -> void:
+	l.omni_shadow_mode = OmniLight3D.SHADOW_CUBE
+	l.shadow_blur = 2.5
+	l.shadow_bias = 0.04; l.shadow_normal_bias = 1.2
+
 func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
 	var t := Node3D.new(); t.position = pos; raiz.add_child(t); tochas_nos.append(t)
 	var cabo := MeshInstance3D.new(); var cm := CylinderMesh.new(); cm.top_radius = 0.05; cm.bottom_radius = 0.035; cm.height = 0.5; cabo.mesh = cm
@@ -104,6 +110,7 @@ func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
 	chama.material_override = mc; chama.position = Vector3(0, 0.3, 0) + dentro * 0.1; t.add_child(chama)
 	var luz := OmniLight3D.new(); luz.position = chama.position + dentro * 0.3; luz.light_color = Color(1.0, 0.68, 0.38)
 	luz.light_energy = 2.1; luz.omni_range = 8.5; luz.omni_attenuation = 1.6; t.add_child(luz)
+	_sombra_suave(luz)
 	tochas.append(luz)
 	var f := CPUParticles3D.new(); f.position = chama.position; f.amount = 14; f.lifetime = 1.6; f.direction = Vector3.UP; f.spread = 25
 	f.initial_velocity_min = 0.3; f.initial_velocity_max = 0.8; f.gravity = Vector3(0, 0.2, 0); f.preprocess = 2.0
@@ -124,10 +131,14 @@ func set_nevoa(tex: Texture2D, tam: Vector2) -> void:
 	for m in materiais:
 		m.set_shader_parameter("nevoa_tex", tex); m.set_shader_parameter("nevoa_tam", tam)
 
-## Tochas de parede só existem para o jogador depois de vistas (senão a luz delas denunciaria salas).
+## Tochas de parede: a luz delas sempre aparece, mesmo onde ninguém do grupo viu ainda (a claridade
+## vaza por portas, grades e corredores, como numa masmorra de verdade).
+## O objeto da tocha (cabo, chama e faíscas) só aparece depois de visto, para não flutuar no escuro.
 func atualizar_tochas(exploradas: Dictionary, mestre_: bool) -> void:
 	for i in tochas_nos.size():
-		tochas_nos[i].visible = mestre_ or exploradas.has(tochas_cel[i])
+		var visto: bool = mestre_ or exploradas.has(tochas_cel[i])
+		for c in tochas_nos[i].get_children():
+			if not c is Light3D: c.visible = visto
 
 ## Aplica o material em todos os blocos (malhas filhas) de um grupo da masmorra.
 func _aplicar(grupo: Node, mat: Material, sombra: bool) -> void:
@@ -146,7 +157,7 @@ func set_mestre(v: bool) -> void:
 func set_tocha(a: Node3D, acesa: bool) -> void:
 	if not luzes_tocha.has(a):
 		var l := OmniLight3D.new(); l.light_color = Color(1.0, 0.72, 0.42); l.light_energy = 0.9
-		l.omni_range = 9.0; l.omni_attenuation = 1.5; _raiz.add_child(l)
+		l.omni_range = 9.0; l.omni_attenuation = 1.5; _raiz.add_child(l); _sombra_suave(l)
 		luzes_tocha[a] = l
 	luzes_tocha[a].visible = acesa
 	if acesa: luzes_tocha[a].global_position = a.global_position + Vector3(0.4, 1.6, 0.3)

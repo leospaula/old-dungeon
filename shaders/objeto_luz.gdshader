@@ -23,5 +23,5 @@ void fragment() {
 		float borda = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.0);
 		EMISSION += vec3(1.0, 0.62, 0.25) * (borda * 0.35 * fechada + destaque * (0.25 + borda * 0.6));
 	}
-	if (v < 0.2) { SPECULAR = 0.0; }
+	SPECULAR = 0.5 * smoothstep(0.08, 0.43, v);
 }
