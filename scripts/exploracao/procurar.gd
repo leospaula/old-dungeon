@@ -1,7 +1,7 @@
 extends RefCounted
 ## Procurar (B/X) adaptado: portas secretas e armadilhas de sala.
-## - Procurar na sala (medalhão Procurar): todos da área vasculham; as paredes viram trechos de 3 m
-##   repartidos entre quem procura (1 turno por trecho por pessoa). Cada um rola em segredo, uma vez por
+## - Procurar na sala (medalhão Procurar): todos da área vasculham. Cada pessoa cobre 36 m² de chão
+##   (com as paredes em volta) por turno; mínimo 1 turno. Sala 24 (110 m²): 3 pessoas 2 turnos, 5–6 → 1. Cada um rola em segredo, uma vez por
 ##   área: porta secreta 1 em 6 (elfo 2 em 6); armadilha de sala 1 em 6 (anão 2 em 6).
 ## - Elfo nota porta secreta de passagem (1 em 6, até 2 casas), uma vez por turno, se não estiver correndo.
 ## - Modo Cauteloso: quem lidera procura armadilhas nas casas à frente enquanto anda (rolagem secreta).
@@ -71,16 +71,27 @@ func _secretas_da_area(area: String) -> Array:
 			if ex.grade.area_de(par[0]) == area or ex.grade.area_de(par[1]) == area: out.append(pt); break
 	return out
 
+## Modo mestre: a parede falsa fica translúcida e lilás (dá para ver a porta atrás).
+var _mat_mestre: StandardMaterial3D
+func mostrar_tampas(v: bool) -> void:
+	if v and _mat_mestre == null:
+		_mat_mestre = StandardMaterial3D.new(); _mat_mestre.albedo_color = Color(0.75, 0.55, 1.0, 0.35)
+		_mat_mestre.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA; _mat_mestre.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	for id in _tampas:
+		_tampas[id].material_override = _mat_mestre if v else ex.luz.pedra_mat
+		var no: Node3D = ex.get_node_or_null("Masmorra/Portas/" + str(id))
+		if no: no.visible = v
+
 # ---------- procurar na sala ----------
 
-## Trechos de parede de 3 m da área (bordas de casa com parede, de 2 em 2).
-func trechos(area: String) -> int:
-	var bordas := 0
+const M2_POR_TURNO := 36.0   # chão (e paredes em volta) que uma pessoa vasculha num turno: 4 quadrados de 3 m
+
+## Chão da área em m² (casas de 1,5 m).
+func metros2(area: String) -> float:
+	var n := 0
 	for c in ex.grade.area:
-		if ex.grade.area_de(c) != area or not ex.grade.chao(c): continue
-		for v in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-			if not ex.grade.passa_reto(c, c + v, true): bordas += 1
-	return maxi(1, ceili(bordas / 2.0))
+		if ex.grade.area_de(c) == area and ex.grade.chao(c): n += 1
+	return n * 2.25
 
 ## Quem procuraria agora na área de quem age (vivos na mesma área que ainda não procuraram nela).
 func procuradores(area: String) -> Array:
@@ -89,7 +100,7 @@ func procuradores(area: String) -> Array:
 
 func turnos_para(area: String) -> int:
 	var n := procuradores(area).size()
-	return ceili(float(trechos(area)) / maxf(1.0, n)) if n > 0 else 0
+	return maxi(1, ceili(metros2(area) / (M2_POR_TURNO * n))) if n > 0 else 0
 
 func procurar_sala() -> void:
 	if ocupado or ex.combate.ativo: return
@@ -103,8 +114,8 @@ func procurar_sala() -> void:
 	for h in ex.vivos(): h.parar()
 	for h in quem:
 		if h.andando(): await h.parou
-	ex._registrar("%s procura%s aqui, %s (%d trecho%s de parede e o chão): %d turno%s." % [", ".join(quem.map(func(h): return h.nome)),
-		"m" if quem.size() > 1 else "", nome_area, trechos(area), "s" if trechos(area) > 1 else "", turnos, "s" if turnos > 1 else ""])
+	ex._registrar("%s procura%s aqui, %s (%d m² de chão e paredes): %d turno%s." % [", ".join(quem.map(func(h): return h.nome)),
+		"m" if quem.size() > 1 else "", nome_area, roundi(metros2(area)), turnos, "s" if turnos > 1 else ""])
 	for h in quem: h.tocar_anim("ajoelhar"); h.player.speed_scale = 0.6
 	await ex.get_tree().create_timer(4.0).timeout
 	if not procurou.has(area): procurou[area] = {}
@@ -114,7 +125,7 @@ func procurar_sala() -> void:
 	for pt in _secretas_da_area(area):
 		for h in quem:
 			var n := 2 if str(h.ficha.p.classe) == "elfo" else 1; var r := Dados.d(6)
-			print("(secreta %s %s: d6 %d contra %d)" % [pt.id, h.nome, r, n])
+			ex._secreto("Porta secreta %s · %s: d6 %d contra %d → %s" % [pt.id, h.nome, r, n, "acha" if r <= n else "falha"])
 			if r <= n: revelar(pt, h.nome); achou = true; break
 	# Armadilhas de sala no chão da área (1 em 6; anão 2 em 6).
 	for c in armadilhas:
@@ -122,10 +133,13 @@ func procurar_sala() -> void:
 		if a.visto or a.fora or ex.grade.area_de(c) != area: continue
 		for h in quem:
 			var n := 2 if str(h.ficha.p.classe) == "anao" else 1; var r := Dados.d(6)
-			print("(armadilha %s %s: d6 %d contra %d)" % [c, h.nome, r, n])
+			ex._secreto("Armadilha de sala %s · %s: d6 %d contra %d → %s" % [c, h.nome, r, n, "acha" if r <= n else "falha"])
 			if r <= n: _achar(c, h.nome); achou = true; break
 	ex._gastar_tempo(float(turnos))
-	if not achou: ex._registrar("Vasculham cada canto e não encontram nada.")
+	if not achou:
+		ex._secreto("Nesta área: %d porta(s) secreta(s) e %d armadilha(s) escondidas." % [_secretas_da_area(area).size(),
+			armadilhas.keys().filter(func(c): return ex.grade.area_de(c) == area and not armadilhas[c].visto and not armadilhas[c].fora).size()])
+		ex._registrar("Vasculham cada canto e não encontram nada.")
 	for h in quem:
 		if h.vivo(): h.tocar("parado", 0.4)
 	ocupado = false
@@ -161,7 +175,7 @@ func pisou(h: Node3D, c: Vector2i) -> void:
 	if a.visto:
 		ex._registrar("%s pula por cima do %s." % [h.nome, str(a.tipo)]); return
 	var r := Dados.d(6)
-	print("(pisou na armadilha %s: d6 %d contra 2)" % [c, r])
+	ex._secreto("%s pisa na armadilha escondida %s: d6 %d contra 2 → %s" % [h.nome, c, r, "dispara" if r <= 2 else "não dispara"])
 	if r > 2: return
 	a.visto = true; a.fora = str(a.tipo) != "fosso"   # o fosso continua lá, aberto
 	var dd := Dados.detalhar(str(a.get("dano", "1d6"))); var dano := maxi(1, int(dd.total))
@@ -187,7 +201,7 @@ func cauteloso(h: Node3D, c: Vector2i) -> void:
 		if a.visto or a.fora or a.has("cauteloso_" + h.nome): continue
 		a["cauteloso_" + h.nome] = true   # uma chance por pessoa
 		var n := 2 if str(h.ficha.p.classe) == "anao" else 1; var r := Dados.d(6)
-		print("(cauteloso %s %s: d6 %d contra %d)" % [alvo, h.nome, r, n])
+		ex._secreto("Cauteloso %s · %s: d6 %d contra %d → %s" % [alvo, h.nome, r, n, "acha" if r <= n else "falha"])
 		if r <= n: _achar(alvo, h.nome)
 
 ## Elfo de passagem: 1 em 6 para cada porta secreta a até 2 casas, uma vez por turno (não correndo).
@@ -207,5 +221,5 @@ func elfo_passando(h: Node3D) -> void:
 		if int(_elfo.get(chave, -99)) >= ex.turno: continue
 		_elfo[chave] = ex.turno
 		var r := Dados.d(6)
-		print("(elfo de passagem %s: d6 %d contra 1)" % [id, r])
+		ex._secreto("%s passa perto da porta secreta %s: d6 %d contra 1 → %s" % [h.nome, id, r, "nota" if r <= 1 else "não nota"])
 		if r <= 1: revelar(pt, h.nome)

@@ -35,6 +35,7 @@ var fugindo := false
 var no_combate := false   # ligado pelo combate enquanto ele dura
 var perto_de_inimigo: Callable   # (ator) -> bool, dado pelo combate: até 3 casas de um inimigo vivo
 var infravisao_m := 0.0
+var separado := false     # grupo: saiu da fila (anda sozinho; a fila de quem lidera não o puxa)
 const VEL_BASE := 2.0     # m/s andando na tela (ritmo normal)
 var velocidade := VEL_BASE
 ## Velocidade "natural" de cada animação de deslocamento no tamanho do jogo (m/s), medida com

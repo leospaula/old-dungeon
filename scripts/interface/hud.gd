@@ -82,7 +82,7 @@ func _carta(h: Node) -> Dictionary:
 	_cartas_caixa.add_child(margem)
 	var painel := PanelContainer.new(); painel.add_theme_stylebox_override("panel", E.painel())
 	painel.mouse_filter = Control.MOUSE_FILTER_STOP; painel.custom_minimum_size.x = 252
-	painel.tooltip_text = "Clique: escolhe quem age (portas, procurar…) · de novo: mais detalhes · duplo clique: ficha · Esc: volta a quem lidera"
+	painel.tooltip_text = "Clique: escolhe quem age (portas, procurar…; clicar no chão o leva sozinho) · de novo: mais detalhes · duplo clique: ficha · Esc: volta a quem lidera"
 	margem.add_child(painel)
 	var v := VBoxContainer.new(); v.add_theme_constant_override("separation", 6); v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	painel.add_child(v)
@@ -153,6 +153,7 @@ func _atualizar_cartas(vez: Node, lider: Node, luz_txt: String, estados: Diction
 		var estado: String = estados.get(h, "%s %d" % [f.classe(), int(f.p.nivel)])
 		if not h.vivo(): estado = "caído"
 		elif vez == null and h == selecionado: estado = "age"
+		elif vez == null and h.get("separado"): estado = "separado"
 		d.estado.text = estado
 		d.estado.add_theme_color_override("font_color", E.OURO_CLARO if ativo else E.TEXTO)
 		d.nome.add_theme_color_override("font_color", E.OURO_VEZ if ativo else E.OURO)

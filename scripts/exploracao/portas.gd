@@ -173,10 +173,10 @@ func ouvir(ouvintes: Array, candidatos: Array) -> Array:
 	var ok := false
 	for h in ouvintes:
 		var n: int = h.ficha.chance_ouvir(); var r := Dados.d(6)
-		print("(ouvir %s: d6 %d contra %d)" % [h.nome, r, n])
+		ex._secreto("Ouvir · %s: d6 %d contra %d → %s" % [h.nome, r, n, "ouve" if r <= n else "falha"])
 		ok = ok or r <= n
 	var ruidosos := candidatos.filter(func(m): return SONS.has(str(m.get_meta("id", ""))))
-	print("(há %d criatura(s), %d fazem barulho)" % [candidatos.size(), ruidosos.size()])
+	ex._secreto("Ao alcance: %d criatura(s), %d fazem barulho" % [candidatos.size(), ruidosos.size()])
 	if not ok or ruidosos.is_empty(): return []
 	for m in ruidosos: m.set_meta("ouvido", ex.turno)
 	return ruidosos
@@ -201,7 +201,9 @@ func _forcar(pt: Dictionary, q: Node3D) -> void:
 	else:
 		ex._registrar("%s força a porta %s (%s em d6): [b]%d[/b] → não cede." % [q.nome, pt.id, faixa, r])
 	ex._registrar("[i]O estrondo ecoa pelos corredores.[/i]")
-	if Dados.d(6) <= 2: ex._surgir_errantes(false, true)   # o barulho atrai quem estiver perto
+	var rb := Dados.d(6)
+	ex._secreto("Barulho atrai errantes: d6 %d contra 2 → %s" % [rb, "sim" if rb <= 2 else "não"])
+	if rb <= 2: ex._surgir_errantes(false, true)   # o barulho atrai quem estiver perto
 
 func _fechadura(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt); var f = q.ficha
@@ -228,7 +230,7 @@ func _procurar(pt: Dictionary, q: Node3D) -> void:
 	var r := Dados.d(100) if ca[0] == "%" else Dados.d(6)
 	var ok := r <= int(ca[1])
 	var tem := e.has("armadilha") and not bool(e.get("armadilha_fora", false))
-	print("(armadilha %s: %s %d contra %d; há: %s)" % [q.nome, ca[0], r, ca[1], tem])
+	ex._secreto("Armadilha na porta %s · %s: %s %d contra %d → %s; armadilha: %s" % [pt.id, q.nome, "d%" if ca[0] == "%" else "d6", r, ca[1], "acha" if ok else "falha", "sim" if tem else "não"])
 	if ok and tem:
 		e.armadilha_achada = true
 		ex._registrar("%s examina a porta %s e [color=#ff9a6a]encontra uma armadilha[/color]: %s" % [q.nome, pt.id, str(e.armadilha.get("achada", e.armadilha.get("efeito", "")))])
@@ -255,7 +257,9 @@ func _pregar(pt: Dictionary, q: Node3D) -> void:
 	e.estado = "pregada"; e.sabe = "pregada"; ex.grade.barrar_porta(pt, true)
 	ex._registrar("%s prega a porta %s: ninguém passa por ela sem forçar." % [q.nome, pt.id])
 	ex._registrar("[i]As marteladas ecoam.[/i]")
-	if Dados.d(6) == 1: ex._surgir_errantes(false, true)
+	var rb := Dados.d(6)
+	ex._secreto("Marteladas atraem errantes: d6 %d contra 1 → %s" % [rb, "sim" if rb == 1 else "não"])
+	if rb == 1: ex._surgir_errantes(false, true)
 
 ## Armadilha da porta (uma vez): dano em quem mexeu ou alarme.
 func _disparar(pt: Dictionary, q: Node3D) -> void:

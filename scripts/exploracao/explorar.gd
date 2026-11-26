@@ -11,7 +11,8 @@ extends Node3D
 ## Névoa de guerra: nunca visto = preto · já visto = lembrança apagada, sem criaturas · à vista = normal.
 ## Combate: na vez do personagem, o alcance fica destacado; clique para andar, num inimigo para atacar,
 ## numa porta para abrir. Espaço encerra a vez.
-## Teclas: F foca · M modo mestre (vê tudo) · G grade · K força um encontro · R recomeça.
+## Teclas: F foca · M modo mestre (vê tudo, rolagens ocultas no registro, marca o escondido) · J reagrupa ·
+## Shift+clique: só quem age anda (separa do grupo) · G grade · K força um encontro · R recomeça.
 ## Linha de comando: -- --captura=arquivo.png [--teste=andar|frente|longe|porta|errantes|combate|auto]
 
 const Luz = preload("res://scripts/visual/luz.gd")
@@ -68,6 +69,7 @@ var selecionado: Node3D = null   # quem age nas ações de exploração (carta c
 var portas: RefCounted     # ações e estado das portas (scripts/exploracao/portas.gd)
 var procurar: RefCounted   # portas secretas e armadilhas de sala (scripts/exploracao/procurar.gd)
 var marca_armadilhas: Node
+var marca_mestre: Node       # modo mestre: armadilhas e portas secretas escondidas
 var bonus_silencio_ate := -1   # até este turno o grupo se move em silêncio com bônus (ouviu monstros antes)
 var _porta_menu := {}      # porta do balão aberto
 var monstros: Array = []   # todos os monstros vivos em cena
@@ -121,7 +123,7 @@ func _ready() -> void:
 	_materiais_das_portas()
 	portas = Portas.new(self)
 	luz.set_nevoa(visao.textura(), Vector2(grade.W, grade.H))
-	for n in ["marca_alcance", "marca_caminho", "marca_vez", "marca_portas", "marca_armadilhas"]:
+	for n in ["marca_alcance", "marca_caminho", "marca_vez", "marca_portas", "marca_armadilhas", "marca_mestre"]:
 		var m := MeshInstance3D.new(); m.set_script(Marcas); add_child(m); set(n, m)
 	procurar = Procurar.new(self); procurar.desenhar()
 	combate = Combate.new(); add_child(combate)
@@ -233,7 +235,7 @@ func _gastar_tocha() -> String:
 func _puxar_fila(de: Vector2i) -> void:
 	var alvo := de
 	for f in grupo:
-		if f == heroi or not f.vivo(): continue
+		if f == heroi or not f.vivo() or f.separado: continue
 		var atual: Vector2i = f.proxima_celula()
 		if atual != alvo:
 			var cam: Array[Vector2i] = grade.caminho(atual, alvo, _ocupadas_por(grupo))   # nunca através de monstros
@@ -251,8 +253,9 @@ func _ocupadas_por(exceto: Array = []) -> Dictionary:
 
 ## Caminho de quem lidera sem atravessar ninguém. Se o grupo fecha um corredor de uma casa só, os
 ## companheiros dão passagem (a fila se reorganiza); monstros nunca são atravessados.
-func _caminho_lider(de: Vector2i, para: Vector2i) -> Array[Vector2i]:
-	var todos := _ocupadas_por([heroi])
+func _caminho_lider(de: Vector2i, para: Vector2i, quem: Node3D = null) -> Array[Vector2i]:
+	if quem == null: quem = heroi
+	var todos := _ocupadas_por([quem])
 	if todos.has(para): return []
 	var desvio := todos.duplicate(); desvio.merge(procurar.vistas())   # desvia de armadilha já vista
 	var cam: Array[Vector2i] = grade.caminho(de, para, desvio)
@@ -296,7 +299,8 @@ func _unhandled_input(e: InputEvent) -> void:
 		match e.keycode:
 			KEY_R: get_tree().reload_current_scene(); return
 			KEY_F: camera.alvo = heroi.global_position; camera.distancia = 14.0
-			KEY_M: mestre = not mestre; luz.set_mestre(mestre); _atualizar_visao()
+			KEY_M: _alternar_mestre()
+			KEY_J: if not combate.ativo: _reagrupar()
 			KEY_G: grade_forte = not grade_forte; luz.set_grade(grade_forte or combate.ativo)
 			KEY_K: if not combate.ativo and not fim: _surgir_errantes(true)
 			KEY_B: if not fim: _brotar_goblin()
@@ -316,7 +320,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			if combate.ativo: combate.clicar_porta(mira[2])
 			else: _menu_da_porta(mira[2], e.position)
 		elif combate.ativo: combate.clicar(mira[0], mira[1])
-		else: _andar_para(mira[0])
+		else: _andar_para(mira[0], e.shift_pressed)
 	elif e is InputEventMouseMotion:
 		var mira := _mira(e.position)
 		var id_porta: String = str(mira[2].id) if not mira[2].is_empty() else ""
@@ -428,8 +432,12 @@ func _raio_caixa(o: Vector3, d: Vector3, a: Vector3, b: Vector3) -> float:
 
 # ---------- exploração ----------
 
-func _andar_para(c: Vector2i) -> void:
+func _andar_para(c: Vector2i, so_ele := false) -> void:
 	if not grade.chao(c) or not visao.exploradas.has(c): return
+	# Quem age (carta escolhida) não é quem lidera, ou Shift+clique: só ele anda e sai da fila.
+	var q := agente()
+	if q != heroi or so_ele:
+		_andar_sozinho(q, c); return
 	porta_alvo = {}
 	var de: Vector2i = heroi.proxima_celula()
 	var cam: Array[Vector2i] = _caminho_lider(de, c)
@@ -438,6 +446,45 @@ func _andar_para(c: Vector2i) -> void:
 	if heroi.andando(): cam.push_front(de)
 	marca_caminho.limpar(); marca_caminho.por([c], Color(1, 0.9, 0.6, 0.35), 0.15)
 	heroi.seguir(cam)
+
+## Separa um do grupo: anda sozinho até a casa e fica lá (a fila não o puxa) até reagrupar (J).
+func _andar_sozinho(q: Node3D, c: Vector2i) -> void:
+	var de: Vector2i = q.proxima_celula()
+	var cam: Array[Vector2i] = _caminho_lider(de, c, q)
+	if cam.is_empty(): return
+	if q.andando(): cam.push_front(de)
+	if not q.separado:
+		q.separado = true
+		_registrar("%s se separa do grupo%s. [i](J reagrupa)[/i]" % [q.nome, "" if q != heroi else " e leva a tocha"])
+		if q == heroi:   # quem lidera saiu sozinho: os outros ficam onde estão
+			for h in vivos():
+				if h != heroi: h.separado = true
+		hud_ui.refazer()
+	marca_caminho.limpar(); marca_caminho.por([c], Color(0.7, 0.85, 1.0, 0.35), 0.15)
+	q.seguir(cam)
+
+## Todos voltam para a fila atrás de quem lidera (a ordem do grupo).
+func _reagrupar() -> void:
+	var sep := vivos().filter(func(h): return h.separado)
+	for h in vivos(): h.separado = false
+	if sep.is_empty() or (sep.size() == 1 and sep[0] == heroi):
+		_registrar("O grupo já está junto."); hud_ui.refazer(); return
+	var livres: Array = grade.alcance(heroi.celula, 9.0, {}, true, visao.exploradas).keys()
+	var ocup := {heroi.celula: true}
+	livres = livres.filter(func(x): return x != heroi.celula and grade.chao(x))
+	livres.sort_custom(func(a, b): return grade.centro(a).distance_to(grade.centro(heroi.celula)) < grade.centro(b).distance_to(grade.centro(heroi.celula)))
+	for h in vivos():
+		if h == heroi: continue
+		h.parar()
+		for x in livres:
+			if ocup.has(x): continue
+			var cam: Array[Vector2i] = grade.caminho(h.proxima_celula(), x, ocup)
+			if cam.is_empty() and h.proxima_celula() != x: continue
+			ocup[x] = true
+			if not cam.is_empty(): h.seguir(cam)
+			break
+	_registrar("O grupo se reagrupa atrás de %s." % heroi.nome)
+	hud_ui.refazer()
 
 func _ir_abrir_porta(pt: Dictionary) -> void:
 	var de: Vector2i = heroi.proxima_celula()
@@ -510,9 +557,12 @@ func _ao_chegar(_c: Vector2i, metros: float, quem: Node3D) -> void:
 		procurar.pisou(quem, _c)
 		if not combate.ativo:
 			procurar.elfo_passando(quem)
-			if quem == heroi and modo == "cauteloso": procurar.cauteloso(quem, _c)
+			if (quem == heroi or quem.separado) and modo == "cauteloso": procurar.cauteloso(quem, _c)
 	if quem == heroi: _anotar_area()
-	if combate.ativo or quem != heroi: return
+	if combate.ativo or quem.lado != "grupo": return
+	# O tempo corre com quem lidera; quem anda separado conta só enquanto quem lidera está parado.
+	if quem != heroi and not (quem.separado and not heroi.andando()):
+		_checar_avistamento(); return
 	metros_no_turno += metros
 	while metros_no_turno >= _taxa_turno():
 		metros_no_turno -= _taxa_turno()
@@ -714,7 +764,7 @@ func _rolar_furtividade() -> bool:
 		var passou := r < chance
 		ok = ok and passou
 		partes.append("%s %d%%: %s" % [str(p.nome).get_slice(" ", 0), roundi(chance * 100), "passou" if passou else "falhou"])
-	print("(furtividade do grupo: %s → %s)" % [", ".join(partes), "ninguém ouviu" if ok else "ouvidos"])   # rolagem escondida
+	_secreto("Furtividade do grupo: %s → %s" % [", ".join(partes), "ninguém ouviu" if ok else "ouvidos"])
 	return ok
 
 func _hora() -> String:
@@ -731,11 +781,45 @@ func _atualizar_visao() -> void:
 	luz.atualizar_tochas(visao.exploradas, mestre)
 	_atualizar_monstros_visiveis()
 	_desenhar_portas()
+	_desenhar_mestre()
 
 func _atualizar_monstros_visiveis() -> void:
 	for m in monstros:
 		if is_instance_valid(m) and m.vivo():
 			m.visible = mestre or visao.visiveis.has(m.celula)
+
+# ---------- modo mestre ----------
+
+func _alternar_mestre() -> void:
+	mestre = not mestre
+	luz.set_mestre(mestre); _atualizar_visao()
+	_registrar("[color=#b9a3e3]Modo mestre %s[/color]%s" % ["ligado" if mestre else "desligado",
+		": rolagens ocultas aparecem aqui e o mapa marca o escondido (roxo: armadilha de sala · lilás: porta secreta · laranja: porta com armadilha)." if mestre else "."])
+
+## Rolagem oculta: vai só para o console; no modo mestre aparece também no registro.
+func _secreto(txt: String) -> void:
+	if mestre: _registrar("[color=#9d8cc4]◆ %s[/color]" % txt)
+	else: print("(%s)" % txt)
+
+## Modo mestre: marca no chão o que o grupo ainda não achou.
+func _desenhar_mestre() -> void:
+	if marca_mestre == null: return
+	marca_mestre.limpar()
+	procurar.mostrar_tampas(mestre)
+	if not mestre: return
+	var cs: Array = []
+	for c in procurar.armadilhas:
+		var a: Dictionary = procurar.armadilhas[c]
+		if not a.visto and not a.fora: cs.append(c)
+	if not cs.is_empty(): marca_mestre.por(cs, Color(0.6, 0.2, 0.85, 0.5), 0.1)
+	for id in portas.est:
+		if not portas.por_id.has(id): continue
+		var pt: Dictionary = portas.por_id[id]; var e: Dictionary = portas.est[id]
+		var cor := Color(0, 0, 0, 0)
+		if procurar.secreta(pt): cor = Color(0.8, 0.6, 1.0, 0.45)
+		elif e.has("armadilha") and not bool(e.get("armadilha_fora", false)) and not bool(e.get("armadilha_achada", false)): cor = Color(1.0, 0.5, 0.1, 0.45)
+		if cor.a == 0: continue
+		for par in grade.lados_da_porta(pt): marca_mestre.por(par, cor, 0.35)
 
 # ---------- encontros ----------
 
@@ -764,7 +848,7 @@ func _surgir_errantes(forcado: bool, ciente := true) -> void:
 		m.set_meta("ciente", ciente or modo == "rapido"); m.set_meta("turno", turno)
 		monstros.append(m); errantes.append(m)
 		_errante_rumo(m)
-	print("(errantes: %d %s a %d m)" % [errantes.size(), dm.nome, int(dist)])
+	_secreto("Errantes: %d %s a %d m%s" % [errantes.size(), dm.nome, int(dist), "" if ciente else ", sem ter ouvido o grupo"])
 	_atualizar_monstros_visiveis()
 	_checar_avistamento()
 
@@ -806,7 +890,8 @@ func _checar_avistamento() -> void:
 	for m in errantes:
 		if not is_instance_valid(m) or not m.vivo(): continue
 		if visao.visiveis.has(m.celula): grupo_ve = true
-		if visao.monstro_ve(m.celula, m.frente_vetor(), m.infravisao_m, heroi.celula, tocha_turnos > 0): monstros_veem = true
+		for h in vivos():
+			if visao.monstro_ve(m.celula, m.frente_vetor(), m.infravisao_m, h.celula, h == heroi and tocha_turnos > 0): monstros_veem = true
 	if grupo_ve or monstros_veem: _comecar_combate(grupo_ve, monstros_veem)
 
 func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
@@ -824,10 +909,14 @@ func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
 	var ouvidos := lista.filter(func(x): return turno - int(x.get_meta("ouvido", -99)) <= 3)
 	# Surpresa (normal 1–2 em d6). Devagar e sem ter sido ouvido: +1 para surpreender.
 	# Correndo: impossível surpreender os monstros, e +1 na chance de ser surpreendido.
-	var sg := (not grupo_ve) or Dados.d(6) <= 2 + int(mm.ser_surpreendido)
+	var rg := Dados.d(6); var ng := 2 + int(mm.ser_surpreendido)
+	var sg := (not grupo_ve) or rg <= ng
 	var sm := false
+	var rm := Dados.d(6); var nm := 2 + (int(mm.surpreender) if furtivos and mm.surpreender != null else 0)
 	if mm.surpreender != null:
-		sm = (not monstros_veem) or Dados.d(6) <= 2 + (int(mm.surpreender) if furtivos else 0)
+		sm = (not monstros_veem) or rm <= nm
+	_secreto("Surpresa do grupo: d6 %d contra %d%s · dos monstros: %s" % [rg, ng, "" if grupo_ve else " (não viu: surpreendido)",
+		"impossível (correndo)" if mm.surpreender == null else "d6 %d contra %d%s" % [rm, nm, "" if monstros_veem else " (não viram: surpreendidos)"]])
 	if not ouvidos.is_empty():
 		sg = false
 		if ouvidos.any(func(x): return not bool(x.get_meta("ciente", true))):
@@ -1413,7 +1502,7 @@ func _linha_de_comando() -> void:
 		var p2: Dictionary = portas.por_id["P02"]
 		print("PROCURAR P02 secreta=", procurar.secreta(p2), " clicável=", not _porta_perto(grade.centro(Vector2i(12, 4)) + Vector3(0, 0, -0.6)).is_empty(), " monstro passa=", grade.passa_reto(Vector2i(12, 3), Vector2i(12, 4), true))
 		grupo[0].colocar(Vector2i(14, 5)); grupo[1].colocar(Vector2i(13, 5)); grupo[2].colocar(Vector2i(15, 6)); _atualizar_visao()
-		print("PROCURAR área=", grade.area_de(grupo[0].celula), " trechos=", procurar.trechos("23"), " turnos=", procurar.turnos_para("23"))
+		print("PROCURAR área=", grade.area_de(grupo[0].celula), " m²=", procurar.metros2("23"), " turnos=", procurar.turnos_para("23"))
 		for k in 12:
 			await procurar.procurar_sala()
 			if not procurar.secreta(p2) and procurar.armadilhas[Vector2i(17, 5)].visto: break
@@ -1428,6 +1517,30 @@ func _linha_de_comando() -> void:
 			procurar.pisou(grupo[0], Vector2i(10, 1))
 			if f2.visto: caiu = true; break
 		print("PROCURAR pisou no fosso escondido: disparou=", caiu, " Tessa PV=", grupo[0].pv)
+	elif teste == "separar":
+		# Caco (escolhido) anda sozinho; quem lidera anda e só a Lianne segue; J reagrupa. Modo mestre marca o escondido.
+		var caco: Node3D = grupo[1]; var lianne: Node3D = grupo[2]
+		_selecionar(caco); _andar_para(Vector2i(6, 1))
+		await get_tree().create_timer(0.2).timeout
+		while caco.andando(): await get_tree().process_frame
+		print("SEPARAR Caco em ", caco.celula, " separado=", caco.separado, " metros=", snappedf(metros_no_turno, 0.1))
+		_selecionar(null); _andar_para(Vector2i(10, 5))
+		await get_tree().create_timer(0.2).timeout
+		while heroi.andando() or lianne.andando(): await get_tree().process_frame
+		print("SEPARAR Tessa em ", heroi.celula, " · Caco ficou em ", caco.celula, " · Lianne seguiu para ", lianne.celula)
+		_reagrupar()
+		await get_tree().create_timer(0.2).timeout
+		while caco.andando() or lianne.andando(): await get_tree().process_frame
+		print("SEPARAR reagrupou: Caco em ", caco.celula, " separado=", caco.separado, " dist=", grade.centro(caco.celula).distance_to(grade.centro(heroi.celula)))
+		_andar_para(Vector2i(6, 5), true)   # Shift: quem lidera sai sozinho
+		await get_tree().create_timer(0.2).timeout
+		while heroi.andando(): await get_tree().process_frame
+		print("SEPARAR Tessa sozinha: outros separados=", vivos().filter(func(h): return h != heroi).map(func(h): return h.separado))
+		_alternar_mestre()
+		print("SEPARAR mestre marcas=", marca_mestre._celulas.size(), " tampa P02 visível=", get_node("Masmorra/Portas/P02").visible)
+		procurar.procurou.clear(); await procurar.procurar_sala()
+		for n in [3, 5, 6]: print("TEMPO sala 24 com %d: %d turnos · dobro: %d" % [n, maxi(1, ceili(procurar.metros2("24") / (36.0 * n))), maxi(1, ceili(2 * procurar.metros2("24") / (36.0 * n)))])
+		print("TEMPO corredor 23: %d m²" % procurar.metros2("23"))
 	elif teste == "secreta":
 		# Captura da P02 vista do corredor 23: escondida (--revelar: depois de achada).
 		var p3: Dictionary = portas.por_id["P03"]; portas.de(p3).estado = "fechada"; _abrir_porta(p3, Vector2i(11, 5), "teste")
