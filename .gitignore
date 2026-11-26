@@ -15,3 +15,6 @@ atelie/arena/itens/
 
 # Animações baixadas do Mixamo: uso livre em jogos, mas sem redistribuir os arquivos soltos
 arte/animacoes/mixamo/
+
+# Decisões e handoff ficam no cofre pessoal, não no repo
+HANDOFF.md
