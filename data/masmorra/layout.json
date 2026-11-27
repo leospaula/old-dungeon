@@ -1038,6 +1038,9 @@
    "tipo": "porta"
   }
  ],
+ "grades_fixas": [
+  {"entre": ["1", "2"], "nota": "frente da cela 1: barras de ferro dos dois lados do portão (P17), como nas outras celas"}
+ ],
  "aberturas": [
   [
    "24p",

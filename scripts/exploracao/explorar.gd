@@ -326,7 +326,7 @@ func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	modelo.scale = Vector3.ONE * float(cfg.escala) * _escala_seres()
 	Bibliotecas.preparar(modelo, "pj")
 	var pas := {}
-	for k in PASSADA_TESSA: pas[k] = PASSADA_TESSA[k] * float(cfg.passo)
+	for k in PASSADA_TESSA: pas[k] = PASSADA_TESSA[k] * float(cfg.passo) * _escala_seres()
 	a.passadas = pas
 	var papeis := TESSA_ANIM.duplicate()
 	papeis.merge(cfg.get("papeis", {}), true)
@@ -450,10 +450,18 @@ func vivos() -> Array:
 	return grupo.filter(func(h): return is_instance_valid(h) and h.vivo())
 
 ## Teste de escala (--escala-seres=1.1): multiplica o tamanho de personagens, monstros e PdMs.
-func _escala_seres() -> float:
-	return float(_args_valor("--escala-seres", "1.0"))
+## Passadas na escala do jogo (pés não escorregam quando o modelo cresce).
+func _passadas(base: Dictionary) -> Dictionary:
+	var p := {}
+	for k in base: p[k] = float(base[k]) * _escala_seres()
+	return p
 
-## Teste de escala (--altura-portas=2.1): altura das portas e grades em metros (planta: 2,4 e 2,6).
+## Escala E4 (27/11): personagens 8% maiores que os modelos normalizados (humanos ~1,75 m).
+const ESCALA_SERES := 1.08
+func _escala_seres() -> float:
+	return float(_args_valor("--escala-seres", str(ESCALA_SERES)))
+
+## Altura das portas e grades (planta: 2,2 m, tools/gerar_masmorra.gd ALT_PORTA); --altura-portas= testa outra.
 func _altura_portas(padrao: float) -> float:
 	var v := _args_valor("--altura-portas", "")
 	return float(v) if v != "" else padrao
@@ -474,7 +482,7 @@ func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 		var modelo: Node3D = load(str(cri.modelo)).instantiate()
 		modelo.scale = Vector3.ONE * float(cri.get("escala", 0.9)) * _escala_seres()
 		Bibliotecas.preparar(modelo, str(cri.categoria))
-		a.passadas = PASSADA_GOBLIN
+		a.passadas = _passadas(PASSADA_GOBLIN)
 		a.giro_anim = TESSA_GIRO
 		a.montar_modelo(modelo, TESSA_ANIM, 0.0)
 		if cri.has("arma"): a.armar(Ficha.info({"id": cri.arma, "qtd": 1}).get("modelo3d", {}))
@@ -504,7 +512,7 @@ func _criar_pdm(id: String, pdm_id: String, c: Vector2i) -> Node3D:
 		var modelo: Node3D = load(str(cri.modelo)).instantiate()
 		modelo.scale = Vector3.ONE * float(cri.get("escala", 0.9)) * _escala_seres()
 		Bibliotecas.preparar(modelo, str(cri.categoria))
-		a.passadas = PASSADA_GOBLIN
+		a.passadas = _passadas(PASSADA_GOBLIN)
 		a.giro_anim = TESSA_GIRO
 		a.montar_modelo(modelo, TESSA_ANIM, 0.0)
 		var arma3d := str(d.get("arma3d", cri.get("arma", "")))
@@ -647,6 +655,9 @@ const PORTA_GLB := "res://arte/final/3d/porta.glb"
 const PORTA_DUPLA_GLB := "res://arte/final/3d/porta-dupla.glb"
 const PORTA_ESPESSURA := 0.14
 func _materiais_das_portas() -> void:
+	if $Masmorra.has_node("GradesFixas"):   # barras fixas: o mesmo portão, sem abrir
+		for no in $Masmorra.get_node("GradesFixas").get_children():
+			for x in _vestir_grade(no): luz.materiais.append(x)   # névoa de guerra e luz como as portas
 	for no in $Masmorra.get_node("Portas").get_children():
 		var folhas := no.find_children("*", "MeshInstance3D", true, false)
 		if folhas.is_empty(): continue
@@ -661,6 +672,7 @@ func _materiais_das_portas() -> void:
 ## Verga: pedra da parede tapando o vão entre o alto da porta (ou grade) e o alto da parede (3 m),
 ## para não ficar um buraco escuro em cima. Mesmo material das paredes.
 const ALTURA_PAREDE := 3.0
+const ALTURA_PORTA := 2.2
 const ESPESSURA_PAREDE := 0.3
 func _vergas() -> void:
 	var paredes := $Masmorra.get_node("Paredes").find_children("*", "MeshInstance3D", true, false)
@@ -671,14 +683,14 @@ func _vergas() -> void:
 		var pt: Dictionary = grade.portas[ch]
 		if feitas.has(pt.id) or not (pt.tipo in ["porta", "dupla", "grade", "cela"]): continue
 		feitas[pt.id] = true
-		var alt := _altura_portas(2.6 if pt.tipo in ["grade", "cela"] else 2.4)
-		if alt >= ALTURA_PAREDE - 0.01: continue
+		var alt := _altura_portas(ALTURA_PORTA)
+		if alt >= ALTURA_PORTA - 0.01: continue   # a planta já traz verga (pedra) ou bandeira (grade) desde 2,2 m
 		var larg := float(pt.largura) * 1.5   # casa de 1,5 m
 		var v := str(pt.orient) == "v"
 		var b := MeshInstance3D.new(); var bm := BoxMesh.new()
-		bm.size = Vector3(ESPESSURA_PAREDE, ALTURA_PAREDE - alt, larg) if v else Vector3(larg, ALTURA_PAREDE - alt, ESPESSURA_PAREDE)
+		bm.size = Vector3(ESPESSURA_PAREDE, ALTURA_PORTA - alt, larg) if v else Vector3(larg, ALTURA_PORTA - alt, ESPESSURA_PAREDE)
 		b.mesh = bm; b.material_override = mat
-		var meio := _pos_porta(pt); meio.y = (alt + ALTURA_PAREDE) * 0.5
+		var meio := _pos_porta(pt); meio.y = (alt + ALTURA_PORTA) * 0.5
 		b.position = meio; b.name = "Verga_" + str(pt.id)
 		$Masmorra.add_child(b)
 
@@ -701,13 +713,13 @@ func _vestir_grade(no: Node3D) -> Array:
 		var mod: Node3D = load(PORTAO_GLB).instantiate()
 		var cm: AABB = Luz.caixa_local(mod)
 		var larg: float = caixa_p.size.z if v else caixa_p.size.x
-		var alt := _altura_portas(2.6)
+		var alt := _altura_portas(ALTURA_PORTA)
 		var bas := Basis(Vector3(0.12 / cm.size.x, 0, 0), Vector3(0, alt / cm.size.y, 0), Vector3(0, 0, larg / cm.size.z))
 		if not v: bas = Basis(Vector3.UP, -PI / 2) * bas
 		# A folha (dobradiça na parede) espelha para as dobradiças ficarem do lado da parede.
 		if str(p.name).begins_with("Folha"): bas = bas * Basis(Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, -1))
 		mod.transform = Transform3D(bas, caixa_p.get_center() - bas * cm.get_center())
-		mod.position.y += (alt - 2.6) * 0.5   # mais baixa: continua apoiada no chão
+		mod.position.y += (alt - ALTURA_PORTA) * 0.5   # mais baixa: continua apoiada no chão
 		for mi in mod.find_children("*", "MeshInstance3D", true, false):
 			var orig = (mi as MeshInstance3D).mesh.surface_get_material(0)
 			if orig is BaseMaterial3D: mat.set_shader_parameter("albedo_tex", orig.albedo_texture)
@@ -755,11 +767,11 @@ func _vestir_porta(no: Node3D) -> Array:
 		var mod: Node3D = load(arq).instantiate()
 		var caixa: AABB = Luz.caixa_local(mod)
 		# Modelo: altura em y, largura em z, espessura em x (face para ±x).
-		var alt_p := _altura_portas(2.4)
+		var alt_p := _altura_portas(ALTURA_PORTA)
 		var esc := Vector3(PORTA_ESPESSURA / caixa.size.x, alt_p / caixa.size.y, largura / caixa.size.z)
 		var bas := Basis(Vector3(esc.x, 0, 0), Vector3(0, esc.y, 0), Vector3(0, 0, esc.z))
 		if not v: bas = Basis(Vector3.UP, -PI / 2) * bas   # z do modelo -> x do mundo
-		var centro_porta: Vector3 = total.get_center() + Vector3(0, (alt_p - 2.4) * 0.5, 0)
+		var centro_porta: Vector3 = total.get_center() + Vector3(0, (alt_p - ALTURA_PORTA) * 0.5, 0)
 		var t_porta := Transform3D(bas, centro_porta - bas * caixa.get_center())
 		mod.transform = p.transform.affine_inverse() * t_porta
 		var mm := mat

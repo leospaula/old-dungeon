@@ -14,6 +14,7 @@ var area := {}        # Vector2i -> id da área
 var tipo := {}        # id da área -> tipo
 var nomes := {}       # id da área -> nome
 var abertas := {}     # "a|b" -> "hv"
+var grades_fixas := {}   # "a|b" -> true: borda de barras fixas (vê através, não passa)
 var portas := {}      # "v:x:y" / "h:x:y" -> porta (Dictionary)
 var bloqueadas := {}  # células com obstáculo fixo (esteiras)
 var porta_aberta := {} # id da porta -> true
@@ -37,6 +38,8 @@ func carregar(caminho: String) -> void:
 		for k in int(pt.largura):
 			var chave := "v:%d:%d" % [pt.x, pt.y + k] if pt.orient == "v" else "h:%d:%d" % [pt.x + k, pt.y]
 			portas[chave] = pt
+	for g in L.get("grades_fixas", []):
+		grades_fixas[_par(str(g.entre[0]), str(g.entre[1]))] = true
 	for e in L.get("esteiras", []):
 		for y in range(int(e.de_y), int(e.ate_y)):
 			bloqueadas[Vector2i(int(e.coluna), y)] = true
@@ -94,6 +97,7 @@ func transparente(a: Vector2i, b: Vector2i) -> bool:
 	var cela: bool = (tipo[ia] == "cela" and ib == "19") or (tipo[ib] == "cela" and ia == "19")
 	if cela: return true
 	var par := _par(ia, ib)
+	if grades_fixas.has(par): return true   # barras fixas: deixam ver, não deixam passar
 	return abertas.has(par) and (abertas[par] as String).contains(ch.left(1))
 
 ## Linha de visada entre os centros de duas células (percorre as células cruzadas pela reta).

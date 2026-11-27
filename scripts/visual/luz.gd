@@ -39,6 +39,7 @@ func configurar(raiz: Node3D, masmorra: Node3D, ambiente: WorldEnvironment, carr
 	for folha in masmorra.get_node("Portas").find_children("*", "MeshInstance3D", true, false):
 		folha.material_override = madeira
 	masmorra.get_node("Ferro").material_override = _objeto(0.8, 0.4)
+	if masmorra.has_node("FerroGrade"): masmorra.get_node("FerroGrade").material_override = _objeto(0.35, 0.55)
 	masmorra.get_node("Esteiras").material_override = _objeto(0.0, 0.9)
 	masmorra.get_node("Cristais").material_override = _objeto(0.0, 0.2, Color(0.4, 0.7, 1.0), 0.8)
 	if masmorra.has_node("Rotulos"): masmorra.get_node("Rotulos").visible = false

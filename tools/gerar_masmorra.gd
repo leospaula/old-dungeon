@@ -9,12 +9,14 @@ extends SceneTree
 const CEL := 1.5
 const ALT := 3.0
 const ESP := 0.3
+const ALT_PORTA := 2.2   # portas e grades (escala E4, 27/11): acima vem verga de pedra ou grade fixa
 const COR_CHAO := {"sala": Color(0.47, 0.44, 0.39), "corredor": Color(0.42, 0.40, 0.36), "cela": Color(0.36, 0.34, 0.31),
 	"prisao": Color(0.40, 0.38, 0.34), "caverna": Color(0.38, 0.32, 0.25), "mina": Color(0.42, 0.35, 0.27)}
 const COR_ROCHA := Color(0.33, 0.33, 0.35)
 const COR_PAREDE := Color(0.42, 0.41, 0.40)
 const COR_MADEIRA := Color(0.45, 0.29, 0.15)
 const COR_FERRO := Color(0.22, 0.23, 0.25)
+const COR_GRADE := Color(0.46, 0.31, 0.2)   # ferro do portão (modelo portao.glb)
 const COR_ESTEIRA := Color(0.42, 0.36, 0.28)
 const COR_CRISTAL := Color(0.45, 0.75, 1.0)
 
@@ -25,6 +27,8 @@ var cel := []           # id da área por célula (ou "")
 var tipos := {}
 var abertas := {}       # "a|b" -> "hv"
 var portas_borda := {}  # "v:x:y" / "h:x:y" -> porta
+var grades_fixas := {}  # "a|b" -> true: a borda entre essas áreas é grade de ferro fixa (não pedra)
+var fixas: Array = []   # [eixo, x, y] de cada trecho de grade fixa
 var rnd := RandomNumberGenerator.new()
 
 func _init() -> void:
@@ -52,6 +56,8 @@ func _run() -> void:
 		for k in int(pt.largura):
 			var chave := "v:%d:%d" % [pt.x, pt.y + k] if pt.orient == "v" else "h:%d:%d" % [pt.x + k, pt.y]
 			portas_borda[chave] = pt
+	for g in L.get("grades_fixas", []):
+		grades_fixas[_par(str(g.entre[0]), str(g.entre[1]))] = true
 
 	var raiz := Node3D.new(); raiz.name = "MasmorraBase"
 	var chao := {}; var rocha := {}; var paredes := {}; var madeira := _St.new()
@@ -94,6 +100,14 @@ func _run() -> void:
 	var portas := Node3D.new(); portas.name = "Portas"
 	for pt in L.portas:
 		_porta(pt, portas, paredes, ferro)
+	# Grades fixas: um painel do portão (metade fixa) por trecho, com a grade de cima até o teto.
+	var gf := Node3D.new(); gf.name = "GradesFixas"
+	for f in fixas:
+		var pt := {"id": "GF_%s_%d_%d" % f, "orient": f[0], "x": f[1], "y": f[2], "largura": 1, "tipo": "grade"}
+		var no := Node3D.new(); no.name = pt.id; gf.add_child(no)
+		no.set_meta("orient", pt.orient); no.set_meta("tipo", "grade"); no.set_meta("fixa", true)
+		_grade_pecas(pt, no, true)
+		_bandeira(pt, ferro)
 
 	# Esteiras
 	for e in L.get("esteiras", []):
@@ -117,7 +131,9 @@ func _run() -> void:
 	_instanciar_blocos(raiz, "Rocha", rocha)
 	_instanciar_blocos(raiz, "Paredes", paredes)
 	raiz.add_child(portas)
+	raiz.add_child(gf)
 	_instanciar(raiz, "Ferro", ferro, false)
+	_instanciar(raiz, "FerroGrade", ferro_grade, false)
 	_instanciar(raiz, "Esteiras", esteira, false)
 	_instanciar(raiz, "Cristais", cristal, true)
 
@@ -179,6 +195,9 @@ func _borda(eixo: String, x: int, y: int, a: String, b: String, paredes: Diction
 	if portas_borda.has("%s:%d:%d" % [eixo, x, y]): return
 	var cela: bool = (tipos[a] == "cela" and b.begins_with("19")) or (tipos[b] == "cela" and a.begins_with("19"))
 	var so_celas: bool = tipos[a] == "cela" and tipos[b] == "cela"
+	if grades_fixas.has(ab):
+		fixas.append([eixo, x, y])
+		return
 	if cela and not so_celas and (a == "19" or b == "19"):
 		_grade(eixo, x, y, 1, ferro)
 		return
@@ -201,20 +220,38 @@ func _grade(eixo: String, x: int, y: int, n: int, ferro: _St) -> void:
 	for h in [0.1, 1.3, 2.55]:
 		ferro.caixa(Vector3(minf(a0.x, a1.x) - 0.05, h, minf(a0.z, a1.z) - 0.05), Vector3(maxf(a0.x, a1.x) + 0.05, h + 0.08, maxf(a0.z, a1.z) + 0.05), COR_FERRO)
 
+## Bandeira de grade: barras fixas do alto da grade (ALT_PORTA) até o teto (ALT), em cima do portão
+## ou do painel fixo, no lugar da verga de pedra. O jogo pinta com o ferro do portão ("FerroGrade").
+var ferro_grade := _St.new()
+func _bandeira(pt: Dictionary, _ferro: _St) -> void:
+	var comp := int(pt.largura) * CEL
+	var v := str(pt.orient) == "v"
+	var a0 := Vector3(pt.x * CEL, 0, pt.y * CEL)
+	var dir := Vector3(0, 0, 1) if v else Vector3(1, 0, 0)
+	var lado := Vector3(1, 0, 0) if v else Vector3(0, 0, 1)
+	var passos := int(round(comp / 0.19))
+	for i in range(1, passos):
+		var p := a0 + dir * (i * comp / passos)
+		ferro_grade.caixa(p - Vector3(0.025, 0, 0.025) + Vector3(0, ALT_PORTA, 0), p + Vector3(0.025, ALT, 0.025), COR_GRADE)
+	for h in [ALT_PORTA, ALT - 0.1]:   # travessas
+		var q0 := a0 - lado * 0.05 + Vector3(0, h, 0); var q1 := a0 + dir * comp + lado * 0.05 + Vector3(0, h + 0.1, 0)
+		ferro_grade.caixa(Vector3(minf(q0.x, q1.x), q0.y, minf(q0.z, q1.z)), Vector3(maxf(q0.x, q1.x), q1.y, maxf(q0.z, q1.z)), COR_GRADE)
+
 ## Grade de cela: metade fixa ("Fixa") e uma folha com dobradiça na parede ("Folha1"), cada uma com
 ## uma caixa fina ("Malha") que o jogo troca pelo modelo do portão (arte/final/3d/portao.glb).
-func _grade_pecas(pt: Dictionary, no: Node3D) -> void:
+func _grade_pecas(pt: Dictionary, no: Node3D, so_fixa := false) -> void:
 	var comp := int(pt.largura) * CEL
 	var base := Vector3(pt.x * CEL, 0, pt.y * CEL)
 	var eixo := Vector3(0, 0, 1) if pt.orient == "v" else Vector3(1, 0, 0)
 	var lado := Vector3(1, 0, 0) if pt.orient == "v" else Vector3(0, 0, 1)
 	var partes := [["Fixa", 0.0, comp / 2.0, 0.0], ["Folha1", comp / 2.0, comp, comp]] if int(pt.largura) > 1 else [["Folha1", 0.0, comp, comp]]
+	if so_fixa: partes = [["Fixa", 0.0, comp, 0.0]]
 	for p in partes:
 		var i0: float = p[1] + 0.03; var i1: float = p[2] - 0.03; var dob: float = p[3]
 		var piv := Node3D.new(); piv.name = p[0]; piv.position = base + eixo * dob; no.add_child(piv)
 		var st := _St.new()
-		var a := -lado * 0.05 + eixo * (i0 - dob); var b := lado * 0.05 + Vector3(0, 2.6, 0) + eixo * (i1 - dob)
-		st.caixa(Vector3(minf(a.x, b.x), 0, minf(a.z, b.z)), Vector3(maxf(a.x, b.x), 2.6, maxf(a.z, b.z)), COR_FERRO)
+		var a := -lado * 0.05 + eixo * (i0 - dob); var b := lado * 0.05 + Vector3(0, ALT_PORTA, 0) + eixo * (i1 - dob)
+		st.caixa(Vector3(minf(a.x, b.x), 0, minf(a.z, b.z)), Vector3(maxf(a.x, b.x), ALT_PORTA, maxf(a.z, b.z)), COR_FERRO)
 		_instanciar(piv, "Malha", st, false)
 
 ## Cada porta de madeira vira um nó próprio (Portas/P01…) com uma dobradiça por folha,
@@ -225,6 +262,7 @@ func _porta(pt: Dictionary, portas: Node3D, paredes: Dictionary, ferro: _St) -> 
 	no.set_meta("orient", pt.orient); no.set_meta("tipo", pt.tipo)
 	if pt.tipo in ["grade", "cela"]:
 		_grade_pecas(pt, no)
+		_bandeira(pt, ferro)
 		return
 	var folhas := 2 if pt.tipo == "dupla" else 1
 	var comp := n * CEL
@@ -237,15 +275,15 @@ func _porta(pt: Dictionary, portas: Node3D, paredes: Dictionary, ferro: _St) -> 
 		var sentido := 1.0 if f == 0 else -1.0
 		var piv := Node3D.new(); piv.name = "Folha%d" % f; piv.position = base + eixo * dobradica; no.add_child(piv)
 		var st := _St.new()
-		var a := -lado * 0.08; var b := lado * 0.08 + Vector3(0, 2.4, 0) + eixo * (i1 - i0) * sentido
-		st.caixa(Vector3(minf(a.x, b.x), 0, minf(a.z, b.z)), Vector3(maxf(a.x, b.x), 2.4, maxf(a.z, b.z)), COR_MADEIRA.lightened(rnd.randf_range(0, 0.08)))
+		var a := -lado * 0.08; var b := lado * 0.08 + Vector3(0, ALT_PORTA, 0) + eixo * (i1 - i0) * sentido
+		st.caixa(Vector3(minf(a.x, b.x), 0, minf(a.z, b.z)), Vector3(maxf(a.x, b.x), ALT_PORTA, maxf(a.z, b.z)), COR_MADEIRA.lightened(rnd.randf_range(0, 0.08)))
 		_instanciar(piv, "Malha", st, false)
 	# Verga de pedra por cima do vão
 	var v0: Vector3; var v1: Vector3
 	if pt.orient == "v":
-		v0 = Vector3(pt.x * CEL - ESP / 2, 2.4, pt.y * CEL); v1 = Vector3(pt.x * CEL + ESP / 2, ALT, pt.y * CEL + comp)
+		v0 = Vector3(pt.x * CEL - ESP / 2, ALT_PORTA, pt.y * CEL); v1 = Vector3(pt.x * CEL + ESP / 2, ALT, pt.y * CEL + comp)
 	else:
-		v0 = Vector3(pt.x * CEL, 2.4, pt.y * CEL - ESP / 2); v1 = Vector3(pt.x * CEL + comp, ALT, pt.y * CEL + ESP / 2)
+		v0 = Vector3(pt.x * CEL, ALT_PORTA, pt.y * CEL - ESP / 2); v1 = Vector3(pt.x * CEL + comp, ALT, pt.y * CEL + ESP / 2)
 	_bloco(paredes, int(pt.x), int(pt.y)).caixa(v0, v1, COR_PAREDE)
 
 func _instanciar(raiz: Node3D, nome: String, st: _St, brilho: bool) -> void:
