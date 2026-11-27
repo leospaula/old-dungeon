@@ -34,6 +34,7 @@ const EscolherGrupo = preload("res://scripts/interface/escolher_grupo.gd")
 const Pacotes = preload("res://scripts/exploracao/pacotes.gd")
 const Bibliotecas = preload("res://scripts/visual/bibliotecas.gd")
 const Cena = preload("res://scripts/exploracao/cena.gd")
+const Sistema = preload("res://scripts/regras/sistema.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/norm/tessa-heroica.glb"
@@ -120,6 +121,9 @@ var pdms := {}                  # id na cena -> ator de PdM (personagem do mestr
 
 func _ready() -> void:
 	$Sol.visible = false
+	for a in _args():   # perfil de regras (Básico = bx; no navegador também vem da URL)
+		if a.begins_with("--regras="): Sistema.usar(a.trim_prefix("--regras="))
+	print("regras: ", Sistema.nome())
 	grade = Grade.new(); grade.carregar(LAYOUT)
 	MONSTROS = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/monstros.json"))
 	ENCONTROS = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/encontros.json"))
@@ -1300,10 +1304,12 @@ func _comecar_combate(grupo_ve: bool, monstros_veem: bool) -> void:
 	var ouvidos := lista.filter(func(x): return turno - int(x.get_meta("ouvido", -99)) <= 3)
 	# Surpresa (normal 1–2 em d6). Devagar e sem ter sido ouvido: +1 para surpreender.
 	# Correndo: impossível surpreender os monstros, e +1 na chance de ser surpreendido.
-	var rg := Dados.d(6); var ng := 2 + int(mm.ser_surpreendido)
+	var sur_g: Array = Sistema.surpresa(int(mm.ser_surpreendido))
+	var rg: int = sur_g[0]; var ng: int = sur_g[1]
 	var sg := (not grupo_ve) or rg <= ng
 	var sm := false
-	var rm := Dados.d(6); var nm := 2 + (int(mm.surpreender) if furtivos and mm.surpreender != null else 0)
+	var sur_m: Array = Sistema.surpresa(int(mm.surpreender) if furtivos and mm.surpreender != null else 0)
+	var rm: int = sur_m[0]; var nm: int = sur_m[1]
 	if mm.surpreender != null:
 		sm = (not monstros_veem) or rm <= nm
 	_secreto("Surpresa do grupo: d6 %d contra %d%s · dos monstros: %s" % [rg, ng, "" if grupo_ve else " (não viu: surpreendido)",

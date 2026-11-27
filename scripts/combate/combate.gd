@@ -6,6 +6,7 @@ extends Node
 ## Moral dos monstros: 2d6 > moral = fogem (testa na primeira baixa e quando metade cai).
 
 const Dados = preload("res://scripts/regras/dados.gd")
+const Sistema = preload("res://scripts/regras/sistema.gd")
 const Efeitos = preload("res://scripts/visual/efeitos.gd")
 
 signal registro(texto: String)
@@ -68,9 +69,8 @@ func _laco(rodada_de_surpresa: bool, grupo_surpreso: bool) -> void:
 			ini_grupo = 0; ini_monstros = 0
 			registro.emit("[color=#c8b89a]— Rodada 1 (surpresa) —[/color]")
 		else:
-			var ig := Dados.d(6); var im := Dados.d(6)
-			while ig == im:
-				ig = Dados.d(6); im = Dados.d(6)
+			var ini: Array = Sistema.iniciativa()
+			var ig: int = ini[0]; var im: int = ini[1]
 			ordem = ["grupo", "monstros"] if ig > im else ["monstros", "grupo"]
 			ini_grupo = ig; ini_monstros = im
 			registro.emit("[color=#c8b89a]— Rodada %d —[/color] iniciativa: grupo %d × monstros %d" % [rodada, ig, im])
@@ -283,23 +283,22 @@ func _faixa(a: Node, alvo: Node) -> int:
 func previsao(a: Node, alvo: Node) -> Dictionary:
 	var faixa := _faixa(a, alvo)
 	var dist: bool = faixa >= 0 and not grade.adjacentes(a.celula, alvo.celula)
-	var mod: int = (a.dist_mod + [1, 0, -1][faixa]) if dist else a.mod_acerto
-	var n: int = clampi(a.thac0 - alvo.ca - mod, 2, 20)
+	var mod: int = (a.dist_mod + Sistema.ajuste_faixa(faixa)) if dist else a.mod_acerto
+	var n: int = Sistema.numero_para_acertar(a.thac0, alvo.ca, mod)
 	var dano: String = a.dist_dano if dist else ("%s%s" % [a.dano, ("%+d" % a.mod_dano) if a.mod_dano != 0 else ""])
-	return {"n": n, "chance": (21 - n) * 5, "dano": dano, "distancia": dist, "mod": mod}
+	return {"n": n, "chance": Sistema.chance_acerto(n), "dano": dano, "distancia": dist, "mod": mod}
 
 func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 	marca_caminho.limpar()
 	_por_cursor(""); alvo_pairado = null
 	# Rola antes: o d20 aparece girando sobre o atacante enquanto ele arma o golpe.
-	var r := Dados.d(20)
-	var precisa: int = a.thac0 - alvo.ca
 	var faixa := _faixa(a, alvo) if distancia else -1
-	var mod: int = (a.dist_mod + [1, 0, -1][faixa]) if distancia else a.mod_acerto
-	var total: int = r + mod
-	var acerta: bool = r == 20 or (r != 1 and total >= precisa)
+	var mod: int = (a.dist_mod + Sistema.ajuste_faixa(faixa)) if distancia else a.mod_acerto
+	var at: Dictionary = Sistema.atacar(a.thac0, alvo.ca, mod)
+	var r: int = at.r; var precisa: int = at.precisa; var total: int = at.total
+	var acerta: bool = at.acerta
 	# Erro com motivo: escudo bloqueia, arma de duas mãos apara, o resto esquiva; 1 natural = golpe em falso.
-	var defesa: String = "" if acerta or r == 1 else alvo.defesa()
+	var defesa: String = "" if acerta or at.falha else alvo.defesa()
 	if distancia:
 		a.gastar_municao()
 		var de: Vector3 = a.global_position + Vector3(0, a.altura_texto() * 0.95, 0)
@@ -310,7 +309,7 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 		if not is_instance_valid(alvo): return
 		await Efeitos.flecha(a.get_parent(), de, para)
 	else:
-		var golpe: String = a.escolher_golpe(r == 20)
+		var golpe: String = a.escolher_golpe(at.critico)
 		if defesa != "": alvo.defender(defesa, a.global_position, a.tempo_impacto(golpe))
 		await a.animar_golpe(alvo, golpe)
 	if not is_instance_valid(alvo): return
@@ -322,12 +321,12 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 	if acerta:
 		var expr: String = a.dist_dano if distancia else a.dano + (("%+d" % a.mod_dano) if a.mod_dano != 0 else "")
 		var dd := Dados.detalhar(expr)
-		var dano := maxi(1, int(dd.total))
+		var dano := maxi(Sistema.dano_minimo(), int(dd.total))
 		alvo.pv -= dano
 		txt += "[color=#ffcf6a]acerta[/color]! %s: %s = [b]%d[/b] de dano." % [expr, dd.texto, dano]
 		registro.emit(txt)
 		# Impacto: quanto maior o dano (e no 20 natural), mais forte. Mais forte quando a Tessa apanha.
-		var critico := r == 20
+		var critico: bool = at.critico
 		var forca := clampf(0.35 + dano * 0.1, 0.4, 1.0) * (1.5 if critico else 1.0)
 		alvo.piscar(Color(1, 0.25, 0.2, 0.6) if no_grupo else Color(1, 0.95, 0.85, 0.7))
 		alvo.recuar(a.global_position, 0.18 + 0.12 * forca)
@@ -342,8 +341,8 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 			alvo.animar_dano()
 		await Efeitos.congelar(self, 0.06 + 0.05 * forca)
 	else:
-		var o_que: String = "Golpe em falso!" if r == 1 else {"bloquear": "Bloqueou!", "aparar": "Aparou!"}.get(defesa, "Esquivou!")
-		if r == 1:
+		var o_que: String = "Golpe em falso!" if at.falha else {"bloquear": "Bloqueou!", "aparar": "Aparou!"}.get(defesa, "Esquivou!")
+		if at.falha:
 			a.recuar(alvo.global_position, 0.25)
 		elif defesa == "bloquear" or defesa == "aparar":
 			alvo.recuar(a.global_position, 0.08 if alvo._tem(defesa) else 0.12)
@@ -362,17 +361,20 @@ func _baixa(x: Node) -> void:
 	_mortos += 1; _xp += x.xp
 	var total := monstros.size()
 	if not _moral_primeira:
-		_moral_primeira = true; _testar_moral()
+		_moral_primeira = true
+		if Sistema.testa_moral_em("primeira_baixa"): _testar_moral()
 	elif not _moral_metade and _mortos * 2 >= total:
-		_moral_metade = true; _testar_moral()
+		_moral_metade = true
+		if Sistema.testa_moral_em("metade_caida"): _testar_moral()
 
 func _testar_moral() -> void:
 	var vivos := monstros.filter(func(m): return is_instance_valid(m) and m.vivo())
 	if vivos.is_empty(): return
 	var moral: int = vivos[0].moral
-	if moral >= 12: return
-	var r := Dados.d(6) + Dados.d(6)
-	if r > moral:
+	var t: Dictionary = Sistema.moral(moral)
+	if not t.testa: return
+	var r: int = t.r
+	if t.foge:
 		registro.emit("Moral dos monstros: 2d6 = %d contra %d → [color=#9ad0ff]fogem![/color]" % [r, moral])
 		for m in vivos:
 			_fugir(m)

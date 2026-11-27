@@ -31,6 +31,7 @@ extends RefCounted
 
 const Dados = preload("res://scripts/regras/dados.gd")
 const Ator = preload("res://scripts/exploracao/ator.gd")
+const Sistema = preload("res://scripts/regras/sistema.gd")
 
 var ex: Node
 var ativa := false
@@ -374,14 +375,15 @@ func _ataque(p: Dictionary) -> void:
 	if alvo == null: return
 	a.olhar_para(alvo.global_position)
 	var arma := str(p.get("arma", a.arma))
-	var precisa: int = a.thac0 - alvo.ca
-	var r := Dados.d(20)
+	var at: Dictionary = Sistema.atacar(a.thac0, alvo.ca, 0)
+	var precisa: int = at.precisa
+	var r: int = at.r
 	var papel := "golpe"
 	if p.has("anim"): a.tocar_anim(str(p.anim), 0.15)
 	else:
 		papel = a.escolher_golpe(false); a.tocar(papel, 0.15)   # golpe do estilo da arma (chicote: de cima)
 	await ex.get_tree().create_timer(a.tempo_impacto(papel)).timeout
-	if r >= precisa or r == 20:
+	if at.acerta:
 		var dano := Dados.rolar(str(p.get("dano", a.dano)))
 		alvo.pv = maxi(1, alvo.pv - dano)
 		alvo.olhar_para(a.global_position); alvo.animar_dano(); alvo.piscar(Color(1, 0.3, 0.2))

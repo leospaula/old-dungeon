@@ -9,6 +9,7 @@ extends RefCounted
 ##   caminho desvia; se for o único caminho, pula por cima.
 ## Dados de teste: data/masmorra/estado-teste.json ("portas" com estado "secreta" e "armadilhas").
 
+const Sistema = preload("res://scripts/regras/sistema.gd")
 const Dados = preload("res://scripts/regras/dados.gd")
 const Fosso = preload("res://scripts/visual/fosso.gd")
 const COR_CHAO := {"sala": Color(0.47, 0.44, 0.39), "corredor": Color(0.42, 0.40, 0.36), "cela": Color(0.36, 0.34, 0.31),
@@ -157,7 +158,7 @@ func procurar_sala() -> void:
 	# Portas secretas: cada um rola em segredo (1 em 6; elfo 2 em 6).
 	for pt in _secretas_da_area(area):
 		for h in quem:
-			var n := 2 if str(h.ficha.p.classe) == "elfo" else 1; var r := Dados.d(6)
+			var n := Sistema.em6("porta_secreta_em6", str(h.ficha.p.classe)); var r := Dados.d(6)
 			ex._secreto("Porta secreta %s · %s: d6 %d contra %d → %s" % [pt.id, h.nome, r, n, "acha" if r <= n else "falha"])
 			if r <= n: revelar(pt, h.nome); achou = true; break
 	# Armadilhas de sala no chão da área (1 em 6; anão 2 em 6).
@@ -165,7 +166,7 @@ func procurar_sala() -> void:
 		var a: Dictionary = armadilhas[c]
 		if a.visto or a.fora or ex.grade.area_de(c) != area: continue
 		for h in quem:
-			var n := 2 if str(h.ficha.p.classe) == "anao" else 1; var r := Dados.d(6)
+			var n := Sistema.em6("armadilha_sala_em6", str(h.ficha.p.classe)); var r := Dados.d(6)
 			ex._secreto("Armadilha de sala %s · %s: d6 %d contra %d → %s" % [c, h.nome, r, n, "acha" if r <= n else "falha"])
 			if r <= n: _achar(c, h.nome); achou = true; break
 	ex._gastar_tempo(float(turnos))
@@ -552,7 +553,7 @@ func cauteloso(h: Node3D, c: Vector2i) -> void:
 		var a: Dictionary = armadilhas[alvo]
 		if a.visto or a.fora or a.has("cauteloso_" + h.nome): continue
 		a["cauteloso_" + h.nome] = true   # uma chance por pessoa
-		var n := 2 if str(h.ficha.p.classe) == "anao" else 1; var r := Dados.d(6)
+		var n := Sistema.em6("armadilha_sala_em6", str(h.ficha.p.classe)); var r := Dados.d(6)
 		ex._secreto("Cauteloso %s · %s: d6 %d contra %d → %s" % [alvo, h.nome, r, n, "acha" if r <= n else "falha"])
 		if r <= n: _achar(alvo, h.nome)
 
@@ -572,6 +573,6 @@ func elfo_passando(h: Node3D) -> void:
 		var chave := "%s:%s" % [id, h.nome]
 		if int(_elfo.get(chave, -99)) >= ex.turno: continue
 		_elfo[chave] = ex.turno
-		var r := Dados.d(6)
-		ex._secreto("%s passa perto da porta secreta %s: d6 %d contra 1 → %s" % [h.nome, id, r, "nota" if r <= 1 else "não nota"])
-		if r <= 1: revelar(pt, h.nome)
+		var r := Dados.d(6); var n := Sistema.em6("elfo_passando_em6", "padrao")
+		ex._secreto("%s passa perto da porta secreta %s: d6 %d contra %d → %s" % [h.nome, id, r, n, "nota" if r <= n else "não nota"])
+		if r <= n: revelar(pt, h.nome)

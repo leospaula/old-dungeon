@@ -4,6 +4,7 @@ extends RefCounted
 ##
 ## Item = {"id": <chave do catálogo>, "qtd": n}. Lugares: mão direita, mão esquerda, corpo, cinto (2) e mochila.
 
+const Sistema = preload("res://scripts/regras/sistema.gd")
 const Regras = preload("res://scripts/regras/regras.gd")
 const CATALOGO_ARQ := "res://data/catalogos/itens.json"
 const MOV_CARGA := {"leve": 36.0, "media": 27.0, "pesada": 18.0}
@@ -220,15 +221,15 @@ func ladrao() -> bool:
 
 func chance_ouvir() -> int:   # em 6
 	if ladrao(): return int(str(p.habilidades_ladrao.ouvir).get_slice("-", 1) if str(p.habilidades_ladrao.ouvir).contains("-") else str(p.habilidades_ladrao.ouvir))
-	return 2 if str(p.classe) in ["anao", "elfo", "halfling"] else 1
+	return Sistema.em6("ouvir_em6", str(p.classe))
 
 func chance_forcar() -> int:  # em 6
-	return clampi(2 + mod("for"), 1, 5)
+	return Sistema.forcar_em6(mod("for"))
 
 ## Achar armadilha: ladrão usa a porcentagem; anão 2 em 6; os outros 1 em 6. [tipo, valor]
 func chance_armadilha() -> Array:
 	if ladrao(): return ["%", int(p.habilidades_ladrao.armadilhas)]
-	return ["d6", 2 if str(p.classe) == "anao" else 1]
+	return ["d6", Sistema.em6("armadilha_em6", str(p.classe))]
 
 func pct_fechadura() -> int:
 	return int(p.habilidades_ladrao.abrir_fechaduras) if ladrao() else 0

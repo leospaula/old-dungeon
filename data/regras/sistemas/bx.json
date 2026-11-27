@@ -1,0 +1,49 @@
+{
+ "_doc": "Perfil de regras 'Básico' (B/X, Old-School Essentials). O jogo pergunta as regras a scripts/regras/sistema.gd, que lê este perfil. Os níveis Intermediário (Rules Cyclopedia) e Avançado (AD&D) serão outros perfis: um herda deste e liga módulos ('base' + 'modulos'), o outro troca as tabelas. Ver docs/sistemas-de-regras.md.",
+ "id": "bx",
+ "nome": "Básico (B/X)",
+ "nivel": 1,
+ "base": "",
+ "modulos": [],
+ "atributos": {
+  "mod": [[3, -3], [5, -2], [8, -1], [12, 0], [15, 1], [17, 2], [99, 3]]
+ },
+ "ataque": {
+  "dado": 20,
+  "natural_acerta": 20,
+  "natural_erra": 1,
+  "faixa_distancia": [1, 0, -1],
+  "dano_minimo": 1
+ },
+ "monstros": {
+  "dado_vida": 8,
+  "pv_minimo": 1,
+  "thac0": {"sem_mais": 20, "com_mais": 19, "minimo": 10, "maximo": 19, "so_pv": 19}
+ },
+ "iniciativa": {
+  "tipo": "por_lado",
+  "dado": 6,
+  "empate": "rola_de_novo"
+ },
+ "surpresa": {
+  "dado": 6,
+  "chance": 2
+ },
+ "moral": {
+  "dados": "2d6",
+  "imune_a_partir": 12,
+  "testa_em": ["primeira_baixa", "metade_caida"]
+ },
+ "movimento": {
+  "exploracao_m": {"leve": 36, "media": 27, "pesada": 18},
+  "combate_divisor": 3
+ },
+ "exploracao": {
+  "ouvir_em6": {"padrao": 1, "anao": 2, "elfo": 2, "halfling": 2},
+  "forcar_em6": {"base": 2, "minimo": 1, "maximo": 5},
+  "armadilha_em6": {"padrao": 1, "anao": 2},
+  "porta_secreta_em6": {"padrao": 1, "elfo": 2},
+  "armadilha_sala_em6": {"padrao": 1, "anao": 2},
+  "elfo_passando_em6": {"padrao": 1}
+ }
+}
