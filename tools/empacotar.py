@@ -48,7 +48,7 @@ def lista_base():
                     "assets/fontes/*.ttf", "assets/fontes/*.otf")
     for id_, glb in HEROIS_GLB.items():
         base.append(f"arte/final/3d/norm/{glb}.glb")
-    for cen in ["tocha-parede", "porta", "porta-dupla"]:   # cenário da masmorra (em toda parte)
+    for cen in ["tocha-parede", "porta", "porta-dupla", "portao"]:   # cenário da masmorra (em toda parte)
         base.append(f"arte/final/3d/{cen}.glb")
     for b in ler("data/regras/animacoes.json")["bibliotecas"].values():   # bibliotecas de animação (uma por arquivo)
         base.append(b["arquivo"].replace("res://", ""))

@@ -65,7 +65,7 @@ func passa_reto(a: Vector2i, b: Vector2i, abre_portas := false) -> bool:
 	var ch := _borda(a, b)
 	if portas.has(ch):
 		var pt: Dictionary = portas[ch]
-		if porta_aberta.has(pt.id): return pt.tipo in ["porta", "dupla"]
+		if porta_aberta.has(pt.id): return true   # porta, dupla ou grade aberta
 		return pt.tipo in ["porta", "dupla"] and abre_portas and not porta_barrada.has(pt.id)
 	if ia == ib: return true
 	var par := _par(ia, ib)

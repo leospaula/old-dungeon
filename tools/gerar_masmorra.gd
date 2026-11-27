@@ -201,15 +201,31 @@ func _grade(eixo: String, x: int, y: int, n: int, ferro: _St) -> void:
 	for h in [0.1, 1.3, 2.55]:
 		ferro.caixa(Vector3(minf(a0.x, a1.x) - 0.05, h, minf(a0.z, a1.z) - 0.05), Vector3(maxf(a0.x, a1.x) + 0.05, h + 0.08, maxf(a0.z, a1.z) + 0.05), COR_FERRO)
 
+## Grade de cela: metade fixa ("Fixa") e uma folha com dobradiça na parede ("Folha1"), cada uma com
+## uma caixa fina ("Malha") que o jogo troca pelo modelo do portão (arte/final/3d/portao.glb).
+func _grade_pecas(pt: Dictionary, no: Node3D) -> void:
+	var comp := int(pt.largura) * CEL
+	var base := Vector3(pt.x * CEL, 0, pt.y * CEL)
+	var eixo := Vector3(0, 0, 1) if pt.orient == "v" else Vector3(1, 0, 0)
+	var lado := Vector3(1, 0, 0) if pt.orient == "v" else Vector3(0, 0, 1)
+	var partes := [["Fixa", 0.0, comp / 2.0, 0.0], ["Folha1", comp / 2.0, comp, comp]] if int(pt.largura) > 1 else [["Folha1", 0.0, comp, comp]]
+	for p in partes:
+		var i0: float = p[1] + 0.03; var i1: float = p[2] - 0.03; var dob: float = p[3]
+		var piv := Node3D.new(); piv.name = p[0]; piv.position = base + eixo * dob; no.add_child(piv)
+		var st := _St.new()
+		var a := -lado * 0.05 + eixo * (i0 - dob); var b := lado * 0.05 + Vector3(0, 2.6, 0) + eixo * (i1 - dob)
+		st.caixa(Vector3(minf(a.x, b.x), 0, minf(a.z, b.z)), Vector3(maxf(a.x, b.x), 2.6, maxf(a.z, b.z)), COR_FERRO)
+		_instanciar(piv, "Malha", st, false)
+
 ## Cada porta de madeira vira um nó próprio (Portas/P01…) com uma dobradiça por folha,
 ## para o jogo poder abri-la. A verga de pedra vai junto com as paredes.
 func _porta(pt: Dictionary, portas: Node3D, paredes: Dictionary, ferro: _St) -> void:
 	var n := int(pt.largura)
-	if pt.tipo in ["grade", "cela"]:
-		_grade(pt.orient, int(pt.x), int(pt.y), n, ferro)
-		return
 	var no := Node3D.new(); no.name = pt.id; portas.add_child(no)
-	no.set_meta("orient", pt.orient)
+	no.set_meta("orient", pt.orient); no.set_meta("tipo", pt.tipo)
+	if pt.tipo in ["grade", "cela"]:
+		_grade_pecas(pt, no)
+		return
 	var folhas := 2 if pt.tipo == "dupla" else 1
 	var comp := n * CEL
 	var base := Vector3(pt.x * CEL, 0, pt.y * CEL)

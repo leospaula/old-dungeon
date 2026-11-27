@@ -503,7 +503,7 @@ func _porta_no_raio(o: Vector3, d: Vector3, limite: float) -> Dictionary:
 	var vistas := {}
 	for ch in grade.portas:
 		var pt: Dictionary = grade.portas[ch]
-		if vistas.has(pt.id) or grade.porta_aberta.has(pt.id) or not (pt.tipo in ["porta", "dupla"]) or procurar.secreta(pt): continue
+		if vistas.has(pt.id) or grade.porta_aberta.has(pt.id) or not (pt.tipo in ["porta", "dupla", "grade", "cela"]) or procurar.secreta(pt): continue
 		vistas[pt.id] = true
 		var conhecida := false
 		for par in grade.lados_da_porta(pt):
@@ -525,7 +525,7 @@ func _porta_perto(p: Vector3) -> Dictionary:
 	for viz in [[Vector2i(-1, 0), fx], [Vector2i(1, 0), 1.0 - fx], [Vector2i(0, -1), fz], [Vector2i(0, 1), 1.0 - fz]]:
 		if float(viz[1]) > 0.22: continue
 		var pt: Dictionary = grade.porta_entre(c, c + viz[0])
-		if not pt.is_empty() and not grade.porta_aberta.has(pt.id) and pt.tipo in ["porta", "dupla"] and not procurar.secreta(pt): return pt
+		if not pt.is_empty() and not grade.porta_aberta.has(pt.id) and pt.tipo in ["porta", "dupla", "grade", "cela"] and not procurar.secreta(pt): return pt
 	return {}
 
 ## Cada porta ganha o próprio material (contorno quente enquanto fechada, acende com o mouse).
@@ -550,6 +550,32 @@ func _centro_z_malha(mod: Node3D) -> float:
 	var ms := mod.find_children("*", "MeshInstance3D", true, false)
 	return (ms[0] as MeshInstance3D).get_aabb().get_center().z if not ms.is_empty() else 0.0
 
+## Grade de cela: o modelo do portão em cada metade (a fixa e a folha), cada um na própria caixa.
+const PORTAO_GLB := "res://arte/final/3d/portao.glb"
+func _vestir_grade(no: Node3D) -> Array:
+	if not ResourceLoader.exists(PORTAO_GLB): return []
+	var v := str(no.get_meta("orient", "v")) == "v"
+	var mat := ShaderMaterial.new(); mat.shader = load("res://shaders/porta_luz.gdshader")
+	mat.set_shader_parameter("fechada", 0.5)
+	for p in no.get_children():
+		var malha: MeshInstance3D = p.get_node_or_null("Malha")
+		if malha == null: continue
+		var caixa_p: AABB = malha.get_aabb()    # no espaço da peça (pivô)
+		var mod: Node3D = load(PORTAO_GLB).instantiate()
+		var cm: AABB = Luz.caixa_local(mod)
+		var larg: float = caixa_p.size.z if v else caixa_p.size.x
+		var bas := Basis(Vector3(0.12 / cm.size.x, 0, 0), Vector3(0, 2.6 / cm.size.y, 0), Vector3(0, 0, larg / cm.size.z))
+		if not v: bas = Basis(Vector3.UP, -PI / 2) * bas
+		# A folha (dobradiça na parede) espelha para as dobradiças ficarem do lado da parede.
+		if str(p.name).begins_with("Folha"): bas = bas * Basis(Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, -1))
+		mod.transform = Transform3D(bas, caixa_p.get_center() - bas * cm.get_center())
+		for mi in mod.find_children("*", "MeshInstance3D", true, false):
+			var orig = (mi as MeshInstance3D).mesh.surface_get_material(0)
+			if orig is BaseMaterial3D: mat.set_shader_parameter("albedo_tex", orig.albedo_texture)
+			(mi as MeshInstance3D).material_override = mat
+		p.add_child(mod); malha.visible = false
+	return [mat]
+
 func _porta_param(id: String, nome: String, valor: float) -> void:
 	for x in porta_mat.get(id, []): x.set_shader_parameter(nome, valor)
 
@@ -557,6 +583,7 @@ func _porta_param(id: String, nome: String, valor: float) -> void:
 ## o modelo da porta dupla inteiro. Porta dupla: o modelo da dupla em cada folha, cortado na metade dela.
 ## Devolve os materiais da porta (para contorno e destaque), ou [] se ficou a caixa.
 func _vestir_porta(no: Node3D) -> Array:
+	if str(no.get_meta("tipo", "")) in ["grade", "cela"]: return _vestir_grade(no)
 	var piv: Array = no.get_children().filter(func(c): return str(c.name).begins_with("Folha"))
 	if piv.is_empty(): return []
 	var malhas: Array = piv.map(func(p): return p.get_node_or_null("Malha"))
@@ -752,6 +779,7 @@ func _abrir_porta(pt: Dictionary, de: Vector2i, quem := "") -> void:
 		var sentido: Vector3 = grade.centro(outro) - grade.centro(de)
 		var eixo := Vector3(0, 0, 1) if pt.orient == "v" else Vector3(1, 0, 0)
 		for folha in no.get_children():
+			if not str(folha.name).begins_with("Folha"): continue   # metade fixa da grade não gira
 			var dir := eixo if folha.name == "Folha0" else -eixo
 			var ang := deg_to_rad(95.0)
 			if dir.rotated(Vector3.UP, ang).dot(sentido) < 0: ang = -ang
