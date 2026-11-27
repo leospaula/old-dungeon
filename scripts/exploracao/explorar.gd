@@ -42,7 +42,7 @@ const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo
 ## Para onde o corpo aponta em cada animação (tools/medir_frente.gd); o modelo gira o contrário. Nas posturas
 ## de lado (guarda, dano, bloqueio, esquiva) vale para onde a cabeça olha (--teste=mirar), não o quadril.
 const TESSA_GIRO := {"parado-espada-escudo": 76.0, "parado": 45.0, "andar": 90.0, "comecar-a-andar": 90.0, "correr": 90.0, "andar-furtivo": 90.0, "parado-agachado": 75.0, "andar-combate": 90.0, "golpe": 70.0,
-	"levar-golpe": 85.0, "morrer": 90.0, "vitoria": 88.0, "magia": 60.0, "sacar-flecha": 81.0, "bloquear": 85.0, "esquivar": 130.0,
+	"levar-golpe": 85.0, "morrer": 90.0, "vitoria": 88.0, "vitoria-braco": 88.0, "vitoria-parado": 88.0, "vitoria-parado-2": 88.0, "sentado": 91.0, "magia": 60.0, "sacar-flecha": 81.0, "bloquear": 85.0, "esquivar": 130.0,
 	"parado-luta": 78.0, "corte-dentro": 63.0, "corte-fora": 118.0, "estocada-cima": 75.0, "soltar-flecha": 84.0,
 	# Estilos de luta (25/11): guardas pelo olhar; golpes pela mão no impacto; arco pela linha da flecha (--teste=olhar).
 	"impacto-guarda": 91.0, "impacto-de-cima": 82.0, "impacto-horizontal": 112.0, "impacto-reves": 75.0,
@@ -1376,7 +1376,7 @@ func _fim_do_combate(resultado: String, xp: int, rodadas: int) -> void:
 		for h in grupo:
 			if not h.vivo(): _diario("evento", "%s caiu em combate." % h.nome)
 		_registrar("[color=#ffcf6a][b]Vitória![/b][/color] %d rodada(s) (%d s). XP: +%d (total %d)." % [rodadas, rodadas * 10, xp, xp_total])
-		for h in vivos(): h.tocar("vitoria")
+		_comemorar(vivos())
 		monstros = monstros.filter(func(m): return is_instance_valid(m) and m.vivo())
 		# Quem caiu sai da fila; se a líder caiu, o próximo vivo passa a liderar (e a levar a tocha).
 		var lider_antes := heroi
@@ -1420,6 +1420,18 @@ func _montar_hud() -> void:
 	livro.adjacentes = func(a, b): return a.celula == b.celula or grade.adjacentes(a.celula, b.celula) or Vector2(a.celula - b.celula).length() < 1.5
 	livro.mudou.connect(_ficha_mudou)
 	livro.usar.connect(_usar_item)
+
+## Comemoração no fim da luta: cada um sorteia uma das animações de vitória a cada luta, sem repetir
+## dentro do grupo enquanto houver opção (assim ninguém faz sempre a mesma pose).
+const VITORIAS := ["vitoria", "vitoria-braco", "vitoria-parado", "vitoria-parado-2"]
+func _comemorar(lista: Array) -> void:
+	var sacola: Array = []
+	for h in lista:
+		if sacola.is_empty():
+			sacola = VITORIAS.filter(func(v): return h.player != null and h.player.has_animation(v)); sacola.shuffle()
+		if sacola.is_empty(): h.tocar("vitoria"); continue
+		h.anim["vitoria"] = sacola.pop_back()
+		h.tocar("vitoria")
 
 func _ficha_mudou(h: Node3D) -> void:
 	_aplicar_ficha(h); _recalcular_grupo(); hud_ui.refazer()
@@ -2277,6 +2289,15 @@ func _linha_de_comando() -> void:
 		print("CELA caminho até o vestíbulo: ", fora.size(), " casas")
 		print("CELA props: ", aventura.props_em_cena.map(func(p): return "%s@%s" % [p.tipo, p.celulas[0]]))
 		print("CELA tochas acesas: ", _acesas().size(), " · visíveis: ", visao.visiveis.size(), " · tochas de parede: ", luz.tochas_cel, " luzes=", luz.tochas.size())
+	elif teste == "vitoria":
+		# Comemoração no fim da luta: cada um com uma vitória sorteada (imprime quem fez qual).
+		camera.alvo = heroi.position + Vector3(0, 0.9, 0); camera.distancia = 6.0; camera.inclinacao = 25.0; camera.guinada = -20.0
+		for h in grupo: h.olhar_para(h.position + Vector3(0.3, 0, 1))
+		for luta in 2:
+			_comemorar(vivos())
+			print("VITORIA luta %d: " % (luta + 1), vivos().map(func(h): return "%s=%s" % [h.nome, h.anim.vitoria]))
+			await get_tree().create_timer(1.6).timeout
+			if captura != "": get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-%d.png" % luta))
 	elif teste == "amarrado":
 		# Prisioneiro de mãos amarradas: em pé, andando, sentado com o ícone de conversa e solto (--fotos=prefixo).
 		var fotos := "/tmp/amarrado"

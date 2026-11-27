@@ -58,7 +58,11 @@
   "olhar-em-volta": "arte/animacoes/mixamo/olhar-em-volta.fbx",
   "sair-do-buraco": "arte/animacoes/mixamo/sair-do-buraco.fbx",
   "levantar": "arte/animacoes/mixamo/levantar.fbx",
-  "ouvir": "arte/animacoes/mixamo/ouvir.fbx"
+  "ouvir": "arte/animacoes/mixamo/ouvir.fbx",
+  "sentado": "arte/animacoes/mixamo/sentado.fbx",
+  "vitoria-braco": "arte/animacoes/mixamo/vitoria-braco.fbx",
+  "vitoria-parado": "arte/animacoes/mixamo/vitoria-parado.fbx",
+  "vitoria-parado-2": "arte/animacoes/mixamo/vitoria-parado-2.fbx"
  },
  "angulo": 35,
  "no_lugar": [
@@ -90,7 +94,11 @@
   "impacto-de-cima",
   "impacto-horizontal",
   "impacto-reves",
-  "pular"
+  "pular",
+  "vitoria-braco",
+  "vitoria-parado",
+  "vitoria-parado-2",
+  "sentado"
  ],
  "_escala_no_jogo": 0.9,
  "cortes": {

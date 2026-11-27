@@ -238,7 +238,12 @@ func pose(q: Node3D, nome: String) -> void:
 			var m: Node = sk.get_node_or_null("MaosAmarradas") if sk else null
 			q.set_meta("amarrado", false)
 			if m: await m.soltar()
-		"sentado":   # de pé até sentado no chão: o "levantar" de trás para a frente, parado no meio
+		"sentado":   # sentado no chão (pose do Mixamo "Male Sitting Pose"); sem ela, o "levantar" parado no meio
+			if q.player != null and q.player.has_animation(SENTADO):
+				q.tocar_anim(SENTADO, 0.6)
+				await ex.get_tree().create_timer(0.6).timeout
+				q.set_meta("sentado", true)
+				return
 			if q.player == null or not q.player.has_animation(LEVANTAR): return
 			var dur: float = q.player.get_animation(LEVANTAR).length
 			q.player.play_backwards(LEVANTAR, 0.3); q.player.speed_scale = 1.0
@@ -247,12 +252,17 @@ func pose(q: Node3D, nome: String) -> void:
 			q.set_meta("sentado", true)
 		"em_pe":
 			if not bool(q.get_meta("sentado", false)) or q.player == null: return
+			q.set_meta("sentado", false)
+			if q.player.current_animation == SENTADO:
+				q.tocar("parado", 0.7)
+				await ex.get_tree().create_timer(0.7).timeout
+				return
 			var dur2: float = q.player.get_animation(LEVANTAR).length
 			q.player.play(LEVANTAR, 0.1); q.player.seek(dur2 * SENTADO_T, true); q.player.speed_scale = 1.3
 			await ex.get_tree().create_timer(dur2 * (1.0 - SENTADO_T) / 1.3).timeout
-			q.set_meta("sentado", false)
 			if q.vivo(): q.tocar("parado", 0.4)
 
+const SENTADO := "sentado"
 var SENTADO_T := 0.3   # fração do "levantar" em que a pessoa está sentada no chão (--sentado-t= nos testes)
 
 ## Ícone de conversa sobre o PdM e a cena que um clique nele roda ("" tira).

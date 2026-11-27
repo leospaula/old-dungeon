@@ -67,8 +67,12 @@
     "pular",
     "sacar-flecha",
     "sair-do-buraco",
+    "sentado",
     "soltar-flecha",
-    "vitoria"
+    "vitoria",
+    "vitoria-braco",
+    "vitoria-parado",
+    "vitoria-parado-2"
    ]
   },
   "humanoide_armado": {
@@ -116,6 +120,7 @@
     "morrer",
     "parado",
     "parado-espada-escudo",
+    "sentado",
     "soltar-flecha"
    ]
   },
