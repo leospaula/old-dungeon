@@ -213,6 +213,12 @@ static func _args() -> PackedStringArray:
 	_args_cache = a if not a.is_empty() else PackedStringArray([""])
 	return _args_cache
 
+## Valor de um argumento "--nome=valor" (ou `padrao`).
+func _args_valor(nome: String, padrao: String) -> String:
+	for a in _args():
+		if a.begins_with(nome + "="): return a.trim_prefix(nome + "=")
+	return padrao
+
 ## --secao=<id>: começa a aventura direto numa seção (aventura.json "secoes"), para testar dali.
 func _secao_pedida() -> String:
 	for a in _args():
@@ -1429,8 +1435,9 @@ func _comemorar(lista: Array) -> void:
 	for h in lista:
 		if sacola.is_empty():
 			sacola = VITORIAS.filter(func(v): return h.player != null and h.player.has_animation(v)); sacola.shuffle()
-		if sacola.is_empty(): h.tocar("vitoria"); continue
+		if sacola.is_empty(): h.guardar_armas(); h.tocar("vitoria"); continue
 		h.anim["vitoria"] = sacola.pop_back()
+		h.guardar_armas()   # comemora de mãos livres: armas e escudo só no combate
 		h.tocar("vitoria")
 
 func _ficha_mudou(h: Node3D) -> void:
@@ -2289,6 +2296,26 @@ func _linha_de_comando() -> void:
 		print("CELA caminho até o vestíbulo: ", fora.size(), " casas")
 		print("CELA props: ", aventura.props_em_cena.map(func(p): return "%s@%s" % [p.tipo, p.celulas[0]]))
 		print("CELA tochas acesas: ", _acesas().size(), " · visíveis: ", visao.visiveis.size(), " · tochas de parede: ", luz.tochas_cel, " luzes=", luz.tochas.size())
+	elif teste == "dados3d":
+		# Mostruário dos dados 3D: d4 a d20 nas duas versões (osso e ferro), rolando até um valor.
+		var Dado3D = load("res://scripts/visual/dado3d.gd")
+		var cam := Camera3D.new(); add_child(cam); cam.fov = 40
+		var centro: Vector3 = heroi.global_position + Vector3(0, 1.6, 0)
+		cam.global_position = centro + Vector3(0, 0.35, 2.1); cam.look_at(centro); cam.current = true
+		for h in grupo: h.visible = false
+		var luz_d := OmniLight3D.new(); luz_d.position = centro + Vector3(0.5, 1.2, 1.4); luz_d.light_energy = 2.5; luz_d.omni_range = 6; add_child(luz_d)
+		var tipos := [4, 6, 8, 10, 12, 20]
+		var mostra := {4: 4, 6: 6, 8: 8, 10: 10, 12: 12, 20: 20}
+		for linha in 2:
+			for i in tipos.size():
+				var d: Node3D = Dado3D.novo(tipos[i], ["osso", "ferro"][linha], 0.13)
+				add_child(d)
+				d.global_position = centro + Vector3((i - 2.5) * 0.36, 0.22 - linha * 0.44, 0)
+				var c := Color(1.0, 0.82, 0.3)
+				d.rolar(int(_args_valor("--valor", str(mostra[tipos[i]]))) if _args_valor("--valor", "") != "" else mostra[tipos[i]], cam, 1.0, c)
+		await get_tree().create_timer(0.45).timeout
+		if captura != "": get_viewport().get_texture().get_image().save_png(captura.replace(".png", "-rolando.png"))
+		await get_tree().create_timer(1.2).timeout
 	elif teste == "vitoria":
 		# Comemoração no fim da luta: cada um com uma vitória sorteada (imprime quem fez qual).
 		camera.alvo = heroi.position + Vector3(0, 0.9, 0); camera.distancia = 6.0; camera.inclinacao = 25.0; camera.guinada = -20.0

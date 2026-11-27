@@ -25,29 +25,38 @@ static func texto(pai: Node, pos: Vector3, txt: String, cor: Color, escala := 1.
 	t.parallel().tween_property(l, "modulate:a", 0.0, dur * 0.45).set_delay(dur * 0.55)
 	t.tween_callback(l.queue_free)
 
-## O dado rola sobre o ator e para no resultado (verde acerta, cinza erra; máximo dourado, 1 vermelho).
-## `lados`: qual dado (d20 no ataque; qualquer outro nos jogos e testes).
+## Dado 3D rolando sobre o ator (scripts/visual/dado3d.gd): gira, assenta com a face sorteada virada para a
+## câmera e, ao parar, o resultado aparece ao lado (o número na face fica pequeno de longe). Cores: máximo
+## dourado, 1 vermelho, verde se acerta/ganha, cinza se erra/perde. `lados`: d4…d20.
+const ESTILO_DADO := "osso"   # "osso" (osso envelhecido, tinta escura) ou "ferro" (ferro escuro, ouro)
 static func dado(ator: Node3D, resultado: int, acerta: bool, dur := 0.5, lados := 20) -> void:
+	var cam := ator.get_viewport().get_camera_3d()
+	var cor := Color(1.0, 0.82, 0.3) if resultado == lados else (Color(1, 0.4, 0.3) if resultado == 1 else (Color(0.55, 1.0, 0.55) if acerta else Color(0.7, 0.72, 0.76)))
+	var alto: float = ator.rotulo.position.y + 0.55 if ator.get("rotulo") else 2.5
+	var d: Node3D = load("res://scripts/visual/dado3d.gd").novo(lados, ESTILO_DADO, 0.21)
+	ator.get_parent().add_child(d)
+	d.global_position = ator.global_position + Vector3(0, alto, 0)
+	if cam == null:
+		d.queue_free(); return
+	await d.rolar(resultado, cam, maxf(dur, 0.5) + 0.35, cor)
+	if not is_instance_valid(d): return
+	# O resultado grande ao lado do dado, legível de longe.
 	var l := Label3D.new()
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED; l.no_depth_test = true; l.render_priority = 9
-	l.font_size = FONTE_TAM; l.outline_size = 14; l.pixel_size = 0.005
-	l.outline_modulate = Color(0.05, 0.02, 0.0, 0.9); l.modulate = Color(1, 0.95, 0.85)
-	ator.get_parent().add_child(l)
-	var alto: float = ator.rotulo.position.y + 0.6 if ator.get("rotulo") else 2.6
-	l.global_position = ator.global_position + Vector3(0, alto, 0)
-	var t0 := Time.get_ticks_msec()
-	while (Time.get_ticks_msec() - t0) / 1000.0 < dur:
-		l.text = "d%d · %d" % [lados, randi_range(1, lados)]
-		await ator.get_tree().create_timer(0.05).timeout
-		if not is_instance_valid(l): return
-	l.text = "d%d · %d" % [lados, resultado]
-	l.modulate = Color(1.0, 0.82, 0.3) if resultado == lados else (Color(1, 0.4, 0.3) if resultado == 1 else (Color(0.55, 1.0, 0.55) if acerta else Color(0.7, 0.72, 0.76)))
+	l.font_size = FONTE_TAM; l.outline_size = 14; l.pixel_size = 0.0055
+	l.outline_modulate = Color(0.05, 0.02, 0.0, 0.9); l.modulate = cor; l.text = str(resultado)
+	var lado := cam.global_transform.basis.x
+	d.get_parent().add_child(l); l.global_position = d.global_position + lado * 0.4
 	l.scale = Vector3.ONE * 1.4
 	var t := l.create_tween()
 	t.tween_property(l, "scale", Vector3.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_interval(0.9)
+	t.tween_interval(1.0)
 	t.tween_property(l, "modulate:a", 0.0, 0.3)
 	t.tween_callback(l.queue_free)
+	var td := d.create_tween()
+	td.tween_interval(1.1)
+	td.tween_property(d, "scale", Vector3.ONE * 0.01, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	td.tween_callback(d.queue_free)
 
 ## Flecha voando de `de` até `para` (com um leve arco). Devolve ao chegar.
 static func flecha(pai: Node, de: Vector3, para: Vector3, vel := 24.0) -> void:

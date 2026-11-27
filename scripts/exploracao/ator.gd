@@ -162,12 +162,18 @@ func armar(m: Dictionary) -> void:
 	_vestidos["mao_d"] = ["arma", no]
 	_mostrar_armas()
 
-## Armas só aparecem no combate; o escudo fica sempre no braço.
+## Armas e escudo só aparecem no combate (por enquanto, até haver armas e escudos guardados no corpo).
 var _escondida := false
 func _mostrar_armas() -> void:
 	for lugar in _vestidos:
 		var no: Node3D = _vestidos[lugar][1]
-		if is_instance_valid(no): no.visible = (em_combate or bool(no.get_meta("escudo", false))) and not (_escondida and lugar == "mao_d")
+		if is_instance_valid(no): no.visible = em_combate and not (_escondida and lugar == "mao_d")   # arma e escudo só no combate
+
+## Guarda arma e escudo sem trocar a animação (comemoração no fim da luta).
+func guardar_armas() -> void:
+	em_combate = false
+	for a in armas_na_mao: a.visible = false
+	_mostrar_armas()
 
 ## Saca (combate) ou guarda a arma (exploração).
 func empunhar(sim: bool) -> void:
