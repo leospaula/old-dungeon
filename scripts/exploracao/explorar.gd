@@ -151,12 +151,14 @@ func _ready() -> void:
 	luz.configurar(self, $Masmorra, $Ambiente, heroi)
 	_acender(heroi)   # a primeira tocha já entra acesa, na mão de quem lidera (se tiver tocha)
 	luz.tochas_automaticas(self, LAYOUT, aventura.areas_iluminadas() if aventura else ["24", "23", "21", "22", "15", "20", "14", "10", "12"], 2)
+	for l in luz.tochas: Sons.laco("tocha_parede", l, Vector3.ZERO)   # crepitar baixinho perto de cada tocha
 	visao = Visao.new(grade)
 	visao.tochas_parede = luz.tochas_cel.duplicate()
 	if aventura:
 		visao.penumbra = aventura.celulas_penumbra(); luz.penumbra(self, visao.penumbra)
 	visao.recalcular_luz_fixa()
 	_materiais_das_portas()
+	_vergas()
 	portas = Portas.new(self)
 	luz.set_nevoa(visao.textura(), Vector2(grade.W, grade.H))
 	for n in ["marca_alcance", "marca_caminho", "marca_vez", "marca_portas", "marca_armadilhas", "marca_mestre"]:
@@ -321,7 +323,7 @@ func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	add_child(a); a.colocar(onde)
 	a.giro_anim = TESSA_GIRO
 	var modelo: Node3D = load(cfg.glb).instantiate()
-	modelo.scale = Vector3.ONE * float(cfg.escala)
+	modelo.scale = Vector3.ONE * float(cfg.escala) * _escala_seres()
 	Bibliotecas.preparar(modelo, "pj")
 	var pas := {}
 	for k in PASSADA_TESSA: pas[k] = PASSADA_TESSA[k] * float(cfg.passo)
@@ -447,6 +449,15 @@ func _caminho_lider(de: Vector2i, para: Vector2i, quem: Node3D = null) -> Array[
 func vivos() -> Array:
 	return grupo.filter(func(h): return is_instance_valid(h) and h.vivo())
 
+## Teste de escala (--escala-seres=1.1): multiplica o tamanho de personagens, monstros e PdMs.
+func _escala_seres() -> float:
+	return float(_args_valor("--escala-seres", "1.0"))
+
+## Teste de escala (--altura-portas=2.1): altura das portas e grades em metros (planta: 2,4 e 2,6).
+func _altura_portas(padrao: float) -> float:
+	var v := _args_valor("--altura-portas", "")
+	return float(v) if v != "" else padrao
+
 func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 	var d: Dictionary = MONSTROS[id]
 	var a: Node3D = Ator.new(); a.grade = grade; a.lado = "monstros"; a.nome = nome
@@ -461,7 +472,7 @@ func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 	if not cri.is_empty() and ResourceLoader.exists(str(cri.modelo)):
 		# Modelo normalizado com a biblioteca da categoria (mesmo giro dos personagens); arma sempre na mão.
 		var modelo: Node3D = load(str(cri.modelo)).instantiate()
-		modelo.scale = Vector3.ONE * float(cri.get("escala", 0.9))
+		modelo.scale = Vector3.ONE * float(cri.get("escala", 0.9)) * _escala_seres()
 		Bibliotecas.preparar(modelo, str(cri.categoria))
 		a.passadas = PASSADA_GOBLIN
 		a.giro_anim = TESSA_GIRO
@@ -491,7 +502,7 @@ func _criar_pdm(id: String, pdm_id: String, c: Vector2i) -> Node3D:
 	var cri: Dictionary = Bibliotecas.criatura(base)
 	if not cri.is_empty() and ResourceLoader.exists(str(cri.modelo)):
 		var modelo: Node3D = load(str(cri.modelo)).instantiate()
-		modelo.scale = Vector3.ONE * float(cri.get("escala", 0.9))
+		modelo.scale = Vector3.ONE * float(cri.get("escala", 0.9)) * _escala_seres()
 		Bibliotecas.preparar(modelo, str(cri.categoria))
 		a.passadas = PASSADA_GOBLIN
 		a.giro_anim = TESSA_GIRO
@@ -540,7 +551,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_P: _acao_hud("procurar")
 			KEY_T: if not fim: _arsenal_teste()
 			KEY_I: _acao_hud("ficha")
-			KEY_D: _alternar_dados()
+			KEY_V: _alternar_dados()   # D move a câmera
 			KEY_N: _alternar_musica()
 			KEY_ESCAPE: _selecionar(null)
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
@@ -647,6 +658,30 @@ func _materiais_das_portas() -> void:
 		porta_mat[str(no.name)] = lista
 		for x in lista: luz.materiais.append(x)
 
+## Verga: pedra da parede tapando o vão entre o alto da porta (ou grade) e o alto da parede (3 m),
+## para não ficar um buraco escuro em cima. Mesmo material das paredes.
+const ALTURA_PAREDE := 3.0
+const ESPESSURA_PAREDE := 0.3
+func _vergas() -> void:
+	var paredes := $Masmorra.get_node("Paredes").find_children("*", "MeshInstance3D", true, false)
+	if paredes.is_empty(): return
+	var mat: Material = (paredes[0] as MeshInstance3D).material_override
+	var feitas := {}
+	for ch in grade.portas:
+		var pt: Dictionary = grade.portas[ch]
+		if feitas.has(pt.id) or not (pt.tipo in ["porta", "dupla", "grade", "cela"]): continue
+		feitas[pt.id] = true
+		var alt := _altura_portas(2.6 if pt.tipo in ["grade", "cela"] else 2.4)
+		if alt >= ALTURA_PAREDE - 0.01: continue
+		var larg := float(pt.largura) * 1.5   # casa de 1,5 m
+		var v := str(pt.orient) == "v"
+		var b := MeshInstance3D.new(); var bm := BoxMesh.new()
+		bm.size = Vector3(ESPESSURA_PAREDE, ALTURA_PAREDE - alt, larg) if v else Vector3(larg, ALTURA_PAREDE - alt, ESPESSURA_PAREDE)
+		b.mesh = bm; b.material_override = mat
+		var meio := _pos_porta(pt); meio.y = (alt + ALTURA_PAREDE) * 0.5
+		b.position = meio; b.name = "Verga_" + str(pt.id)
+		$Masmorra.add_child(b)
+
 ## Centro (z) das malhas do modelo no espaço da própria malha, para o corte da porta dupla.
 func _centro_z_malha(mod: Node3D) -> float:
 	var ms := mod.find_children("*", "MeshInstance3D", true, false)
@@ -666,11 +701,13 @@ func _vestir_grade(no: Node3D) -> Array:
 		var mod: Node3D = load(PORTAO_GLB).instantiate()
 		var cm: AABB = Luz.caixa_local(mod)
 		var larg: float = caixa_p.size.z if v else caixa_p.size.x
-		var bas := Basis(Vector3(0.12 / cm.size.x, 0, 0), Vector3(0, 2.6 / cm.size.y, 0), Vector3(0, 0, larg / cm.size.z))
+		var alt := _altura_portas(2.6)
+		var bas := Basis(Vector3(0.12 / cm.size.x, 0, 0), Vector3(0, alt / cm.size.y, 0), Vector3(0, 0, larg / cm.size.z))
 		if not v: bas = Basis(Vector3.UP, -PI / 2) * bas
 		# A folha (dobradiça na parede) espelha para as dobradiças ficarem do lado da parede.
 		if str(p.name).begins_with("Folha"): bas = bas * Basis(Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, -1))
 		mod.transform = Transform3D(bas, caixa_p.get_center() - bas * cm.get_center())
+		mod.position.y += (alt - 2.6) * 0.5   # mais baixa: continua apoiada no chão
 		for mi in mod.find_children("*", "MeshInstance3D", true, false):
 			var orig = (mi as MeshInstance3D).mesh.surface_get_material(0)
 			if orig is BaseMaterial3D: mat.set_shader_parameter("albedo_tex", orig.albedo_texture)
@@ -718,10 +755,11 @@ func _vestir_porta(no: Node3D) -> Array:
 		var mod: Node3D = load(arq).instantiate()
 		var caixa: AABB = Luz.caixa_local(mod)
 		# Modelo: altura em y, largura em z, espessura em x (face para ±x).
-		var esc := Vector3(PORTA_ESPESSURA / caixa.size.x, 2.4 / caixa.size.y, largura / caixa.size.z)
+		var alt_p := _altura_portas(2.4)
+		var esc := Vector3(PORTA_ESPESSURA / caixa.size.x, alt_p / caixa.size.y, largura / caixa.size.z)
 		var bas := Basis(Vector3(esc.x, 0, 0), Vector3(0, esc.y, 0), Vector3(0, 0, esc.z))
 		if not v: bas = Basis(Vector3.UP, -PI / 2) * bas   # z do modelo -> x do mundo
-		var centro_porta: Vector3 = total.get_center()
+		var centro_porta: Vector3 = total.get_center() + Vector3(0, (alt_p - 2.4) * 0.5, 0)
 		var t_porta := Transform3D(bas, centro_porta - bas * caixa.get_center())
 		mod.transform = p.transform.affine_inverse() * t_porta
 		var mm := mat
@@ -887,10 +925,10 @@ func _abrir_porta(pt: Dictionary, de: Vector2i, quem := "") -> void:
 	grade.abrir_porta(pt)
 	var no_som := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
 	if no_som:
-		if pt.tipo in ["grade", "cela"]: Sons.tocar("grade_abrir", no_som.global_position + Vector3(0, 1, 0))
+		if pt.tipo in ["grade", "cela"]: Sons.tocar("grade_abrir", _pos_porta(pt))
 		else:
-			Sons.tocar("porta_abrir", no_som.global_position + Vector3(0, 1, 0))
-			if randf() < 0.35: Sons.tocar("porta_ranger", no_som.global_position + Vector3(0, 1, 0), -2.0)
+			Sons.tocar("porta_abrir", _pos_porta(pt))
+			if randf() < 0.35: Sons.tocar("porta_ranger", _pos_porta(pt), -2.0)
 	if porta_mat.has(str(pt.id)):
 		_porta_param(str(pt.id), "fechada", 0.0); _porta_param(str(pt.id), "destaque", 0.0)
 	var no := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
@@ -910,10 +948,18 @@ func _abrir_porta(pt: Dictionary, de: Vector2i, quem := "") -> void:
 	_checar_avistamento()
 
 ## Fecha a porta (evento): as folhas voltam, a luz e a visão deixam de passar (grade continua deixando ver).
+## Meio da porta (entre as casas dos dois lados), na altura da fechadura: onde os sons dela tocam.
+## (O nó da porta fica na origem; as folhas é que estão no lugar.)
+func _pos_porta(pt: Dictionary) -> Vector3:
+	var soma := Vector3.ZERO; var n := 0
+	for par in grade.lados_da_porta(pt):
+		for c in par: soma += grade.centro(c); n += 1
+	return (soma / maxf(n, 1)) + Vector3(0, 1.1, 0)
+
 func _fechar_porta(pt: Dictionary) -> void:
 	var no := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
 	if no and grade.porta_aberta.has(pt.id):
-		Sons.tocar("grade_bater" if pt.tipo in ["grade", "cela"] else "porta_fechar", no.global_position + Vector3(0, 1, 0))
+		Sons.tocar("grade_bater" if pt.tipo in ["grade", "cela"] else "porta_fechar", _pos_porta(pt))
 	if no:
 		for folha in no.get_children():
 			if str(folha.name).begins_with("Folha"):
@@ -930,7 +976,7 @@ func _trancar_porta(pt: Dictionary) -> void:
 	e.estado = "trancada"
 	grade.barrar_porta(pt, true)
 	var no_t := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
-	if no_t: Sons.tocar("trancar_grade" if pt.tipo in ["grade", "cela"] else "trancar", no_t.global_position + Vector3(0, 1, 0))
+	if no_t: Sons.tocar("trancar_grade" if pt.tipo in ["grade", "cela"] else "trancar", _pos_porta(pt))
 	_registrar("[i]Uma chave gira na fechadura: a porta %s está trancada.[/i]" % pt.id)
 
 ## Entreabre a folha só um pouco (só visual; a passagem continua fechada).
@@ -942,7 +988,7 @@ func _entreabrir_porta(pt: Dictionary, graus: float, quem: Node3D) -> void:
 	for par in grade.lados_da_porta(pt):
 		if par[0] == de: outro = par[1]
 		elif par[1] == de: outro = par[0]
-	Sons.tocar("grade_fresta" if pt.tipo in ["grade", "cela"] else "porta_fresta", no.global_position + Vector3(0, 1, 0))
+	Sons.tocar("grade_fresta" if pt.tipo in ["grade", "cela"] else "porta_fresta", _pos_porta(pt))
 	var sentido: Vector3 = grade.centro(outro) - grade.centro(de)
 	var eixo := Vector3(0, 0, 1) if pt.orient == "v" else Vector3(1, 0, 0)
 	for folha in no.get_children():
@@ -1461,7 +1507,7 @@ func _alternar_dados() -> void:
 	Efeitos.dados_ligados = not Efeitos.dados_ligados
 	var cf := ConfigFile.new(); cf.load(OPCOES)
 	cf.set_value("visual", "dados", Efeitos.dados_ligados); cf.save(OPCOES)
-	_registrar("[i]Dados rolando na tela: %s (tecla D).[/i]" % ("ligados" if Efeitos.dados_ligados else "desligados"))
+	_registrar("[i]Dados rolando na tela: %s (tecla V).[/i]" % ("ligados" if Efeitos.dados_ligados else "desligados"))
 
 var _musica_salva := true
 

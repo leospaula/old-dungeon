@@ -174,6 +174,7 @@ func passo(p: Dictionary) -> void:
 			await ex.get_tree().create_timer(float(p.get("s", 1.0))).timeout
 		"anim":
 			var q := quem(p); if q == null: return
+			_som_da_anim(q, str(p.anim), float(p.get("ritmo", 1.0)), p)
 			await _anim(q, str(p.anim), float(p.get("ate", 0.0)), float(p.get("ritmo", 1.0)))
 		"abrir_porta":
 			var pt: Dictionary = ex.portas.por_id[str(p.porta)]
@@ -402,6 +403,26 @@ func medir_grupo() -> void:
 				_menor_dist = minf(_menor_dist, Vector2(l[i].global_position.x - l[j].global_position.x, l[i].global_position.z - l[j].global_position.z).length())
 
 ## Anima e espera; `ate` > 0 segura a pose nesse tempo da animação.
+## Som automático de uma animação de cena: golpe (no instante do impacto, pelo estilo da arma: chicote
+## estala, as outras cortam o ar) e "levar golpe" (a criatura geme de dor). "som": "<evento>" troca;
+## "som": "" cala.
+const ANIM_DOR := ["levar-golpe", "dano", "cair"]
+func _som_da_anim(q: Node3D, nome: String, ritmo: float, p: Dictionary) -> void:
+	nome = nome.trim_suffix(":reverso")
+	var ev := str(p.get("som", "<auto>"))
+	if ev == "": return
+	if ev == "<auto>":
+		if nome in ANIM_DOR:
+			ex.get_tree().create_timer(0.12).timeout.connect(func(): if is_instance_valid(q): Sons.criatura(q, "dor"))
+			return
+		var imp: Dictionary = q.estilos().impactos
+		if not imp.has(nome): return
+		ev = "chicote" if str(q.estilo) == "chicote" else "golpe_ar"
+		var t := float(imp[nome]) / float(q.estilos().velocidade.get(nome, 1.0)) / maxf(ritmo, 0.1)
+		ex.get_tree().create_timer(t).timeout.connect(func(): if is_instance_valid(q): Sons.tocar(ev, q))
+		return
+	Sons.tocar(ev, q)
+
 func _anim(q: Node3D, nome: String, ate: float, ritmo: float) -> void:
 	if nome.ends_with(":reverso"):   # de trás para a frente (ajoelhar:reverso = levantar de joelhos)
 		nome = nome.trim_suffix(":reverso")
@@ -534,10 +555,13 @@ func _ataque(p: Dictionary) -> void:
 	if at.acerta:
 		var dano := Dados.rolar(str(p.get("dano", a.dano)))
 		alvo.pv = maxi(1, alvo.pv - dano)
+		Sons.tocar("chicote" if str(a.estilo) == "chicote" else "golpe_impacto", alvo)
+		Sons.criatura(alvo, "dor")
 		alvo.olhar_para(a.global_position); alvo.animar_dano(); alvo.piscar(Color(1, 0.3, 0.2))
 		ex._registrar("%s acerta %s com o %s pelas barras (d20 %d, precisa %d): [color=#ff9a6a]%d de dano[/color]." % [a.nome, alvo.nome, arma, r, precisa, dano])
 		ex._ficha_mudou(alvo)
 	else:
+		Sons.tocar("chicote" if str(a.estilo) == "chicote" else "golpe_ar", a)
 		alvo.defender("esquivar", a.global_position, 0.0)
 		ex._registrar("%s estala o %s pelas barras, mas %s se esquiva (d20 %d, precisa %d)." % [a.nome, arma, alvo.nome, r, precisa])
 	await ex.get_tree().create_timer(0.9).timeout

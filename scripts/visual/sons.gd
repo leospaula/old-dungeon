@@ -14,6 +14,7 @@ var criaturas := {}
 var fundo := {}
 var _cache := {}
 var ligado := true
+var _log := OS.get_cmdline_user_args().has("--sons-log")   # imprime cada som pedido (diagnóstico)
 var musica_ligada := true
 var _camadas := {}   # "ambiente"/"musica" -> AudioStreamPlayer
 
@@ -42,7 +43,7 @@ static func criatura(ator: Node, momento: String, volume_extra := 0.0) -> bool:
 	return true
 
 ## Som contínuo preso a um nó (tocha crepitando); devolve o player (pare com `parar_laco`).
-static func laco(evento: String, no: Node3D) -> Node:
+static func laco(evento: String, no: Node3D, deslocar := Vector3(0, 1.4, 0)) -> Node:
 	if atual == null: return null
 	var e: Dictionary = atual.eventos.get(evento, {})
 	if e.is_empty() or not ResourceLoader.exists(str(e.arquivos[0])): return null
@@ -51,7 +52,7 @@ static func laco(evento: String, no: Node3D) -> Node:
 	var p := AudioStreamPlayer3D.new()
 	p.stream = st; p.volume_db = float(e.get("volume_db", -20)); p.unit_size = 3.0
 	p.max_distance = float(e.get("distancia", 8)); p.name = "Laco_" + evento
-	no.add_child(p); p.position = Vector3(0, 1.4, 0)
+	no.add_child(p); p.position = deslocar
 	p.play(randf() * maxf(st.get_length() - 0.1, 0.0))
 	return p
 
@@ -87,6 +88,7 @@ func _camada(k: String) -> void:
 
 func _tocar(evento: String, onde, volume_extra: float) -> void:
 	var e: Dictionary = eventos.get(evento, {})
+	if _log: print("SOM ", evento, " @ ", onde.global_position if onde is Node3D else onde, "" if not e.is_empty() else " (NÃO EXISTE)")
 	if e.is_empty(): return
 	var lista: Array = e.arquivos
 	var arq: String = lista[randi() % lista.size()]

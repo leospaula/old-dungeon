@@ -103,7 +103,8 @@
       "volume_db": -2,
       "tom": 0.05,
       "espacial": true,
-      "distancia": 40
+      "distancia": 40,
+      "descricao": "grade de ferro batendo ao fechar"
     },
     "grade_abrir": {
       "arquivos": [
@@ -112,7 +113,8 @@
       "volume_db": -3,
       "tom": 0.04,
       "espacial": true,
-      "distancia": 34
+      "distancia": 34,
+      "descricao": "grade/porta de cela de ferro abrindo (dobradiça rangendo)"
     },
     "trancar": {
       "arquivos": [
@@ -230,7 +232,8 @@
       ],
       "volume_db": -8,
       "tom": 0.12,
-      "espacial": false
+      "espacial": false,
+      "descricao": "dados rolando e parando"
     },
     "livro_abrir": {
       "arquivos": [
@@ -300,7 +303,8 @@
       "tom": 0.04,
       "espacial": true,
       "distancia": 24,
-      "tom_base": 1.1
+      "tom_base": 1.1,
+      "descricao": "grade de ferro entreabrindo"
     },
     "porta_fresta": {
       "arquivos": [
@@ -320,7 +324,8 @@
       "volume_db": -4,
       "tom": 0.04,
       "espacial": true,
-      "distancia": 24
+      "distancia": 24,
+      "descricao": "chave girando na fechadura da grade"
     },
     "chaves": {
       "arquivos": [
@@ -329,7 +334,8 @@
       "volume_db": -6,
       "tom": 0.05,
       "espacial": true,
-      "distancia": 26
+      "distancia": 26,
+      "descricao": "molho de chaves tilintando (carcereiro andando, sacudindo as chaves)"
     },
     "chicote": {
       "arquivos": [
@@ -338,7 +344,8 @@
       "volume_db": -3,
       "tom": 0.08,
       "espacial": true,
-      "distancia": 34
+      "distancia": 34,
+      "descricao": "estalo de chicote"
     },
     "golpe_ar": {
       "arquivos": [
@@ -348,7 +355,8 @@
       "volume_db": -8,
       "tom": 0.12,
       "espacial": true,
-      "distancia": 20
+      "distancia": 20,
+      "descricao": "arma cortando o ar (golpe que erra, golpe sem alvo)"
     },
     "besta_disparo": {
       "arquivos": [
@@ -357,7 +365,8 @@
       "volume_db": -4,
       "tom": 0.06,
       "espacial": true,
-      "distancia": 28
+      "distancia": 28,
+      "descricao": "besta disparando"
     },
     "arco_disparo": {
       "arquivos": [
@@ -366,7 +375,8 @@
       "volume_db": -6,
       "tom": 0.08,
       "espacial": true,
-      "distancia": 28
+      "distancia": 28,
+      "descricao": "arco sendo puxado e solto"
     },
     "funda_girar": {
       "arquivos": [
@@ -375,7 +385,8 @@
       "volume_db": -7,
       "tom": 0.1,
       "espacial": true,
-      "distancia": 28
+      "distancia": 28,
+      "descricao": "funda girando antes do arremesso"
     },
     "flecha_acerto": {
       "arquivos": [
@@ -384,7 +395,8 @@
       "volume_db": -4,
       "tom": 0.1,
       "espacial": true,
-      "distancia": 28
+      "distancia": 28,
+      "descricao": "flecha ou virote acertando"
     },
     "dados_mao": {
       "arquivos": [
@@ -393,29 +405,29 @@
       "volume_db": -6,
       "tom": 0.08,
       "espacial": true,
-      "distancia": 20
+      "distancia": 20,
+      "descricao": "dados chacoalhando na mão antes de jogar"
     },
     "voz_monstro": {
       "arquivos": [
-        "res://arte/sons/freesound/voz-monstro-1.ogg",
-        "res://arte/sons/freesound/voz-monstro-2.ogg",
-        "res://arte/sons/freesound/voz-monstro-3.ogg"
+        "res://arte/sons/freesound/voz-monstro-1.ogg"
       ],
       "volume_db": -5,
       "tom": 0.08,
       "espacial": true,
-      "distancia": 30
+      "distancia": 30,
+      "descricao": "grunhido curto e grave de monstro: acompanha a fala de um monstro grande (hobgoblin)"
     },
     "voz_humano": {
       "arquivos": [
         "res://arte/sons/freesound/voz-humano-hm.ogg",
-        "res://arte/sons/freesound/voz-humano-hmmm.ogg",
-        "res://arte/sons/freesound/voz-humano-grunhido.ogg"
+        "res://arte/sons/freesound/voz-humano-hmmm.ogg"
       ],
       "volume_db": -5,
       "tom": 0.06,
       "espacial": true,
-      "distancia": 26
+      "distancia": 26,
+      "descricao": "murmúrio neutro de homem (\"hm\", \"hmmm\"): acompanha uma fala comum"
     },
     "voz_humano_riso": {
       "arquivos": [
@@ -424,7 +436,8 @@
       "volume_db": -5,
       "tom": 0.04,
       "espacial": true,
-      "distancia": 26
+      "distancia": 26,
+      "descricao": "risada maldosa de homem: quem ganha, zomba ou se diverte às custas de alguém"
     },
     "dor_humano": {
       "arquivos": [
@@ -433,7 +446,8 @@
       "volume_db": -6,
       "tom": 0.12,
       "espacial": true,
-      "distancia": 26
+      "distancia": 26,
+      "descricao": "grunhido curto de homem levando um golpe: chicoteado, arremessado, ferido (só personagens homens)"
     },
     "passo_bota": {
       "arquivos": [
@@ -450,18 +464,19 @@
       "volume_db": -15,
       "tom": 0.08,
       "espacial": true,
-      "distancia": 24
+      "distancia": 24,
+      "descricao": "passo de bota pesada na pedra"
     },
     "goblin_dor": {
       "arquivos": [
         "res://arte/sons/freesound/goblin-grito-1.ogg",
-        "res://arte/sons/freesound/goblin-grito-2.ogg",
-        "res://arte/sons/freesound/goblin-berro.ogg"
+        "res://arte/sons/freesound/goblin-grito-2.ogg"
       ],
       "volume_db": -5,
       "tom": 0.1,
       "espacial": true,
-      "distancia": 30
+      "distancia": 30,
+      "descricao": "grito agudo de goblin ferido"
     },
     "goblin_morte": {
       "arquivos": [
@@ -470,18 +485,18 @@
       "volume_db": -4,
       "tom": 0.08,
       "espacial": true,
-      "distancia": 30
+      "distancia": 30,
+      "descricao": "goblin morrendo"
     },
     "goblin_alerta": {
       "arquivos": [
-        "res://arte/sons/freesound/goblin-berro.ogg",
-        "res://arte/sons/freesound/goblin-risada.ogg",
-        "res://arte/sons/freesound/goblin-grito-2.ogg"
+        "res://arte/sons/freesound/goblin-berro.ogg"
       ],
       "volume_db": -4,
       "tom": 0.1,
       "espacial": true,
-      "distancia": 40
+      "distancia": 40,
+      "descricao": "berro de guerra de goblin: ao ver o grupo, começo do combate"
     },
     "tocha_acender": {
       "arquivos": [
@@ -491,7 +506,8 @@
       "volume_db": -7,
       "tom": 0.06,
       "espacial": true,
-      "distancia": 18
+      "distancia": 18,
+      "descricao": "tocha sendo acesa"
     },
     "tocha_apagar": {
       "arquivos": [
@@ -500,7 +516,8 @@
       "volume_db": -7,
       "tom": 0.06,
       "espacial": true,
-      "distancia": 18
+      "distancia": 18,
+      "descricao": "tocha sendo apagada (sopro, fogo morrendo)"
     },
     "tocha_crepitar": {
       "arquivos": [
@@ -510,7 +527,8 @@
       "tom": 0.05,
       "espacial": true,
       "distancia": 7,
-      "laco": true
+      "laco": true,
+      "descricao": "tocha na mão crepitando (contínuo, só perto)"
     },
     "correntes": {
       "arquivos": [
@@ -519,7 +537,8 @@
       "volume_db": -7,
       "tom": 0.05,
       "espacial": true,
-      "distancia": 24
+      "distancia": 24,
+      "descricao": "correntes/algemas tilintando"
     },
     "corda": {
       "arquivos": [
@@ -528,7 +547,8 @@
       "volume_db": -6,
       "tom": 0.06,
       "espacial": true,
-      "distancia": 18
+      "distancia": 18,
+      "descricao": "corda sendo desamarrada"
     },
     "pocao_beber": {
       "arquivos": [
@@ -537,7 +557,8 @@
       "volume_db": -6,
       "tom": 0.06,
       "espacial": true,
-      "distancia": 18
+      "distancia": 18,
+      "descricao": "gole de poção"
     },
     "magia_missil": {
       "arquivos": [
@@ -546,7 +567,8 @@
       "volume_db": -5,
       "tom": 0.05,
       "espacial": true,
-      "distancia": 34
+      "distancia": 34,
+      "descricao": "mísseis mágicos sendo disparados"
     },
     "magia": {
       "arquivos": [
@@ -555,7 +577,8 @@
       "volume_db": -6,
       "tom": 0.05,
       "espacial": true,
-      "distancia": 30
+      "distancia": 30,
+      "descricao": "magia leve sendo lançada"
     },
     "armadilha": {
       "arquivos": [
@@ -565,7 +588,8 @@
       "volume_db": -3,
       "tom": 0.06,
       "espacial": true,
-      "distancia": 30
+      "distancia": 30,
+      "descricao": "armadilha disparando (mecanismo, espetos)"
     },
     "clique": {
       "arquivos": [
@@ -573,7 +597,49 @@
       ],
       "volume_db": -12,
       "tom": 0.08,
-      "espacial": false
+      "espacial": false,
+      "descricao": "clique de botão da interface"
+    },
+    "ameaca_monstro": {
+      "arquivos": [
+        "res://arte/sons/freesound/voz-monstro-3.ogg"
+      ],
+      "volume_db": -5,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 34,
+      "descricao": "rosnado de monstro: ameaça, raiva, ao ver o grupo"
+    },
+    "esforco_monstro": {
+      "arquivos": [
+        "res://arte/sons/freesound/voz-monstro-2.ogg"
+      ],
+      "volume_db": -7,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 30,
+      "descricao": "grunhidos de esforço de monstro: ao desferir um golpe"
+    },
+    "goblin_riso": {
+      "arquivos": [
+        "res://arte/sons/freesound/goblin-risada.ogg"
+      ],
+      "volume_db": -5,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 30,
+      "descricao": "gargalhada de goblin: quando acerta alguém, zombando"
+    },
+    "tocha_parede": {
+      "arquivos": [
+        "res://arte/sons/freesound/tocha-crepitar.ogg"
+      ],
+      "volume_db": -26,
+      "tom": 0.05,
+      "espacial": true,
+      "distancia": 6,
+      "laco": true,
+      "descricao": "tocha de parede crepitando (contínuo, só perto)"
     }
   },
   "fundo": {
@@ -594,37 +660,23 @@
     }
   },
   "criaturas": {
-    "_doc": "Som por criatura (meta id do ator; \"grupo\" = personagens): voz (falas de cena), dor, morte, alerta (início do combate), passo.",
-    "grupo": {
-      "dor": "dor_humano"
-    },
+    "_doc": "Som por criatura (meta id do ator; \"grupo\" = personagens). Momentos: voz (cada fala de cena), riso (ganhou/zomba), dor (levou golpe), morte, alerta (viu o grupo, começo do combate), ataque (esforço ao golpear), acerta (zomba ao acertar), passo. Só ligar um momento a um som que descreve aquela ação; sem som certo, deixar vazio (e anotar em Sons por cena).",
     "goblin": {
       "dor": "goblin_dor",
       "morte": "goblin_morte",
-      "alerta": "goblin_alerta"
-    },
-    "kobold": {
-      "dor": "goblin_dor",
-      "morte": "goblin_morte",
-      "alerta": "goblin_alerta"
-    },
-    "chefe_kobold": {
-      "dor": "goblin_dor",
-      "morte": "goblin_morte",
-      "alerta": "goblin_alerta"
+      "alerta": "goblin_alerta",
+      "acerta": "goblin_riso"
     },
     "hobgoblin": {
       "voz": "voz_monstro",
-      "dor": "voz_monstro",
-      "morte": "voz_monstro",
-      "alerta": "voz_monstro",
+      "alerta": "ameaca_monstro",
+      "ataque": "esforco_monstro",
       "passo": "passo_bota"
     },
     "chefe_hobgoblin": {
       "voz": "voz_monstro",
-      "dor": "voz_monstro",
-      "morte": "voz_monstro",
-      "alerta": "voz_monstro",
+      "alerta": "ameaca_monstro",
+      "ataque": "esforco_monstro",
       "passo": "passo_bota"
     },
     "guarda": {
@@ -635,6 +687,7 @@
     "bandido": {
       "voz": "voz_humano",
       "dor": "dor_humano",
+      "riso": "voz_humano_riso",
       "passo": "passo_bota"
     },
     "prisioneiro": {

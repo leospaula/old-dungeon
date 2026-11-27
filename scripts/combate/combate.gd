@@ -316,6 +316,7 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 		await Efeitos.flecha(a.get_parent(), de, para)
 	else:
 		var golpe: String = a.escolher_golpe(at.critico)
+		if randf() < 0.5: Sons.criatura(a, "ataque")   # esforço (às vezes, para não cansar)
 		if defesa != "": alvo.defender(defesa, a.global_position, a.tempo_impacto(golpe))
 		await a.animar_golpe(alvo, golpe)
 	if not is_instance_valid(alvo): return
@@ -339,6 +340,7 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 		if camera: camera.tremer((0.09 if no_grupo else 0.06) * forca)
 		Sons.tocar(_som_golpe(a, distancia), alvo)
 		Sons.criatura(alvo, "morte" if alvo.pv <= 0 else "dor", -2.0)
+		if alvo.pv > 0 and randf() < 0.4: get_tree().create_timer(0.5).timeout.connect(func(): if is_instance_valid(a): Sons.criatura(a, "acerta"))
 		if alvo.ca <= 4 and not distancia: Sons.tocar("acerto_armadura", alvo, -3.0)
 		Efeitos.texto(alvo.get_parent(), topo, ("CRÍTICO!  %d" % dano) if critico else str(dano),
 			Color(1, 0.35, 0.25) if no_grupo else Color(1, 0.85, 0.35), minf(0.9 + 0.1 * minf(dano, 6) + (0.15 if critico else 0.0), 1.4))
