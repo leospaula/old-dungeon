@@ -65,13 +65,14 @@ input[type=range] { width: 100%; }
     <div>
       <div class="eyebrow">Masmorra Clássica · ateliê</div>
       <h1>Arena de combate</h1>
-      <p class="muted" style="margin:6px 0 0;max-width:62ch">Escolha a personagem, a arma e o escudo, e veja guarda, golpe e defesa como no jogo. Arraste para girar, role para aproximar.</p>
+      <p class="muted" style="margin:6px 0 0;max-width:62ch">Escolha personagem, monstro ou PNJ, a arma e o escudo, e veja guarda, golpe, defesa e as habilidades como no jogo. Cada um usa a biblioteca de animações da sua categoria. Arraste para girar, role para aproximar.</p>
     </div>
     <a href="atelie.html">← voltar ao ateliê</a>
   </header>
   <div class="grid">
     <div class="painel">
-      <div class="campo"><h2>Personagem</h2><div class="opcoes" id="pers"></div></div>
+      <div class="campo"><h2>Personagens</h2><div class="opcoes" id="pers"></div></div>
+      <div class="campo"><h2>Monstros e PNJ</h2><div class="opcoes" id="pers-m"></div><span class="muted nota" id="categoria"></span></div>
       <div class="campo"><h2>Arma</h2><select id="arma" aria-label="Arma"></select><span class="muted nota" id="estilo"></span></div>
       <div class="campo"><h2>Mão esquerda</h2><div class="opcoes" id="escudo"></div><span class="muted nota" id="escudo-nota"></span></div>
       <div class="campo"><h2>Ritmo</h2><input type="range" id="ritmo" min="0.1" max="1.5" step="0.05" value="1" aria-label="Ritmo"><span class="data muted" id="ritmo-v">1,00×</span></div>
@@ -86,6 +87,8 @@ input[type=range] { width: 100%; }
         <button class="acao" id="b-defesa">Defesa</button>
         <button class="acao" id="b-pausa">Pausar</button>
       </div>
+      <div class="campo" style="gap:6px"><h2>Habilidades e exploração</h2><div class="acoes" id="habilidades"></div>
+        <span class="muted nota">Apagadas: a categoria deste personagem não tem a animação.</span></div>
       <span class="muted nota">A defesa segue a regra do jogo: escudo bloqueia, armas com "aparar" (duas mãos, haste, cajado) aparam, o resto esquiva. As armas usam a mesma montagem do jogo (exportada por <span class="data">tools/exportar_arena.gd</span>).</span>
     </div>
   </div>
@@ -153,17 +156,40 @@ function doisMaos() { const it = D.itens[S.arma]; return !!it && it.maos >= 2; }
 
 async function trocarPersonagem() {
   msg.textContent = "Carregando " + D.personagens[S.pers].nome + "…"; msg.style.display = "grid";
-  const g = await carregar(D.personagens[S.pers].modelo);
+  const pd = D.personagens[S.pers];
+  const [g, lib] = await Promise.all([carregar(pd.modelo), carregar(D.bibliotecas[pd.biblioteca])]);
   if (P.obj) cena.remove(P.obj);
-  P.obj = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(g.scene) : g.scene;
+  P.obj = g.scene;
   cena.add(P.obj);
   P.mixer = new THREE.AnimationMixer(P.obj); P.acoes = {};
-  for (const c of g.animations) P.acoes[c.name] = P.mixer.clipAction(c);
+  for (const c of clipesDe(S.pers, lib)) P.acoes[c.name] = P.mixer.clipAction(c);
+  $("#categoria").textContent = "Categoria: " + ((D.categorias[pd.categoria] || {}).nome || pd.categoria) + " · biblioteca " + pd.biblioteca;
+  botoesHabilidades();
+  // Enquadra pela altura do modelo (do halfling ao hobgoblin).
+  const caixa = new THREE.Box3().setFromObject(P.obj), alt = Math.max(0.5, caixa.max.y - caixa.min.y);
+  const dir = camera.position.clone().sub(controles.target).normalize();
+  controles.target.set(0, alt * 0.55, 0); camera.position.copy(controles.target).add(dir.multiplyScalar(alt * 2.6)); controles.update();
   P.mixer.addEventListener("finished", () => { if (P.fim) { const f = P.fim; P.fim = null; f(); } });
   P.montados = []; P.corda = null; P.atual = "";
   msg.style.display = "none";
   await vestir();
   guarda(0);
+}
+
+// Clipes da biblioteca para este personagem: só os da categoria; o quadril sobe e desce na escala dele
+// (no jogo é Skeleton3D.motion_scale).
+const cacheClipes = {};
+function clipesDe(id, lib) {
+  if (cacheClipes[id]) return cacheClipes[id];
+  const pd = D.personagens[id], k = pd.escala_quadril || 1, usa = new Set(pd.animacoes);
+  const out = [];
+  for (const c of lib.animations) {
+    if (usa.size && !usa.has(c.name)) continue;
+    const n = c.clone();
+    for (const t of n.tracks) if (t.name.endsWith(".position")) { t.values = Float32Array.from(t.values, v => v * k); }
+    out.push(n);
+  }
+  return (cacheClipes[id] = out);
 }
 
 function osso(nome) { let b = null; P.obj.traverse(n => { if (!b && n.isBone && n.name === nome) b = n; }); return b; }
@@ -338,10 +364,32 @@ function hud(extra) {
 
 // ---------- interface ----------
 function botoesPersonagem() {
-  const box = $("#pers"); box.replaceChildren();
+  $("#pers").replaceChildren(); $("#pers-m").replaceChildren();
   for (const id in D.personagens) {
     const b = document.createElement("button"); b.textContent = D.personagens[id].nome; b.setAttribute("aria-pressed", String(id === S.pers));
     b.onclick = async () => { S.pers = id; botoesPersonagem(); await trocarPersonagem(); };
+    (D.personagens[id].grupo === "Personagens" ? $("#pers") : $("#pers-m")).append(b);
+  }
+}
+const HABILIDADES = [
+  ["parado", "Parado", true], ["andar", "Andar", true], ["correr", "Correr", true], ["andar-furtivo", "Andar furtivo", true],
+  ["parado-agachado", "Agachado", true], ["olhar-em-volta", "Procurar", false], ["ouvir", "Ouvir", false],
+  ["examinar-ajoelhado", "Examinar ajoelhado", false], ["ajoelhar", "Ajoelhar", false], ["chutar-porta", "Chutar porta", false],
+  ["pular", "Pular", false], ["sair-do-buraco", "Sair do buraco", false], ["levantar", "Levantar", false],
+  ["beber", "Beber poção", false], ["arremessar-frasco", "Arremessar frasco", false], ["sacar-flecha", "Sacar flecha", false],
+  ["magia", "Magia", false], ["magia-area", "Magia em área", false], ["levar-golpe", "Levar golpe", false],
+  ["morrer", "Morrer", false], ["vitoria", "Vitória", false],
+];
+function botoesHabilidades() {
+  const box = $("#habilidades"); box.replaceChildren();
+  for (const [nome, rot, laco] of HABILIDADES) {
+    const b = document.createElement("button"); b.textContent = rot; b.disabled = !P.acoes[nome];
+    b.title = P.acoes[nome] ? nome : nome + " (fora da categoria)";
+    b.onclick = () => {
+      for (const r of P.montados) r.piv.visible = !["beber", "arremessar-frasco", "magia", "magia-area"].includes(nome);
+      S.andando = false; marcarAndar();
+      if (laco) tocar(nome, 0); else tocar(nome, 1, 0.15, nome === "morrer" ? null : () => guarda(0.3));
+    };
     box.append(b);
   }
 }
