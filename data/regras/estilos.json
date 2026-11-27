@@ -51,6 +51,12 @@
    "parado_combate": "impacto-guarda",
    "atirar": "arremessar"
   },
+  "chicote": {
+   "parado_combate": "impacto-guarda",
+   "golpe": "impacto-de-cima",
+   "golpe2": "impacto-reves",
+   "golpe_critico": "impacto-horizontal"
+  },
   "desarmado": {
    "parado_combate": "impacto-guarda",
    "golpe": "golpe"

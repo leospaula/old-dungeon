@@ -109,9 +109,27 @@ static func caixa_local(raiz: Node3D) -> AABB:
 		caixa = bb if primeiro else caixa.merge(bb); primeiro = false
 	return caixa
 
+## Centro do topo do modelo (média dos vértices na faixa mais alta), no espaço da raiz: a boca da tocha,
+## de onde a chama sai. `faixa` = fração da altura considerada topo.
+static func topo_local(raiz: Node3D, faixa := 0.06) -> Vector3:
+	var caixa := caixa_local(raiz)
+	var corte := caixa.end.y - caixa.size.y * faixa
+	var soma := Vector3.ZERO; var n := 0
+	for mi in raiz.find_children("*", "MeshInstance3D", true, false):
+		var tr := Transform3D(); var p: Node = mi
+		while p != raiz and p != null:
+			tr = (p as Node3D).transform * tr; p = p.get_parent()
+		var m: Mesh = (mi as MeshInstance3D).mesh
+		for s in m.get_surface_count():
+			for v in (m.surface_get_arrays(s)[Mesh.ARRAY_VERTEX] as PackedVector3Array):
+				var w := tr * v
+				if w.y >= corte: soma += w; n += 1
+	return soma / n if n > 0 else Vector3(caixa.get_center().x, caixa.end.y, caixa.get_center().z)
+
 const TOCHA_GLB := "res://arte/final/3d/tocha-parede.glb"
 const TOCHA_ALTURA := 0.9
 
+var _topo_tocha := Vector3.INF   # medido uma vez (todas as tochas usam o mesmo modelo)
 func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
 	var t := Node3D.new(); t.position = pos; raiz.add_child(t); tochas_nos.append(t)
 	var pos_chama := Vector3(0, 0.3, 0) + dentro * 0.1
@@ -127,8 +145,9 @@ func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
 		t.add_child(mod)
 		for mi in mod.find_children("*", "MeshInstance3D", true, false):   # a própria chama não faz sombra da tocha
 			(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		var cabeca := Vector3(caixa.get_center().x, caixa.end.y, caixa.position.z + caixa.size.z * 0.3)
-		pos_chama = mod.transform * cabeca + Vector3(0, 0.06, 0)
+		# Chama saindo de dentro da boca da tocha: centro (x, z) do topo do modelo, base um pouco abaixo da borda.
+		if _topo_tocha == Vector3.INF: _topo_tocha = topo_local(mod)
+		pos_chama = mod.transform * _topo_tocha + Vector3(0, -0.02, 0)
 	else:
 		var cabo := MeshInstance3D.new(); var cm := CylinderMesh.new(); cm.top_radius = 0.05; cm.bottom_radius = 0.035; cm.height = 0.5; cabo.mesh = cm
 		var mm := StandardMaterial3D.new(); mm.albedo_color = Color(0.25, 0.15, 0.08); cabo.material_override = mm

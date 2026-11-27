@@ -99,13 +99,14 @@
    "ca": 6,
    "arma": "chicote",
    "dano": "1d2",
-   "arma3d": "",
+   "arma3d": "chicote",
    "retrato": "hobgoblin",
    "carrega": [
     "chaves",
     "chicote"
    ],
-   "quer": "Manter os prisioneiros quietos até a venda para as minas."
+   "quer": "Manter os prisioneiros quietos até a venda para as minas.",
+   "empunhar": true
   },
   "prisioneiro": {
    "nome": "Prisioneiro",
@@ -242,7 +243,7 @@
        {
         "faz": "anim",
         "quem": "carcereiro",
-        "anim": "golpe",
+        "anim": "impacto-de-cima",
         "ritmo": 1.2
        },
        {
@@ -305,8 +306,7 @@
         "faz": "ataque",
         "quem": "carcereiro",
         "arma": "chicote",
-        "dano": "1d2",
-        "anim": "golpe"
+        "dano": "1d2"
        }
       ]
      },
@@ -379,7 +379,7 @@
        {
         "faz": "anim",
         "quem": "carcereiro",
-        "anim": "golpe",
+        "anim": "impacto-de-cima",
         "ritmo": 1.2
        },
        {

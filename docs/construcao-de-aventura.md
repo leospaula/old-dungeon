@@ -66,7 +66,11 @@ mão vazia), `empunhar` e `retrato`.
 
 - O PdM **não entra no combate nem nos errantes**: é ator de cena. Bloqueia casas como qualquer pessoa.
 - Aparece só quando alguém do grupo vê a casa dele (névoa), como os monstros.
-- O chicote do carcereiro não tem modelo 3D: `arma3d: ""`, e o golpe sai de mão vazia.
+- Arma na mão do PdM: `arma3d` com o item do catálogo (o carcereiro usa o `chicote`, desenhado pelo jogo
+  como a funda: cabo trançado + tira de couro com física). Com `empunhar: true` ele fica em guarda com a
+  arma à mostra. O passo `ataque` sem `anim` usa o golpe do estilo da arma.
+- **Item que falta no catálogo vira item de verdade**, com modelo (ou desenho procedural), estilo de
+  luta e lugar no arsenal do Ateliê, antes de ir para a cena.
 
 ## 5. Eventos e cenas
 

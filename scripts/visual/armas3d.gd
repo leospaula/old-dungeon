@@ -8,12 +8,13 @@ extends RefCounted
 ##            mao: "direita" | "esquerda" | "antebraco", pose, pose_t, rotacao [graus], ao_longo, afastar (m),
 ##            ajuste_punho [m]×3, duas_maos (o cabo aponta para a mão esquerda quando ela está no cabo),
 ##            corda (arco: corda desenhada), escala_eixos [x, y, z], alinhar_curva (arco: curva para +Z),
-##            alinhar_em [anim, t, "mao_esquerda"|"frente"] (eixo fixo calculado nessa pose), procedural: "funda"}
+##            alinhar_em [anim, t, "mao_esquerda"|"frente"] (eixo fixo calculado nessa pose), procedural: "funda" | "chicote"}
 
 const CordaArco = preload("res://scripts/visual/corda_arco.gd")
 const DuasMaos = preload("res://scripts/visual/duas_maos.gd")
 const PrumoArco = preload("res://scripts/visual/prumo_arco.gd")
 const Funda = preload("res://scripts/visual/funda.gd")
+const Chicote = preload("res://scripts/visual/chicote.gd")
 const PoseAlinhada = preload("res://scripts/visual/pose_alinhada.gd")
 
 ## Prende o item ao esqueleto. `escala` = escala do modelo do personagem no jogo (para o comprimento real).
@@ -27,6 +28,12 @@ static func montar(sk: Skeleton3D, ap: AnimationPlayer, m: Dictionary, escala: f
 		var fu: Node3D = Funda.new(); fu.sk = sk; fu.comprimento = float(m.get("comprimento", 0.5)) / escala
 		bf.add_child(fu)
 		return bf
+	if str(m.get("procedural", "")) == "chicote":
+		var bc := BoneAttachment3D.new(); bc.bone_name = osso; sk.add_child(bc)
+		var ch: Node3D = Chicote.new(); ch.sk = sk; ch.comprimento = float(m.get("comprimento", 1.5)) / escala
+		ch.set_meta("escala", escala)
+		bc.add_child(ch)
+		return bc
 	if i_osso < 0 or not ResourceLoader.exists(str(m.arquivo)): return null
 	var item: Node3D = load(str(m.arquivo)).instantiate()
 	var caixa := _aabb(item)

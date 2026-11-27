@@ -376,8 +376,11 @@ func _ataque(p: Dictionary) -> void:
 	var arma := str(p.get("arma", a.arma))
 	var precisa: int = a.thac0 - alvo.ca
 	var r := Dados.d(20)
-	a.tocar_anim(str(p.get("anim", "golpe")), 0.15)
-	await ex.get_tree().create_timer(a.tempo_impacto() if a.has_method("tempo_impacto") else 0.5).timeout
+	var papel := "golpe"
+	if p.has("anim"): a.tocar_anim(str(p.anim), 0.15)
+	else:
+		papel = a.escolher_golpe(false); a.tocar(papel, 0.15)   # golpe do estilo da arma (chicote: de cima)
+	await ex.get_tree().create_timer(a.tempo_impacto(papel)).timeout
 	if r >= precisa or r == 20:
 		var dano := Dados.rolar(str(p.get("dano", a.dano)))
 		alvo.pv = maxi(1, alvo.pv - dano)

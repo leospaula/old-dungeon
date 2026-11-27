@@ -2131,6 +2131,39 @@ func _linha_de_comando() -> void:
 		var g: Node3D = monstros.filter(func(m): return is_instance_valid(m) and m.vivo())[0]
 		combate._fugir(g); await get_tree().create_timer(0.3).timeout
 		print("FUGA ", g.nome, " anim=", g.player.current_animation, " vel=", g.vel_atual(), " andando=", g.andando())
+	elif teste == "arma":
+		# Uma arma só (--arma=<item>), com fotos em sequência: em guarda, golpe e depois (--fotos=prefixo).
+		var arma := "chicote"; var fotos := "/tmp/arma"
+		for x in _args():
+			if x.begins_with("--arma="): arma = x.trim_prefix("--arma=")
+			if x.begins_with("--fotos="): fotos = x.trim_prefix("--fotos=")
+		var lista: Array = Ficha.catalogo().keys().filter(func(k): return Ficha.catalogo()[k].has("estilo"))
+		_arsenal_i = lista.find(arma) - 1
+		_arsenal_teste()
+		_brotar_goblin(true)
+		await get_tree().create_timer(1.5).timeout
+		var g: Node3D = monstros[0]; g.pv = 999; g.pv_max = 999
+		for h in grupo: if h != heroi: h.visible = false   # só quem testa a arma aparece
+		heroi.empunhar(true); heroi.olhar_para(g.global_position)
+		var cam := Camera3D.new(); add_child(cam); cam.fov = 45
+		var lado: Vector3 = (g.global_position - heroi.global_position); lado.y = 0; lado = lado.normalized()
+		var meio: Vector3 = (heroi.global_position + g.global_position) * 0.5
+		var lateral: Vector3 = lado.cross(Vector3.UP)
+		for sinal in [1.0, -1.0, 0.0]:   # o lado da dupla que tem chão (câmera fora da parede)
+			var p: Vector3 = meio + lateral * 3.4 * sinal - (lado * 3.4 if sinal == 0.0 else Vector3.ZERO)
+			if grade.chao(grade.celula(p)) or sinal == 0.0:
+				cam.global_position = p + Vector3(0, 1.9, 0); break
+		cam.global_position = cam.global_position.lerp(heroi.global_position + Vector3(0, 1.2, 0), 0.35)
+		cam.look_at(heroi.global_position + Vector3(0, 0.9, 0)); cam.current = true
+		await get_tree().create_timer(1.5).timeout
+		get_viewport().get_texture().get_image().save_png(fotos + "-00.png")
+		for golpe in 2:
+			Dados.forcados.append(19)
+			combate._atacar(heroi, g, false)
+			for k in 10:
+				await get_tree().create_timer(0.1).timeout
+				get_viewport().get_texture().get_image().save_png("%s-%d%d.png" % [fotos, golpe + 1, k])
+			await get_tree().create_timer(1.5).timeout
 	elif teste == "arsenal":
 		# A Tessa passa por todas as armas (tecla T) e ataca um goblin com cada uma; quadro no impacto.
 		_brotar_goblin(true)

@@ -95,7 +95,7 @@ input[type=range] { width: 100%; }
 </div>
 <script>
 const $ = s => document.querySelector(s);
-const NOMES_ESTILO = { arremesso: "arremesso", espada: "espada", faca: "faca", impacto: "impacto (pacote do machado)", duas_maos: "duas mãos", haste: "haste", cajado: "cajado", arco: "arco", besta: "besta", funda: "funda", desarmado: "mãos vazias" };
+const NOMES_ESTILO = { arremesso: "arremesso", espada: "espada", faca: "faca", impacto: "impacto (pacote do machado)", duas_maos: "duas mãos", haste: "haste", cajado: "cajado", arco: "arco", besta: "besta", funda: "funda", chicote: "chicote", desarmado: "mãos vazias" };
 const ANIM_PADRAO = { parado_combate: "parado-espada-escudo", andar_combate: "andar-combate", golpe: "golpe" };
 const PUXA = { "atirar-flecha": [1.45, 3.1] };
 let D = null;
@@ -197,6 +197,7 @@ function osso(nome) { let b = null; P.obj.traverse(n => { if (!b && n.isBone && 
 async function montar(id) {
   const m = D.montagens[S.pers][id]; if (!m) return;
   if (m.procedural === "funda") { criarFunda(m); return; }
+  if (m.procedural === "chicote") { criarChicote(m); return; }
   const g = await carregar(D.modelos_itens[D.itens[id].modelo]);
   const b = osso(m.osso); if (!b) return;
   const piv = new THREE.Group(), resto = new THREE.Group();
@@ -213,6 +214,7 @@ function desmontar() {
   for (const r of P.montados) r.osso.remove(r.piv);
   P.montados = []; if (P.corda) { cena.remove(P.corda.a); cena.remove(P.corda.b); P.corda = null; }
   if (P.funda) { for (const o of P.funda.objs) cena.remove(o); P.funda = null; }
+  if (P.chicote) { for (const o of P.chicote.objs) cena.remove(o); P.chicote = null; }
 }
 
 // ---------- funda desenhada (mesma ideia de scripts/visual/funda.gd: pêndulo preso à mão) ----------
@@ -237,6 +239,57 @@ function atualizarFunda(dt) {
   const lado = f.p.clone().sub(mao).cross(new THREE.Vector3(0, 1, 0));
   if (lado.length() > 1e-4) lado.normalize().multiplyScalar(0.018); else lado.set(0.018, 0, 0);
   ligar(f.a, mao, f.p.clone().add(lado)); ligar(f.b, mao, f.p.clone().sub(lado)); f.bolsa.position.copy(f.p);
+}
+// ---------- chicote desenhado (mesma conta de scripts/visual/chicote.gd) ----------
+// Cabo trançado no punho (linha dos nós dos dedos, saindo pelo polegar) e tira de couro que afina, em
+// corrente de pontos com gravidade, pouco atrito e chão: chicoteia no golpe e deita no chão parado.
+const CH = { N: 18, ATRITO: 0.965, IT: 8, CABO: 0.26, ATRAS: 0.06, RB: 0.011, RP: 0.0025 };
+function criarChicote(m) {
+  const k = 1 / (D.personagens[S.pers].escala || 1);   // a arena mostra o modelo no tamanho dele (sem a escala do jogo)
+  const trancado = new THREE.MeshStandardMaterial({ color: 0x381f12, roughness: 0.9 });
+  const couro = new THREE.MeshStandardMaterial({ color: 0x572e1a, roughness: 1.0 });
+  const cabo = new THREE.Mesh(new THREE.CylinderGeometry(0.014 * k, 0.017 * k, 1, 8, 1), trancado);
+  const segs = [];
+  for (let i = 0; i < CH.N - 1; i++) {
+    const f0 = i / (CH.N - 1), f1 = (i + 1) / (CH.N - 1);
+    const rb = CH.RB + (CH.RP - CH.RB) * f0, rt = CH.RB + (CH.RP - CH.RB) * f1;
+    const sg = new THREE.Mesh(new THREE.CylinderGeometry(rt * k, rb * k, 1, 6, 1), couro); segs.push(sg); cena.add(sg);
+  }
+  cena.add(cabo);
+  P.chicote = { objs: [cabo, ...segs], cabo, segs, mao: osso("mixamorig_RightHand"), ind: osso("mixamorig_RightHandIndex1"),
+    min: osso("mixamorig_RightHandPinky1"), k, l: m.comprimento * k / (CH.N - 1), p: null, ant: null };
+}
+function pontasCabo(c) {
+  const mao = c.mao.getWorldPosition(new THREE.Vector3()), ind = c.ind.getWorldPosition(new THREE.Vector3()), mi = c.min.getWorldPosition(new THREE.Vector3());
+  const centro = mao.clone().lerp(ind.clone().add(mi).multiplyScalar(0.5), 0.8);
+  const eixo = ind.clone().sub(mi).normalize();
+  return [centro.clone().sub(eixo.clone().multiplyScalar(CH.ATRAS * c.k)), centro.clone().add(eixo.multiplyScalar((CH.CABO - CH.ATRAS) * c.k))];
+}
+function atualizarChicote(dt) {
+  const c = P.chicote; if (!c || !c.mao || !c.ind || !c.min) return;
+  const [base, ponta] = pontasCabo(c); const chao = CH.RB * c.k;
+  if (!c.p) {
+    const dir = ponta.clone().sub(base).normalize(); c.p = []; c.ant = [];
+    for (let i = 0; i < CH.N; i++) { const q = ponta.clone().add(dir.clone().multiplyScalar(c.l * i)); q.y = Math.max(q.y, chao); c.p.push(q); c.ant.push(q.clone()); }
+  }
+  if (!S.pausado) {
+    for (let i = 1; i < CH.N; i++) {
+      const v = c.p[i].clone().sub(c.ant[i]).multiplyScalar(CH.ATRITO); c.ant[i].copy(c.p[i]);
+      c.p[i].add(v).add(new THREE.Vector3(0, -9.8 * dt * dt, 0));
+    }
+    for (let k = 0; k < CH.IT; k++) {
+      c.p[0].copy(ponta);
+      for (let i = 0; i < CH.N - 1; i++) {
+        const d = c.p[i + 1].clone().sub(c.p[i]); const dl = d.length(); if (dl < 1e-5) continue;
+        const corr = d.multiplyScalar(1 - c.l / dl);
+        if (i === 0) c.p[i + 1].sub(corr); else { c.p[i].add(corr.clone().multiplyScalar(0.5)); c.p[i + 1].sub(corr.multiplyScalar(0.5)); }
+      }
+      for (let i = 1; i < CH.N; i++) if (c.p[i].y < chao) { c.p[i].y = chao; c.ant[i].lerp(c.p[i], 0.3); }
+    }
+  }
+  c.p[0].copy(ponta); c.ant[0].copy(ponta);
+  ligar(c.cabo, base, ponta);
+  for (let i = 0; i < CH.N - 1; i++) ligar(c.segs[i], c.p[i], c.p[i + 1]);
 }
 async function vestir() {
   desmontar();
@@ -445,7 +498,7 @@ function laco() {
   requestAnimationFrame(laco);
   const dt = relogio.getDelta();
   if (P.mixer && !S.pausado) P.mixer.update(dt);
-  if (P.obj) { P.obj.updateMatrixWorld(true); ajustarDinamicos(dt); P.obj.updateMatrixWorld(true); atualizarCorda(); atualizarFunda(Math.min(dt, 0.05)); hud(); }
+  if (P.obj) { P.obj.updateMatrixWorld(true); ajustarDinamicos(dt); P.obj.updateMatrixWorld(true); atualizarCorda(); atualizarFunda(Math.min(dt, 0.05)); atualizarChicote(Math.min(dt, 0.033)); hud(); }
   controles.update(); renderer.render(cena, camera);
 }
 
