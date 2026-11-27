@@ -246,3 +246,17 @@ equipamento na sala 4 (F5). Retratos e modelos dos PdMs criados antes (arte no p
   d4), que fecha com os 5 personagens. Ganha quem passar o d20 dele.
 - Conferência: `--teste=eventos --escolhas=deitar,desamarrar,jogar,…` roda a aventura a partir do primeiro
   evento, com os encadeados; imprime o `estado` e as pistas do diário.
+
+### Som das cenas (27/11)
+- Cada momento da aventura ganha som de três jeitos, nesta ordem de preferência:
+  1. **automático pelo evento do jogo** (porta, grade, passo, golpe, dado, tocha): nada a escrever na cena;
+  2. **automático pela criatura** (`data/sons.json` → `criaturas`): cada `fala` toca a `voz` de quem fala,
+     e o combate toca `alerta`, `dor` e `morte`; uma fala pode pedir outro momento (`"voz": "riso"`) ou
+     nenhum (`"muda": true`);
+  3. **passo `som` na cena** para o que o texto descreve e o jogo não faz sozinho: `{"faz": "som", "som":
+     "chaves", "quem": "carcereiro", "volume": -4, "espera": 1.2}` (sem `quem`, toca sem posição).
+- Regra de leitura do texto: todo verbo de ruído na narração ("o tilintar de chaves", "estala o chicote nas
+  barras", "passos pesados") vira um passo `som` logo depois da `mensagem`.
+- O que falta de som por seção fica em `Sons por cena` no cofre; o validador recusa `som` que não existe.
+- **Escolha de material** (sons, arte): página local com um código por opção, prévia, link, caixa de marcar
+  e campo de observação; o Leonardo devolve os códigos. É o padrão para qualquer decisão entre opções.
