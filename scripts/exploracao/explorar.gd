@@ -529,6 +529,10 @@ func _porta_perto(p: Vector3) -> Dictionary:
 	return {}
 
 ## Cada porta ganha o próprio material (contorno quente enquanto fechada, acende com o mouse).
+## As folhas usam o modelo 3D da porta (arte/final/3d/porta*.glb) no lugar da caixa da planta.
+const PORTA_GLB := "res://arte/final/3d/porta.glb"
+const PORTA_DUPLA_GLB := "res://arte/final/3d/porta-dupla.glb"
+const PORTA_ESPESSURA := 0.14
 func _materiais_das_portas() -> void:
 	for no in $Masmorra.get_node("Portas").get_children():
 		var folhas := no.find_children("*", "MeshInstance3D", true, false)
@@ -536,14 +540,70 @@ func _materiais_das_portas() -> void:
 		var m: ShaderMaterial = folhas[0].material_override.duplicate()
 		m.set_shader_parameter("fechada", 1.0)
 		for f in folhas: f.material_override = m
-		porta_mat[str(no.name)] = m
-		luz.materiais.append(m)
+		var lista: Array = _vestir_porta(no)
+		if lista.is_empty(): lista = [m]
+		porta_mat[str(no.name)] = lista
+		for x in lista: luz.materiais.append(x)
+
+## Centro (z) das malhas do modelo no espaço da própria malha, para o corte da porta dupla.
+func _centro_z_malha(mod: Node3D) -> float:
+	var ms := mod.find_children("*", "MeshInstance3D", true, false)
+	return (ms[0] as MeshInstance3D).get_aabb().get_center().z if not ms.is_empty() else 0.0
+
+func _porta_param(id: String, nome: String, valor: float) -> void:
+	for x in porta_mat.get(id, []): x.set_shader_parameter(nome, valor)
+
+## Troca as caixas das folhas pelo modelo 3D. Porta de 1 casa: porta simples. Porta larga de uma folha:
+## o modelo da porta dupla inteiro. Porta dupla: o modelo da dupla em cada folha, cortado na metade dela.
+## Devolve os materiais da porta (para contorno e destaque), ou [] se ficou a caixa.
+func _vestir_porta(no: Node3D) -> Array:
+	var piv: Array = no.get_children().filter(func(c): return str(c.name).begins_with("Folha"))
+	if piv.is_empty(): return []
+	var malhas: Array = piv.map(func(p): return p.get_node_or_null("Malha"))
+	if malhas.has(null): return []
+	# Caixa da porta inteira, no espaço do nó da porta.
+	var total := AABB(); var primeiro := true
+	for i in piv.size():
+		var b: AABB = (piv[i] as Node3D).transform * (malhas[i] as MeshInstance3D).get_aabb()
+		total = b if primeiro else total.merge(b); primeiro = false
+	var v := str(no.get_meta("orient", "v")) == "v"
+	var largura: float = total.size.z if v else total.size.x
+	var arq := PORTA_GLB if piv.size() == 1 and largura < 2.0 else PORTA_DUPLA_GLB
+	if not ResourceLoader.exists(arq): return []
+	var mat := ShaderMaterial.new(); mat.shader = load("res://shaders/porta_luz.gdshader")
+	mat.set_shader_parameter("fechada", 1.0)
+	var mats: Array = [mat]
+	for i in piv.size():
+		var p: Node3D = piv[i]
+		var mod: Node3D = load(arq).instantiate()
+		var caixa: AABB = Luz.caixa_local(mod)
+		# Modelo: altura em y, largura em z, espessura em x (face para ±x).
+		var esc := Vector3(PORTA_ESPESSURA / caixa.size.x, 2.4 / caixa.size.y, largura / caixa.size.z)
+		var bas := Basis(Vector3(esc.x, 0, 0), Vector3(0, esc.y, 0), Vector3(0, 0, esc.z))
+		if not v: bas = Basis(Vector3.UP, -PI / 2) * bas   # z do modelo -> x do mundo
+		var centro_porta: Vector3 = total.get_center()
+		var t_porta := Transform3D(bas, centro_porta - bas * caixa.get_center())
+		mod.transform = p.transform.affine_inverse() * t_porta
+		var mm := mat
+		if piv.size() > 1:
+			mm = mat.duplicate(); mats.append(mm)
+			mm.set_shader_parameter("corte", -1.0 if str(p.name) == "Folha0" else 1.0)
+			mm.set_shader_parameter("corte_centro", _centro_z_malha(mod))
+		for mi in mod.find_children("*", "MeshInstance3D", true, false):
+			var tex = null
+			var orig = (mi as MeshInstance3D).mesh.surface_get_material(0)
+			if orig is BaseMaterial3D: tex = orig.albedo_texture
+			mm.set_shader_parameter("albedo_tex", tex)
+			(mi as MeshInstance3D).material_override = mm
+		p.add_child(mod)
+		(malhas[i] as MeshInstance3D).visible = false
+	return mats
 
 func _acender_porta(id: String) -> void:
 	if id == _porta_acesa: return
-	if porta_mat.has(_porta_acesa): porta_mat[_porta_acesa].set_shader_parameter("destaque", 0.0)
+	_porta_param(_porta_acesa, "destaque", 0.0)
 	_porta_acesa = id
-	if porta_mat.has(id): porta_mat[id].set_shader_parameter("destaque", 1.0)
+	_porta_param(id, "destaque", 1.0)
 
 ## Soleiras âmbar no chão dos dois lados de cada porta fechada já vista (o símbolo de porta do mapa).
 func _desenhar_portas() -> void:
@@ -686,7 +746,7 @@ func _abrir_porta(pt: Dictionary, de: Vector2i, quem := "") -> void:
 		elif par[1] == de: outro = par[0]
 	grade.abrir_porta(pt)
 	if porta_mat.has(str(pt.id)):
-		porta_mat[str(pt.id)].set_shader_parameter("fechada", 0.0); porta_mat[str(pt.id)].set_shader_parameter("destaque", 0.0)
+		_porta_param(str(pt.id), "fechada", 0.0); _porta_param(str(pt.id), "destaque", 0.0)
 	var no := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
 	if no:
 		var sentido: Vector3 = grade.centro(outro) - grade.centro(de)
@@ -1337,6 +1397,19 @@ func _atualizar_hud() -> void:
 func _linha_de_comando() -> void:
 	var captura := ""; var teste := ""
 	for a in _args():
+		if a.begins_with("--abrir="):   # captura: abre a porta (testa as folhas do modelo 3D)
+			var ptx: Dictionary = portas.por_id.get(a.trim_prefix("--abrir="), {})
+			if not ptx.is_empty(): _abrir_porta(ptx, grade.lados_da_porta(ptx)[0][0])
+		if a.begins_with("--alvo-porta="):   # captura: câmera numa porta (mestre: mostra tudo)
+			var np: Node3D = $Masmorra.get_node_or_null("Portas/" + a.trim_prefix("--alvo-porta="))
+			if np:
+				var cx := AABB(); var pr := true
+				for mi in np.find_children("*", "MeshInstance3D", true, false):
+					var bb: AABB = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()
+					cx = bb if pr else cx.merge(bb); pr = false
+				camera.alvo = cx.get_center(); _alternar_mestre()
+		if a == "--alvo-tocha" and not luz.tochas_nos.is_empty():   # captura: câmera na primeira tocha de parede
+			camera.alvo = luz.tochas_nos[0].global_position + Vector3(0, -0.3, 0)
 		if a.begins_with("--camera="):   # distância,inclinação,guinada (capturas)
 			var v := a.trim_prefix("--camera=").split(",")
 			camera.distancia = float(v[0]); camera.inclinacao = float(v[1]); camera.guinada = float(v[2])

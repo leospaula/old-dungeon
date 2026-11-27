@@ -98,16 +98,47 @@ func _sombra_suave(l: OmniLight3D) -> void:
 	l.shadow_blur = 2.5
 	l.shadow_bias = 0.04; l.shadow_normal_bias = 1.2
 
+## Caixa de todas as malhas de um modelo, no espaço da raiz dele (conta a escala dos nós do .glb).
+static func caixa_local(raiz: Node3D) -> AABB:
+	var caixa := AABB(); var primeiro := true
+	for n in raiz.find_children("*", "MeshInstance3D", true, false):
+		var tr := Transform3D(); var p: Node = n
+		while p != raiz and p != null:
+			tr = (p as Node3D).transform * tr; p = p.get_parent()
+		var bb: AABB = tr * (n as MeshInstance3D).get_aabb()
+		caixa = bb if primeiro else caixa.merge(bb); primeiro = false
+	return caixa
+
+const TOCHA_GLB := "res://arte/final/3d/tocha-parede.glb"
+const TOCHA_ALTURA := 0.9
+
 func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
 	var t := Node3D.new(); t.position = pos; raiz.add_child(t); tochas_nos.append(t)
-	var cabo := MeshInstance3D.new(); var cm := CylinderMesh.new(); cm.top_radius = 0.05; cm.bottom_radius = 0.035; cm.height = 0.5; cabo.mesh = cm
-	var mm := StandardMaterial3D.new(); mm.albedo_color = Color(0.25, 0.15, 0.08); cabo.material_override = mm
-	cabo.rotation_degrees = Vector3(-25, 0, 0) if absf(dentro.z) > 0.5 else Vector3(0, 0, -25)
-	t.add_child(cabo)
-	var chama := MeshInstance3D.new(); var sm := SphereMesh.new(); sm.radius = 0.09; sm.height = 0.24; chama.mesh = sm
+	var pos_chama := Vector3(0, 0.3, 0) + dentro * 0.1
+	if ResourceLoader.exists(TOCHA_GLB):
+		# Modelo: placa no +z (contra a parede), tocha avançando para -z, altura em y.
+		var mod: Node3D = load(TOCHA_GLB).instantiate()
+		var caixa := caixa_local(mod)
+		var s := TOCHA_ALTURA / caixa.size.y
+		var zm := -dentro; var xm := Vector3.UP.cross(zm).normalized()
+		var b := Basis(xm * s, Vector3.UP * s, zm * s)
+		var placa := Vector3(caixa.get_center().x, caixa.get_center().y, caixa.end.z)
+		mod.transform = Transform3D(b, -dentro * 0.2 - b * placa)
+		t.add_child(mod)
+		for mi in mod.find_children("*", "MeshInstance3D", true, false):   # a própria chama não faz sombra da tocha
+			(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var cabeca := Vector3(caixa.get_center().x, caixa.end.y, caixa.position.z + caixa.size.z * 0.3)
+		pos_chama = mod.transform * cabeca + Vector3(0, 0.06, 0)
+	else:
+		var cabo := MeshInstance3D.new(); var cm := CylinderMesh.new(); cm.top_radius = 0.05; cm.bottom_radius = 0.035; cm.height = 0.5; cabo.mesh = cm
+		var mm := StandardMaterial3D.new(); mm.albedo_color = Color(0.25, 0.15, 0.08); cabo.material_override = mm
+		cabo.rotation_degrees = Vector3(-25, 0, 0) if absf(dentro.z) > 0.5 else Vector3(0, 0, -25)
+		t.add_child(cabo)
+	var chama := MeshInstance3D.new(); var sm := SphereMesh.new(); sm.radius = 0.055; sm.height = 0.17; chama.mesh = sm
+	chama.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mc := StandardMaterial3D.new(); mc.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED; mc.albedo_color = Color(1.0, 0.7, 0.3)
 	mc.emission_enabled = true; mc.emission = Color(1.0, 0.6, 0.2); mc.emission_energy_multiplier = 1.3
-	chama.material_override = mc; chama.position = Vector3(0, 0.3, 0) + dentro * 0.1; t.add_child(chama)
+	chama.material_override = mc; chama.position = pos_chama; t.add_child(chama)
 	var luz := OmniLight3D.new(); luz.position = chama.position + dentro * 0.3; luz.light_color = Color(1.0, 0.68, 0.38)
 	luz.light_energy = 2.1; luz.omni_range = 8.5; luz.omni_attenuation = 1.6; t.add_child(luz)
 	_sombra_suave(luz)
@@ -117,7 +148,7 @@ func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
 	var qm := QuadMesh.new(); qm.size = Vector2(0.035, 0.035)
 	var fm := StandardMaterial3D.new(); fm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED; fm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	fm.albedo_color = Color(1.0, 0.75, 0.35); fm.emission_enabled = true; fm.emission = Color(1, 0.6, 0.2); fm.emission_energy_multiplier = 1.2
-	qm.material = fm; f.mesh = qm; t.add_child(f)
+	qm.material = fm; f.mesh = qm; f.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF; t.add_child(f)
 
 func _objeto(metalico: float, rugosidade: float, emissao := Color.BLACK, forca := 0.0) -> ShaderMaterial:
 	var m := ShaderMaterial.new(); m.shader = load("res://shaders/objeto_luz.gdshader")
