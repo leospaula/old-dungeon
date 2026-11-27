@@ -34,6 +34,7 @@ const EscolherGrupo = preload("res://scripts/interface/escolher_grupo.gd")
 const Pacotes = preload("res://scripts/exploracao/pacotes.gd")
 const Bibliotecas = preload("res://scripts/visual/bibliotecas.gd")
 const Cena = preload("res://scripts/exploracao/cena.gd")
+const Efeitos = preload("res://scripts/visual/efeitos.gd")
 const Sistema = preload("res://scripts/regras/sistema.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
@@ -124,6 +125,7 @@ func _ready() -> void:
 	for a in _args():   # perfil de regras (Básico = bx; no navegador também vem da URL)
 		if a.begins_with("--regras="): Sistema.usar(a.trim_prefix("--regras="))
 	print("regras: ", Sistema.nome())
+	_carregar_opcoes()
 	grade = Grade.new(); grade.carregar(LAYOUT)
 	MONSTROS = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/monstros.json"))
 	ENCONTROS = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/encontros.json"))
@@ -531,6 +533,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_P: _acao_hud("procurar")
 			KEY_T: if not fim: _arsenal_teste()
 			KEY_I: _acao_hud("ficha")
+			KEY_D: _alternar_dados()
 			KEY_ESCAPE: _selecionar(null)
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
 				# Atalhos dos medalhões (a tecla aparece no canto de cada um).
@@ -1108,10 +1111,12 @@ func _passar_turno() -> void:
 		var chance := int(m.errantes_em_6)
 		var r := Dados.d(6)
 		var faixa := "1" if chance == 1 else "1–%d" % chance
+		# O teste de errantes é do mestre: o jogador só fica sabendo quando algo se ouve.
 		if r > chance:
-			_registrar("Monstros errantes (%s, %s em d6): %d → nada." % [str(m.nome).to_lower(), faixa, r])
+			_secreto("Monstros errantes (%s, %s em d6): %d → nada." % [str(m.nome).to_lower(), faixa, r])
 			return
-		_registrar("Monstros errantes (%s, %s em d6): [b]%d[/b] → [color=#ff9a6a]passos ao longe…[/color]" % [str(m.nome).to_lower(), faixa, r])
+		_secreto("Monstros errantes (%s, %s em d6): %d → vêm vindo." % [str(m.nome).to_lower(), faixa, r])
+		_registrar("[color=#ff9a6a]Passos ao longe…[/color]")
 		var ciente := true
 		if bool(m.furtivo):
 			var f := _rolar_furtividade()
@@ -1430,6 +1435,19 @@ func _montar_hud() -> void:
 ## Comemoração no fim da luta: cada um sorteia uma das animações de vitória a cada luta, sem repetir
 ## dentro do grupo enquanto houver opção (assim ninguém faz sempre a mesma pose).
 const VITORIAS := ["vitoria", "vitoria-braco", "vitoria-parado", "vitoria-parado-2"]
+## Tecla D: liga/desliga os dados 3D rolando no combate e nos testes (o jogo de dados do prisioneiro
+## mostra sempre). A escolha fica guardada em user://opcoes.cfg.
+const OPCOES := "user://opcoes.cfg"
+func _alternar_dados() -> void:
+	Efeitos.dados_ligados = not Efeitos.dados_ligados
+	var cf := ConfigFile.new(); cf.load(OPCOES)
+	cf.set_value("visual", "dados", Efeitos.dados_ligados); cf.save(OPCOES)
+	_registrar("[i]Dados rolando na tela: %s (tecla D).[/i]" % ("ligados" if Efeitos.dados_ligados else "desligados"))
+
+func _carregar_opcoes() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(OPCOES) == OK: Efeitos.dados_ligados = bool(cf.get_value("visual", "dados", true))
+
 func _comemorar(lista: Array) -> void:
 	var sacola: Array = []
 	for h in lista:
@@ -1543,16 +1561,19 @@ func _fora_da_tela(p: Vector3) -> bool:
 	var t := camera.unproject_position(p); var r := get_viewport().get_visible_rect().size
 	return t.x < r.x * 0.08 or t.x > r.x * 0.92 or t.y < r.y * 0.1 or t.y > r.y * 0.72
 
+static var _SEM_NUMERO := RegEx.create_from_string("\\s+\\d+[a-zA-Z]*$")
 func _atualizar_hud() -> void:
 	if hud_ui == null: return
 	var luz_txt := ""
 	var acesas := _acesas().map(func(h): return [h.nome, h.tocha_resto])
 	if not combate.ativo:
+		# Só o tipo do lugar ("Cela", "Sala", "Corredor"): o número da planta é coisa do mestre.
 		var area: String = grade.nomes.get(grade.area_de(heroi.celula), "")
+		if not mestre: area = _SEM_NUMERO.sub(area, "")
 		var prox := turno + (2 - turno % 2)
 		hud_ui.atualizar_exploracao(MOV.modos, modo, {"area": area, "turno": turno, "hora": _hora(), "andado": metros_no_turno,
 			"taxa": _taxa_turno(), "errantes": prox, "xp": xp_total, "acesas": acesas, "tocha_max": TURNOS_POR_TOCHA,
-			"reserva": _tochas_reserva()}, heroi, luz_txt)
+			"reserva": _tochas_reserva(), "mestre": mestre}, heroi, luz_txt)
 		return
 	var v: Node = combate.vez
 	var info := ""

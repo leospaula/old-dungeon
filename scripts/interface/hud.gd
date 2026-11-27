@@ -523,7 +523,9 @@ func _canto_relogio(r: Dictionary) -> void:
 		linha_luz = "%d acesa%s · gasta %d por turno · luz para ~%d turno%s" % [n, "s" if n > 1 else "", n, dura, "s" if dura != 1 else ""]
 	var ll := E.rotulo(linha_luz, 12, Color("#ff9a6a") if n != 1 else E.TEXTO); _canto_caixa.add_child(ll)
 	luz.tooltip_text = "\n".join(acesas.map(func(a): return "%s: %d de %d turnos" % [a[0], int(a[1]), int(r.tocha_max)])) if n > 0 else "Nenhuma tocha acesa"
-	_canto_caixa.add_child(E.rotulo("Teste de errantes no turno %d · XP do grupo %d" % [int(r.errantes), int(r.xp)], 12, E.TEXTO))
+	var pe := "XP do grupo %d" % int(r.xp)
+	if bool(r.get("mestre", false)): pe = "Teste de errantes no turno %d · " % int(r.errantes) + pe   # só o mestre vê
+	_canto_caixa.add_child(E.rotulo(pe, 12, E.TEXTO))
 
 ## ordem: [{nome, lado, vivo, retrato, vez, agiu}]
 func _canto_iniciativa(rodada: int, ini: Array, ordem: Array) -> void:

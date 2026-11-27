@@ -28,6 +28,10 @@ static func texto(pai: Node, pos: Vector3, txt: String, cor: Color, escala := 1.
 ## Dado 3D rolando sobre o ator (scripts/visual/dado3d.gd): gira, assenta com a face sorteada virada para a
 ## câmera e, ao parar, o resultado aparece ao lado (o número na face fica pequeno de longe). Cores: máximo
 ## dourado, 1 vermelho, verde se acerta/ganha, cinza se erra/perde. `lados`: d4…d20.
+static var dados_ligados := true   # tecla D (explorar.gd): dados no combate e nos testes; o jogo de dados mostra sempre
+## Dado do combate/testes: só aparece com os dados ligados.
+static func dado_opcional(ator: Node3D, resultado: int, acerta: bool, dur := 0.5, lados := 20) -> void:
+	if dados_ligados: dado(ator, resultado, acerta, dur, lados)
 const ESTILO_DADO := "osso"   # "osso" (osso envelhecido, tinta escura) ou "ferro" (ferro escuro, ouro)
 static func dado(ator: Node3D, resultado: int, acerta: bool, dur := 0.5, lados := 20) -> void:
 	var cam := ator.get_viewport().get_camera_3d()

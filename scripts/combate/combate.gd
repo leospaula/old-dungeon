@@ -297,6 +297,7 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 	var at: Dictionary = Sistema.atacar(a.thac0, alvo.ca, mod)
 	var r: int = at.r; var precisa: int = at.precisa; var total: int = at.total
 	var acerta: bool = at.acerta
+	Efeitos.dado_opcional(a, r, acerta, 0.55)   # o d20 rola sobre quem ataca enquanto arma o golpe
 	# Erro com motivo: escudo bloqueia, arma de duas mãos apara, o resto esquiva; 1 natural = golpe em falso.
 	var defesa: String = "" if acerta or at.falha else alvo.defesa()
 	if distancia:

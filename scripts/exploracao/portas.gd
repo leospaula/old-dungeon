@@ -7,6 +7,7 @@ extends RefCounted
 ## Estado inicial das portas: data/masmorra/estado-teste.json (até a aventura trazer o dela).
 
 const Dados = preload("res://scripts/regras/dados.gd")
+const Efeitos = preload("res://scripts/visual/efeitos.gd")
 const ARQ := "res://data/masmorra/estado-teste.json"
 const RODADA := 1.0 / 60.0   # turno de 10 min = 60 rodadas de 10 s
 const BARRAM := ["trancada", "pregada", "secreta"]   # monstros não passam
@@ -234,6 +235,7 @@ func _forcar(pt: Dictionary, q: Node3D) -> void:
 	var e := de(pt); var f = q.ficha
 	var n := _chance_forcar(e, f); var r := Dados.d(6)
 	var ok := r <= n
+	Efeitos.dado_opcional(q, r, ok, 0.5, 6)
 	await _animar(q, "chutar-porta")   # chuta, abrindo ou não
 	ex._gastar_tempo(RODADA)
 	var faixa := "1" if n == 1 else "1–%d" % n
