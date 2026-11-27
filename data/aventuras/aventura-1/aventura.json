@@ -977,5 +977,55 @@
     }
    ]
   }
+ ],
+ "secoes": [
+  {
+   "id": "1",
+   "nome": "Despertar na cela",
+   "nota": "O começo normal (o carcereiro chega 10 s depois).",
+   "evento": "carcereiro-chega",
+   "atraso": 10.0
+  },
+  {
+   "id": "2",
+   "nome": "O carcereiro traz o prisioneiro",
+   "evento": "carcereiro-chega",
+   "atraso": 1.0
+  },
+  {
+   "id": "3",
+   "nome": "O jogo de dados do prisioneiro",
+   "eventos_feitos": [
+    "carcereiro-chega"
+   ],
+   "preparar": [
+    {
+     "faz": "surgir",
+     "quem": "prisioneiro",
+     "pdm": "prisioneiro",
+     "area": "1",
+     "pos": "C2"
+    },
+    {
+     "faz": "pose",
+     "quem": "prisioneiro",
+     "pose": "amarrado"
+    },
+    {
+     "faz": "olhar",
+     "quem": "prisioneiro",
+     "para": "grupo"
+    },
+    {
+     "faz": "surgir",
+     "quem": "carcereiro",
+     "pdm": "carcereiro",
+     "area": "4",
+     "pos": "B4"
+    }
+   ],
+   "evento": "prisioneiro-dados",
+   "atraso": 1.0
+  }
  ]
 }

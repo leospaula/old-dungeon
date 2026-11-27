@@ -177,6 +177,19 @@ prisioneiro virou `jogo_dados`:
   voltam; luz e visão param de passar, mas a grade continua deixando ver) e `trancar_porta` (estado
   `trancada` + barrada: monstros e PdMs não atravessam).
 
+## 5.7 Seções como pontos de partida (`secoes`)
+Cada seção nova ganha uma entrada em `secoes` no aventura.json, para ser testada sozinha:
+- `preparar`: passos de cena que montam o mundo como ele estaria naquele ponto (PdMs onde estão, poses,
+  portas). Exemplo: na seção 3, o prisioneiro já está amarrado na cela e o carcereiro na sala 4;
+- `estado`: o que o `aventura.estado` já teria (dívidas, jogos…);
+- `eventos_feitos`: eventos de antes, que não devem disparar;
+- `evento` (ou `cena`): o que começa a seção, e `atraso`.
+
+Abrir: `tools/secao.sh <id>` (sem argumento, lista as seções), ou `--aventura=<id> --secao=<id>`. O grupo
+padrão entra sem a tela de escolha (`--escolher` para ver a tela; `--grupo=a,b,c` para escolher). Com
+`--escolhas=a,b,…` as escolhas se respondem sozinhas (para os testes sem tela).
+**Regra do método: ao terminar uma seção, ela entra em `secoes`.**
+
 ## 6. Verificação de cada sala
 1. `python3 tools/validar_aventura.py data/aventuras/<id>/aventura.json` → "tudo certo".
 2. Cena sem tela, todas as ramificações: `--teste=<cena> --escolhas=a,b,c` (respostas automáticas).

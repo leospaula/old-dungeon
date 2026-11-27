@@ -411,6 +411,52 @@
      "$ref": "#/$defs/passo_cena"
     }
    }
+  },
+  "secoes": {
+   "type": "array",
+   "description": "Pontos de partida para testar a aventura por seção (--secao=<id>): 'preparar' (passos de cena que montam o mundo como estaria ali), 'estado', 'eventos_feitos' e o 'evento' (ou 'cena') que começa a seção.",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "nome"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "nome": {
+      "type": "string"
+     },
+     "nota": {
+      "type": "string"
+     },
+     "preparar": {
+      "type": "array",
+      "items": {
+       "$ref": "#/$defs/passo_cena"
+      }
+     },
+     "estado": {
+      "type": "object"
+     },
+     "eventos_feitos": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "evento": {
+      "type": "string"
+     },
+     "cena": {
+      "type": "string"
+     },
+     "atraso": {
+      "type": "number"
+     }
+    }
+   }
   }
  },
  "$defs": {

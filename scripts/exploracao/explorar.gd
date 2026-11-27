@@ -178,7 +178,10 @@ func _ready() -> void:
 	_anotar_area()
 	cena = Cena.new(self)
 	_linha_de_comando()
-	if aventura and not Array(_args()).any(func(a): return a.begins_with("--teste=") or a.begins_with("--cena=") or a.begins_with("--sem-eventos")):
+	var secao := _secao_pedida()
+	if aventura and secao != "":
+		cena.comecar_secao(secao)   # teste a partir de uma seção: o mundo como estaria ali, e a cena dela
+	elif aventura and not Array(_args()).any(func(a): return a.begins_with("--teste=") or a.begins_with("--cena=") or a.begins_with("--sem-eventos")):
 		cena.comecar()
 
 # ---------- personagens ----------
@@ -210,6 +213,12 @@ static func _args() -> PackedStringArray:
 	_args_cache = a if not a.is_empty() else PackedStringArray([""])
 	return _args_cache
 
+## --secao=<id>: começa a aventura direto numa seção (aventura.json "secoes"), para testar dali.
+func _secao_pedida() -> String:
+	for a in _args():
+		if a.begins_with("--secao="): return a.trim_prefix("--secao=")
+	return ""
+
 func _aventura_pedida() -> String:
 	var args := _args()
 	for a in args:
@@ -230,6 +239,8 @@ func _escolher_grupo() -> void:
 	for a in args:
 		if a.begins_with("--grupo="): aventura.escolhidos = Array(a.trim_prefix("--grupo=").split(",")); return
 		if a.begins_with("--captura-escolha="): foto = a.trim_prefix("--captura-escolha=")
+	if _secao_pedida() != "" and not args.has("--escolher"):   # teste de seção: grupo padrão, sem a tela
+		aventura.escolhidos = disp.slice(0, n) if n > 0 else disp.duplicate(); return
 	if n <= 0 or n >= disp.size(): aventura.escolhidos = disp.duplicate(); return
 	if foto == "" and Array(args).any(func(a): return a.begins_with("--teste=") or a.begins_with("--captura")):
 		aventura.escolhidos = disp.slice(0, n); return

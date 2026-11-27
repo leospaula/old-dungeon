@@ -67,6 +67,29 @@ func comecar() -> void:
 		if q.has("inicio"):
 			ex.get_tree().create_timer(float(q.inicio)).timeout.connect(func(): disparar(ev))
 
+## Começa numa seção (aventura.json "secoes"): roda o "preparar" (o mundo como estaria ali: PdMs, poses,
+## portas, estado), marca como feitos os eventos de antes (para não dispararem) e dispara o "evento" da seção.
+func comecar_secao(id: String) -> void:
+	var lista: Array = ex.aventura.d.get("secoes", [])
+	var sec: Dictionary = {}
+	for x in lista:
+		if str(x.id) == id: sec = x
+	if sec.is_empty():
+		ex._registrar("[color=#ff7a5a]Seção %s não existe. Seções: %s[/color]" % [id, ", ".join(lista.map(func(x): return str(x.id)))]); return
+	for e in sec.get("eventos_feitos", []): _feitos[str(e)] = true
+	ex._registrar("[color=#b9a3e3]Teste: começando na seção %s — %s.[/color]" % [id, str(sec.get("nome", ""))])
+	print("SECAO ", id, " · ", sec.get("nome", ""))
+	await ex.get_tree().create_timer(0.3).timeout
+	ativa = true
+	await rodar(sec.get("preparar", []))
+	ex.aventura.estado.merge(sec.get("estado", {}), true)
+	ativa = false
+	await ex.get_tree().create_timer(float(sec.get("atraso", 1.0))).timeout
+	var ev_id := str(sec.get("evento", ""))
+	for ev in eventos():
+		if str(ev.get("id", "")) == ev_id: disparar(ev); return
+	if sec.has("cena"): rodar_cena(str(sec.cena))
+
 func disparar(ev: Dictionary) -> void:
 	var id := str(ev.get("id", ""))
 	if bool(ev.get("uma_vez", true)) and _feitos.has(id): return
