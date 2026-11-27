@@ -20,6 +20,19 @@ func _ready() -> void:
 
 func limpar() -> void:
 	_celulas.clear(); _retangulos.clear(); _aneis.clear(); _pontos.clear(); _redesenhar()
+	_seguir = null; position = Vector3.ZERO
+
+## A camada acompanha alguém (o círculo de quem age vai junto enquanto ele anda).
+var _seguir: Node3D = null
+var _origem := Vector3.ZERO
+func seguir(no: Node3D, celula: Vector2i) -> void:
+	_seguir = no; _origem = Vector3((celula.x + 0.5) * CEL, 0, (celula.y + 0.5) * CEL)
+
+func _process(_dt: float) -> void:
+	if _seguir == null: return
+	if not is_instance_valid(_seguir): _seguir = null; return
+	var p := _seguir.global_position
+	position = Vector3(p.x - _origem.x, 0, p.z - _origem.z)
 
 func retangulo(a: Vector2, b: Vector2, cor: Color) -> void:
 	_retangulos.append([a, b, cor]); _redesenhar()

@@ -573,8 +573,19 @@ func _vestir_grade(no: Node3D) -> Array:
 			var orig = (mi as MeshInstance3D).mesh.surface_get_material(0)
 			if orig is BaseMaterial3D: mat.set_shader_parameter("albedo_tex", orig.albedo_texture)
 			(mi as MeshInstance3D).material_override = mat
+		if str(p.name) == "Fixa": _tapar_fechadura(mod, cm)
 		p.add_child(mod); malha.visible = false
 	return [mat]
+
+## A metade fixa da grade não abre: tapa o furo da fechadura (furo de verdade na malha do modelo) com
+## uma plaquinha de ferro da cor da tranca. Posição medida na vista de frente do modelo (tools/render_glb.gd).
+func _tapar_fechadura(mod: Node3D, cm: AABB) -> void:
+	var placa := MeshInstance3D.new(); var bm := BoxMesh.new()
+	bm.size = Vector3(cm.size.x * 0.95, cm.size.y * 0.1, cm.size.z * 0.1); placa.mesh = bm
+	var m := StandardMaterial3D.new(); m.albedo_color = Color(0.4, 0.29, 0.21); m.roughness = 0.8; m.metallic = 0.25
+	placa.material_override = m
+	placa.position = Vector3(cm.get_center().x, cm.end.y - cm.size.y * 0.503, cm.end.z - cm.size.z * 0.8476)
+	mod.add_child(placa)
 
 func _porta_param(id: String, nome: String, valor: float) -> void:
 	for x in porta_mat.get(id, []): x.set_shader_parameter(nome, valor)
