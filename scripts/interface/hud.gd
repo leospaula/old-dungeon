@@ -328,7 +328,8 @@ func menu_acoes(titulo: String, opcoes: Array, onde: Vector2) -> void:
 
 var _dialogo: Control
 ## Caixa no meio da tela com texto e botões. opcoes: [{id, texto, dica, ativo}]. ao_escolher(id).
-func dialogo(titulo: String, texto: String, opcoes: Array, ao_escolher: Callable) -> void:
+## `retrato`: id do retrato de quem fala (PdM), mostrado ao lado do título.
+func dialogo(titulo: String, texto: String, opcoes: Array, ao_escolher: Callable, retrato := "") -> void:
 	fechar_dialogo()
 	var fundo := ColorRect.new(); fundo.color = Color(0, 0, 0, 0.45); fundo.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fundo.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -337,7 +338,12 @@ func dialogo(titulo: String, texto: String, opcoes: Array, ao_escolher: Callable
 	var painel := PanelContainer.new(); painel.add_theme_stylebox_override("panel", E.painel(true))
 	painel.custom_minimum_size.x = 460; centro.add_child(painel)
 	var v := VBoxContainer.new(); v.add_theme_constant_override("separation", 10); painel.add_child(v)
-	v.add_child(E.rotulo(titulo, 18, E.OURO, "titulo"))
+	if retrato != "":
+		var topo := HBoxContainer.new(); topo.add_theme_constant_override("separation", 12); v.add_child(topo)
+		var r := E.Retrato.new(retrato, 56, titulo); r.aro(E.FILETE, 2.0); topo.add_child(r)
+		var tt := E.rotulo(titulo, 18, E.OURO, "titulo"); tt.size_flags_vertical = Control.SIZE_SHRINK_CENTER; topo.add_child(tt)
+	else:
+		v.add_child(E.rotulo(titulo, 18, E.OURO, "titulo"))
 	var t := RichTextLabel.new(); t.bbcode_enabled = true; t.fit_content = true; t.scroll_active = false
 	t.custom_minimum_size.x = 430; _fontes_rich(t, 14); t.text = texto; v.add_child(t)
 	var n := 0
@@ -360,6 +366,56 @@ func fechar_dialogo() -> void:
 
 func dialogo_aberto() -> bool:
 	return is_instance_valid(_dialogo)
+
+# ---------- fala de personagem (cena) ----------
+
+var _fala: PanelContainer
+var _fala_no: Node3D
+var _fala_seta: Control
+var _fala_pular := false
+## Balão de fala em cima da cabeça de quem fala (acompanha o personagem na tela): retrato, nome e a fala.
+## Some sozinho depois do tempo de leitura, ou antes, com um clique (pular_fala). Devolve quando some.
+func fala(no: Node3D, camera: Camera3D, nome: String, retrato: String, texto: String, altura := 2.0) -> void:
+	fechar_fala()
+	_fala = PanelContainer.new(); _fala.add_theme_stylebox_override("panel", E.painel(true))
+	_fala.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(_fala)
+	var h := HBoxContainer.new(); h.add_theme_constant_override("separation", 10); h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fala.add_child(h)
+	var r := E.Retrato.new(retrato, 46, nome); r.aro(E.FILETE, 2.0); h.add_child(r)
+	var v := VBoxContainer.new(); v.add_theme_constant_override("separation", 2); v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(v)
+	v.add_child(E.rotulo(nome, 14, E.OURO, "titulo"))
+	var t := RichTextLabel.new(); t.bbcode_enabled = true; t.fit_content = true; t.scroll_active = false
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE; t.custom_minimum_size.x = 300; _fontes_rich(t, 15)
+	t.text = "“%s”" % texto; v.add_child(t)
+	_fala_seta = Control.new(); _fala_seta.size = Vector2(18, 10); _fala_seta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fala_seta.draw.connect(func():
+		_fala_seta.draw_colored_polygon(PackedVector2Array([Vector2(0, 0), Vector2(18, 0), Vector2(9, 10)]), E.COURO)
+		_fala_seta.draw_polyline(PackedVector2Array([Vector2(0, 0), Vector2(9, 10), Vector2(18, 0)]), E.OURO_CLARO, 1.0, true))
+	add_child(_fala_seta)
+	_fala_no = no; _fala_pular = false
+	var fim := Time.get_ticks_msec() + int(maxf(2.6, texto.length() * 0.06) * 1000)
+	var minimo := Time.get_ticks_msec() + 350   # o clique que abriu não pula a fala
+	while Time.get_ticks_msec() < fim and is_instance_valid(_fala):
+		if _fala_pular and Time.get_ticks_msec() > minimo: break
+		_fala_pular = false
+		if is_instance_valid(no):
+			var cab := no.global_position + Vector3(0, altura, 0)
+			if not camera.is_position_behind(cab):
+				var p := camera.unproject_position(cab)
+				_fala.reset_size()
+				_fala.global_position = Vector2(clampf(p.x - 40, 8, size.x - _fala.size.x - 8), clampf(p.y - _fala.size.y - 12, 8, size.y - _fala.size.y - 8))
+				_fala_seta.global_position = Vector2(clampf(p.x - 9, 8, size.x - 26), _fala.global_position.y + _fala.size.y - 1)
+		await get_tree().process_frame
+	fechar_fala()
+
+func pular_fala() -> void:
+	_fala_pular = true
+
+func fechar_fala() -> void:
+	if is_instance_valid(_fala): _fala.queue_free()
+	if is_instance_valid(_fala_seta): _fala_seta.queue_free()
+	_fala = null; _fala_seta = null; _fala_no = null
 
 # ---------- balão de ação ----------
 

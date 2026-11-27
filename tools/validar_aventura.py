@@ -147,12 +147,30 @@ def main():
             if a_.get("evento") and a_["evento"] not in eventos:
                 E(o, f"evento '{a_['evento']}' não existe")
 
-    # PdMs
+    # Cenas: passos com área/posição, portas, PdMs e cenas citadas.
+    cenas = av.get("cenas", {})
+    surgem = set()
+    def passos_ok(onde, passos):
+        for j, p_ in enumerate(passos):
+            o = f"{onde}[{j}]"
+            if "area" in p_ and "pos" in p_ and area_ok(o, p_["area"]): pos_ok(o, p_["area"], p_["pos"])
+            if "porta" in p_ and p_["porta"] not in pl.portas: E(o, f"porta {p_['porta']} não existe")
+            if p_.get("faz") == "surgir":
+                if p_.get("pdm", p_.get("quem")) not in pdms: E(o, f"pdm '{p_.get('pdm', p_.get('quem'))}' não está em 'pdms'")
+                surgem.add(p_.get("pdm", p_.get("quem")))
+            if p_.get("faz") == "cena" and p_.get("id") not in cenas: E(o, f"cena '{p_.get('id')}' não existe")
+            if p_.get("faz") == "escolha":
+                for k, op in enumerate(p_.get("opcoes", [])): passos_ok(f"{o}.opcoes[{k}]", op.get("faz", []))
+                passos_ok(f"{o}.ao_limite", p_.get("ao_limite", []))
+    for cid, passos in cenas.items(): passos_ok(f"cenas.{cid}", passos)
+
+    # PdMs (a base pode ser do bestiário ou só um modelo de data/regras/animacoes.json)
+    criaturas = json.load(open(os.path.join(RAIZ, "data/regras/animacoes.json"))).get("criaturas", {})
     for pid, p_ in pdms.items():
         for it in p_.get("carrega", []): item_ok(f"pdms.{pid}.carrega", it)
-        if p_.get("base") and p_["base"] not in monstros:
-            A(f"pdms.{pid}.base", f"'{p_['base']}' não está no bestiário")
-    colocados = {p_["id"] for c in av["areas"].values() for p_ in c.get("pdms", [])}
+        if p_.get("base") and p_["base"] not in monstros and p_["base"] not in criaturas:
+            A(f"pdms.{pid}.base", f"'{p_['base']}' não está no bestiário nem nas criaturas com modelo")
+    colocados = {p_["id"] for c in av["areas"].values() for p_ in c.get("pdms", [])} | surgem
     for pid in pdms:
         if pid not in colocados: A(f"pdms.{pid}", "pdm não foi colocado em nenhuma área")
 
@@ -171,6 +189,9 @@ def main():
         gatilho_ok(f"eventos[{i}].quando", ev["quando"])
         for j, f in enumerate(ev["faz"]):
             (k, v), = f.items(); o = f"eventos[{i}].faz[{j}]"
+            if k == "cena":
+                if v not in cenas: E(o, f"cena '{v}' não existe")
+                continue
             if k == "acordar": area_ok(o, v)
             elif k in ("abrir_porta", "trancar_porta") and v not in pl.portas: E(o, f"porta {v} não existe")
             elif k == "revelar_secreta" and v not in pl.secretas: E(o, f"secreta {v} não existe")

@@ -43,11 +43,14 @@ Um prop maior que 1×1 ocupa a partir da posição para a direita e para baixo. 
 | `itens` | chaves, objetos de missão e itens mágicos citados por id |
 | `pdms` | personagens do mestre (nome, atitude, fala, o que querem) |
 | `eventos` | `quando` (um gatilho) → `faz` (lista de efeitos) |
+| `cenas` | cenas roteirizadas: id → lista de passos (surgir, andar, andar_grupo, fala, escolha, câmera, portas…). Os passos estão documentados em `scripts/exploracao/cena.gd`, e o método em `docs/construcao-de-aventura.md` |
 | `errantes` | tabela de monstros errantes, com chance e frequência |
 | `objetivos` | condições de vitória, XP e o objetivo `final` |
 
-**Gatilhos:** `entrar_area`, `porta_aberta`, `monstro_morto`, `item_pego`, `prop_usado`, `grupo_em`, `turno`, `evento`.
-**Efeitos:** `mensagem`, `acordar`, `abrir_porta`, `trancar_porta`, `revelar_secreta`, `surgir`, `dar_item`, `moral`, `objetivo`.
+**Gatilhos:** `inicio` (segundos depois do começo), `entrar_area`, `porta_aberta`, `monstro_morto`, `item_pego`, `prop_usado`, `grupo_em`, `turno`, `evento`.
+**Efeitos:** `cena` (roda uma cena), `mensagem`, `acordar`, `abrir_porta`, `trancar_porta`, `revelar_secreta`, `surgir`, `dar_item`, `moral`, `objetivo`.
+
+**PdMs** (`pdms`): `nome`, `base` (criatura com modelo em `data/regras/animacoes.json` ou do bestiário), `atitude`, `pv`, `ca`, `arma`, `dano`, `arma3d` (item do catálogo na mão; `""` = nenhum), `empunhar`, `retrato`. Entram em cena pelo passo `surgir` e não participam do combate.
 
 ## O que o verificador confere
 - o arquivo segue o esquema;

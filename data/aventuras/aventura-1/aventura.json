@@ -1,38 +1,628 @@
 {
-  "$schema": "../../esquemas/aventura.schema.json",
-  "id": "aventura-1",
-  "titulo": "Aventura 1 — Fuga da prisão",
-  "planta": "masmorra-base@3",
-  "nivel": [1, 1],
-  "gancho": "Vocês são gente comum da vila. Dois bandidos os pegaram na estrada, uma pancada na cabeça e mais nada.",
-  "notas_mestre": "Montada sala a sala, na ordem da aventura (vault: Aventura 1 - Fuga da Dungeon de Zastan). Parte I: cela (1), vestíbulo (2), corredor (3), sala dos guardas (4).",
-  "grupo": ["tessa", "durgo", "caco", "lianne", "mirela", "anselmo", "bento"],
-  "tamanho_grupo": 5,
-  "partes": [
-    {"id": "parte-1", "nome": "Parte I — A cela", "areas": ["1", "2", "3", "4"],
-     "criaturas": ["hobgoblin", "goblin", "prisioneiro", "guarda"]}
-  ],
-  "inicio": {"tipo": "capturados", "area": "1", "pos": "B3", "sem_equipamento": true,
-             "equipamento_em": {"area": "4", "pos": "F5", "prop": "pilha-armaduras"}},
-  "portas": {
-    "P17": {"estado": "trancada", "abre_com": "chaves", "inquebravel": true, "nota": "Grade da cela 1. O carcereiro tem as chaves."}
-  },
-  "areas": {
-    "1": {
-      "leitura": "Vocês acordam numa sala sombria. Chão e três paredes de rocha; a quarta parede são grossas barras de ferro. Estão presos.",
-      "luz": "penumbra",
-      "props": [
-        {"tipo": "catre", "pos": "A4"},
-        {"tipo": "catre", "pos": "D4"}
-      ]
-    },
-    "2": {"luz": "iluminado"},
-    "4": {
-      "luz": "iluminado",
-      "props": [
-        {"tipo": "mesa-carcereiro", "pos": "B2"},
-        {"tipo": "pilha-armaduras", "pos": "F5", "nome": "Pilha de equipamento"}
-      ]
-    }
+ "$schema": "../../esquemas/aventura.schema.json",
+ "id": "aventura-1",
+ "titulo": "Aventura 1 — Fuga da prisão",
+ "planta": "masmorra-base@3",
+ "nivel": [
+  1,
+  1
+ ],
+ "gancho": "Vocês são gente comum da vila. Dois bandidos os pegaram na estrada, uma pancada na cabeça e mais nada.",
+ "notas_mestre": "Montada sala a sala, na ordem da aventura (vault: Aventura 1 - Fuga da Dungeon de Zastan). Parte I: cela (1), vestíbulo (2), corredor (3), sala dos guardas (4).",
+ "grupo": [
+  "tessa",
+  "durgo",
+  "caco",
+  "lianne",
+  "mirela",
+  "anselmo",
+  "bento"
+ ],
+ "tamanho_grupo": 5,
+ "partes": [
+  {
+   "id": "parte-1",
+   "nome": "Parte I — A cela",
+   "areas": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "criaturas": [
+    "hobgoblin",
+    "goblin",
+    "prisioneiro",
+    "guarda"
+   ]
   }
+ ],
+ "inicio": {
+  "tipo": "capturados",
+  "area": "1",
+  "pos": "B3",
+  "sem_equipamento": true,
+  "equipamento_em": {
+   "area": "4",
+   "pos": "F5",
+   "prop": "pilha-armaduras"
+  }
+ },
+ "portas": {
+  "P17": {
+   "estado": "trancada",
+   "abre_com": "chaves",
+   "inquebravel": true,
+   "nota": "Grade da cela 1. O carcereiro tem as chaves."
+  }
+ },
+ "areas": {
+  "1": {
+   "leitura": "Vocês acordam numa sala sombria. Chão e três paredes de rocha; a quarta parede são grossas barras de ferro. Estão presos.",
+   "luz": "penumbra",
+   "props": [
+    {
+     "tipo": "catre",
+     "pos": "A4"
+    },
+    {
+     "tipo": "catre",
+     "pos": "D4"
+    }
+   ]
+  },
+  "2": {
+   "luz": "iluminado",
+   "leitura": "Um vestíbulo estreito diante das celas, iluminado por tochas. Uma porta leva ao corredor."
+  },
+  "4": {
+   "luz": "iluminado",
+   "props": [
+    {
+     "tipo": "mesa-carcereiro",
+     "pos": "B2"
+    },
+    {
+     "tipo": "pilha-armaduras",
+     "pos": "F5",
+     "nome": "Pilha de equipamento"
+    }
+   ]
+  }
+ },
+ "pdms": {
+  "carcereiro": {
+   "nome": "Hobgoblin",
+   "base": "hobgoblin",
+   "atitude": "hostil",
+   "pv": 4,
+   "ca": 6,
+   "arma": "chicote",
+   "dano": "1d2",
+   "arma3d": "",
+   "retrato": "hobgoblin",
+   "carrega": [
+    "chaves",
+    "chicote"
+   ],
+   "quer": "Manter os prisioneiros quietos até a venda para as minas."
+  },
+  "prisioneiro": {
+   "nome": "Prisioneiro",
+   "base": "prisioneiro",
+   "atitude": "desconfiada",
+   "pv": 6,
+   "ca": 9,
+   "retrato": "prisioneiro",
+   "quer": "Sair vivo, e de preferência com lucro."
+  },
+  "guarda": {
+   "nome": "Guarda",
+   "base": "guarda",
+   "atitude": "hostil",
+   "arma3d": "besta",
+   "empunhar": false,
+   "retrato": "guarda"
+  }
+ },
+ "cenas": {
+  "carcereiro": [
+   {
+    "faz": "mensagem",
+    "texto": "Passos pesados no corredor. O tilintar de chaves se aproxima."
+   },
+   {
+    "faz": "camera",
+    "area": "2",
+    "pos": "C2",
+    "dx": -0.75,
+    "dz": 0.4,
+    "distancia": 10.0,
+    "inclinacao": 68.0,
+    "guinada": -200.0
+   },
+   {
+    "faz": "surgir",
+    "quem": "carcereiro",
+    "pdm": "carcereiro",
+    "area": "4",
+    "pos": "B1"
+   },
+   {
+    "faz": "surgir",
+    "quem": "prisioneiro",
+    "pdm": "prisioneiro",
+    "area": "4",
+    "pos": "C1"
+   },
+   {
+    "faz": "andar_grupo",
+    "quem": [
+     "carcereiro",
+     "prisioneiro"
+    ],
+    "destinos": [
+     {
+      "area": "2",
+      "pos": "C2"
+     },
+     {
+      "area": "2",
+      "pos": "D2"
+     }
+    ]
+   },
+   {
+    "faz": "mensagem",
+    "texto": "Um monstro peludo, de chicote na mão, para diante da grade. Atrás dele, um homem musculoso de mãos amarradas."
+   },
+   {
+    "faz": "olhar",
+    "quem": "carcereiro",
+    "para": "grupo"
+   },
+   {
+    "faz": "olhar",
+    "quem": "prisioneiro",
+    "para": "grupo"
+   },
+   {
+    "faz": "fala",
+    "quem": "carcereiro",
+    "texto": "Pra trás, vermes! Todo mundo deitado no chão, e nada de gracinha!"
+   },
+   {
+    "faz": "grupo",
+    "acao": "recuar",
+    "porta": "P17"
+   },
+   {
+    "faz": "escolha",
+    "quem": "carcereiro",
+    "titulo": "Hobgoblin",
+    "texto": "O hobgoblin estala o chicote nas barras e sacode o molho de chaves. O prisioneiro de mãos amarradas espera atrás dele. O que vocês fazem?",
+    "texto_depois": "O hobgoblin continua diante da grade, chicote erguido, esperando que obedeçam.",
+    "limite": 3,
+    "opcoes": [
+     {
+      "id": "deitar",
+      "texto": "Deitar no chão",
+      "dica": "Obedecer. Ele abre a grade, empurra o prisioneiro para dentro e tranca de novo.",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "grupo",
+        "acao": "deitar"
+       },
+       {
+        "faz": "mensagem",
+        "texto": "Vocês se deitam na pedra fria."
+       },
+       {
+        "faz": "abrir_porta",
+        "porta": "P17",
+        "quem": "carcereiro"
+       },
+       {
+        "faz": "andar",
+        "quem": "carcereiro",
+        "area": "2",
+        "pos": "B2"
+       },
+       {
+        "faz": "olhar",
+        "quem": "carcereiro",
+        "para": "prisioneiro"
+       },
+       {
+        "faz": "fala",
+        "quem": "carcereiro",
+        "texto": "Pra dentro, você. Vai fazer companhia pros novatos."
+       },
+       {
+        "faz": "anim",
+        "quem": "carcereiro",
+        "anim": "golpe",
+        "ritmo": 1.2
+       },
+       {
+        "faz": "andar",
+        "quem": "prisioneiro",
+        "area": "1",
+        "pos": "C2",
+        "correr": true
+       },
+       {
+        "faz": "anim",
+        "quem": "prisioneiro",
+        "anim": "levar-golpe"
+       },
+       {
+        "faz": "andar",
+        "quem": "carcereiro",
+        "area": "2",
+        "pos": "C2"
+       },
+       {
+        "faz": "olhar",
+        "quem": "carcereiro",
+        "para": "grupo"
+       },
+       {
+        "faz": "cena",
+        "id": "carcereiro-tranca"
+       },
+       {
+        "faz": "cena",
+        "id": "carcereiro-sai"
+       },
+       {
+        "faz": "grupo",
+        "acao": "levantar"
+       },
+       {
+        "faz": "olhar",
+        "quem": "prisioneiro",
+        "para": "grupo"
+       },
+       {
+        "faz": "mensagem",
+        "texto": "O prisioneiro se põe de pé e estende as mãos amarradas para vocês."
+       }
+      ]
+     },
+     {
+      "id": "recusar",
+      "texto": "Recusar-se a deitar",
+      "dica": "Ficar de pé, encarando o carcereiro.",
+      "faz": [
+       {
+        "faz": "fala",
+        "quem": "carcereiro",
+        "texto": "Eu disse NO CHÃO!"
+       },
+       {
+        "faz": "ataque",
+        "quem": "carcereiro",
+        "arma": "chicote",
+        "dano": "1d2",
+        "anim": "golpe"
+       }
+      ]
+     },
+     {
+      "id": "correr",
+      "texto": "Correr para a grade quando ele destrancar",
+      "dica": "{agente} espera a chave girar e salta para a saída.",
+      "faz": [
+       {
+        "faz": "pausa",
+        "s": 0.6
+       },
+       {
+        "faz": "abrir_porta",
+        "porta": "P17",
+        "quem": "carcereiro",
+        "fresta": 22
+       },
+       {
+        "faz": "pj",
+        "quem": "agente",
+        "ir": "porta",
+        "porta": "P17",
+        "casa": 1,
+        "correr": true,
+        "mensagem": "{nome} dispara para a grade entreaberta!"
+       },
+       {
+        "faz": "fechar_porta",
+        "porta": "P17"
+       },
+       {
+        "faz": "anim",
+        "quem": "pj",
+        "anim": "levar-golpe"
+       },
+       {
+        "faz": "fala",
+        "quem": "carcereiro",
+        "texto": "Hah! Lento demais, verme."
+       },
+       {
+        "faz": "mensagem",
+        "texto": "Ele bate a grade antes, gira a chave e nem se dá ao trabalho de olhar de novo."
+       }
+      ]
+     },
+     {
+      "id": "fingir",
+      "texto": "Fingir que está doente e rastejar até a grade",
+      "dica": "{agente} geme, se arrasta pelo chão e espera a grade abrir.",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "pj",
+        "quem": "agente",
+        "ir": "porta",
+        "porta": "P17",
+        "casa": 0,
+        "modo": "rastejar",
+        "anim": "ajoelhar",
+        "ate": 2.0,
+        "mensagem": "{nome} geme e se arrasta até a grade, como quem passa mal."
+       },
+       {
+        "faz": "abrir_porta",
+        "porta": "P17",
+        "quem": "carcereiro"
+       },
+       {
+        "faz": "anim",
+        "quem": "carcereiro",
+        "anim": "golpe",
+        "ritmo": 1.2
+       },
+       {
+        "faz": "andar",
+        "quem": "prisioneiro",
+        "area": "1",
+        "pos": "C1",
+        "correr": true
+       },
+       {
+        "faz": "anim",
+        "quem": "pj",
+        "anim": "levar-golpe"
+       },
+       {
+        "faz": "mensagem",
+        "texto": "O hobgoblin arremessa o prisioneiro em cima do fingido. Os dois rolam no chão."
+       },
+       {
+        "faz": "cena",
+        "id": "carcereiro-tranca"
+       },
+       {
+        "faz": "fala",
+        "quem": "carcereiro",
+        "texto": "Hahaha! Doente, é? Agora tá com companhia pra cuidar de você!"
+       },
+       {
+        "faz": "cena",
+        "id": "carcereiro-sai"
+       },
+       {
+        "faz": "andar",
+        "quem": "prisioneiro",
+        "area": "1",
+        "pos": "C2"
+       },
+       {
+        "faz": "olhar",
+        "quem": "prisioneiro",
+        "para": "grupo"
+       }
+      ]
+     },
+     {
+      "id": "forcar",
+      "texto": "Forçar as barras",
+      "dica": "{mais_forte} agarra as barras e tenta entortá-las.",
+      "faz": [
+       {
+        "faz": "pj",
+        "quem": "mais_forte",
+        "ir": "porta",
+        "porta": "P17",
+        "casa": 0,
+        "anim": "chutar-porta",
+        "mensagem": "{nome} agarra as barras e faz força até as veias saltarem. O ferro nem treme."
+       },
+       {
+        "faz": "olhar",
+        "quem": "carcereiro",
+        "para": "grupo"
+       },
+       {
+        "faz": "fala",
+        "quem": "carcereiro",
+        "texto": "Isso aí não dobra com unha, não. Precisa das ferramentas certas…"
+       },
+       {
+        "faz": "mensagem",
+        "texto": "Ele balança o molho de chaves bem longe do alcance das barras, rindo."
+       }
+      ]
+     }
+    ],
+    "ao_limite": [
+     {
+      "faz": "fala",
+      "quem": "carcereiro",
+      "texto": "Cansei. GUARDAS!"
+     },
+     {
+      "faz": "surgir",
+      "quem": "guarda1",
+      "pdm": "guarda",
+      "area": "4",
+      "pos": "A1"
+     },
+     {
+      "faz": "surgir",
+      "quem": "guarda2",
+      "pdm": "guarda",
+      "area": "4",
+      "pos": "B1"
+     },
+     {
+      "faz": "surgir",
+      "quem": "guarda3",
+      "pdm": "guarda",
+      "area": "4",
+      "pos": "A2"
+     },
+     {
+      "faz": "surgir",
+      "quem": "guarda4",
+      "pdm": "guarda",
+      "area": "4",
+      "pos": "B2"
+     },
+     {
+      "faz": "andar_grupo",
+      "quem": [
+       "guarda1",
+       "guarda2",
+       "guarda3",
+       "guarda4"
+      ],
+      "correr": true,
+      "destinos": [
+       {
+        "area": "2",
+        "pos": "A1"
+       },
+       {
+        "area": "2",
+        "pos": "B1"
+       },
+       {
+        "area": "2",
+        "pos": "C1"
+       },
+       {
+        "area": "2",
+        "pos": "D1"
+       }
+      ]
+     },
+     {
+      "faz": "guarda",
+      "quem": [
+       "guarda1",
+       "guarda2",
+       "guarda3",
+       "guarda4"
+      ],
+      "para": "grupo",
+      "mirar": "besta-mirar",
+      "ate": 0.9
+     },
+     {
+      "faz": "mensagem",
+      "texto": "Uma dúzia de guardas com bestas enche o vestíbulo e o corredor. Todas as bestas apontam para a cela."
+     }
+    ]
+   }
+  ],
+  "carcereiro-tranca": [
+   {
+    "faz": "fechar_porta",
+    "porta": "P17"
+   },
+   {
+    "faz": "pausa",
+    "s": 0.5
+   },
+   {
+    "faz": "trancar_porta",
+    "porta": "P17"
+   }
+  ],
+  "carcereiro-sai": [
+   {
+    "faz": "olhar",
+    "quem": "carcereiro",
+    "para": "grupo"
+   },
+   {
+    "faz": "fala",
+    "quem": "carcereiro",
+    "texto": "E nada de barulho aí dentro. Da próxima vez, o chicote não erra."
+   },
+   {
+    "faz": "andar_grupo",
+    "quem": [
+     "guarda1",
+     "guarda2",
+     "guarda3",
+     "guarda4"
+    ],
+    "destinos": [
+     {
+      "area": "4",
+      "pos": "A1"
+     },
+     {
+      "area": "4",
+      "pos": "B1"
+     },
+     {
+      "area": "4",
+      "pos": "A2"
+     },
+     {
+      "area": "4",
+      "pos": "B2"
+     }
+    ]
+   },
+   {
+    "faz": "sumir",
+    "quem": "guarda1"
+   },
+   {
+    "faz": "sumir",
+    "quem": "guarda2"
+   },
+   {
+    "faz": "sumir",
+    "quem": "guarda3"
+   },
+   {
+    "faz": "sumir",
+    "quem": "guarda4"
+   },
+   {
+    "faz": "andar",
+    "quem": "carcereiro",
+    "area": "4",
+    "pos": "B4"
+   }
+  ]
+ },
+ "eventos": [
+  {
+   "id": "carcereiro-chega",
+   "quando": {
+    "inicio": 10
+   },
+   "faz": [
+    {
+     "cena": "carcereiro"
+    }
+   ]
+  }
+ ]
 }

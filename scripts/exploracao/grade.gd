@@ -133,8 +133,20 @@ func abrir_porta(pt: Dictionary) -> void:
 	if porta_aberta.has(pt.id): return
 	porta_aberta[pt.id] = true
 	for par in lados_da_porta(pt):
-		if astar.has_point(_id(par[0])) and astar.has_point(_id(par[1])):
-			astar.connect_points(_id(par[0]), _id(par[1]))
+		for ag in [astar, astar_livre]:
+			if ag.has_point(_id(par[0])) and ag.has_point(_id(par[1])):
+				ag.connect_points(_id(par[0]), _id(par[1]))
+
+## Fecha de novo (evento da aventura: o carcereiro bate a grade). Monstros continuam abrindo porta de
+## madeira ao passar, a não ser que esteja barrada; grade e cela fechadas ninguém atravessa.
+func fechar_porta(pt: Dictionary) -> void:
+	if not porta_aberta.has(pt.id): return
+	porta_aberta.erase(pt.id)
+	for par in lados_da_porta(pt):
+		var a := _id(par[0]); var b := _id(par[1])
+		if astar.has_point(a) and astar.has_point(b): astar.disconnect_points(a, b)
+		var madeira: bool = pt.tipo in ["porta", "dupla"] and not porta_barrada.has(pt.id)
+		if not madeira and astar_livre.has_point(a) and astar_livre.has_point(b): astar_livre.disconnect_points(a, b)
 
 ## Trancada ou pregada: monstros não abrem ao passar. Liga/desliga a passagem no grafo deles.
 func barrar_porta(pt: Dictionary, sim: bool) -> void:

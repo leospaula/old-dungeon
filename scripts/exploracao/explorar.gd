@@ -33,6 +33,7 @@ const Aventura = preload("res://scripts/exploracao/aventura.gd")
 const EscolherGrupo = preload("res://scripts/interface/escolher_grupo.gd")
 const Pacotes = preload("res://scripts/exploracao/pacotes.gd")
 const Bibliotecas = preload("res://scripts/visual/bibliotecas.gd")
+const Cena = preload("res://scripts/exploracao/cena.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
 const TESSA_GLB := "res://arte/final/3d/norm/tessa-heroica.glb"
@@ -114,6 +115,8 @@ var _area_antes := ""
 var pacotes: Node              # downloads por parte da aventura (scripts/exploracao/pacotes.gd)
 var aventura: RefCounted = null   # aventura carregada (scripts/exploracao/aventura.gd); null = masmorra de teste
 var hud_centro: Label
+var cena: RefCounted            # cenas e eventos da aventura (scripts/exploracao/cena.gd)
+var pdms := {}                  # id na cena -> ator de PdM (personagem do mestre, fora do combate)
 
 func _ready() -> void:
 	$Sol.visible = false
@@ -169,7 +172,10 @@ func _ready() -> void:
 	else:
 		_registrar("A Tessa desce a escada para a [b]%s[/b]. Clique no chão para andar; clique numa porta para ver as ações; clique numa carta para escolher quem age." % grade.nomes.get(grade.area_de(heroi.celula), ""))
 	_anotar_area()
+	cena = Cena.new(self)
 	_linha_de_comando()
+	if aventura and not Array(_args()).any(func(a): return a.begins_with("--teste=") or a.begins_with("--cena=") or a.begins_with("--sem-eventos")):
+		cena.comecar()
 
 # ---------- personagens ----------
 
@@ -390,7 +396,7 @@ func _sem_parar_no_fosso(cam: Array[Vector2i], n: int) -> Array[Vector2i]:
 ## Casas ocupadas por seres vivos (onde estão e para onde já estão indo), menos os de `exceto`.
 func _ocupadas_por(exceto: Array = []) -> Dictionary:
 	var d := {}
-	for x in grupo + monstros + errantes:
+	for x in grupo + monstros + errantes + pdms.values():
 		if not is_instance_valid(x) or not x.vivo() or x in exceto: continue
 		d[x.celula] = true; d[x.proxima_celula()] = true
 	return d
@@ -440,9 +446,57 @@ func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 	a.visible = false
 	return a
 
+## PdM (personagem do mestre) de uma cena: modelo da criatura "base", fora do combate e dos errantes.
+## Dados em aventura.json "pdms" (nome, base, pv, ca, arma, dano, retrato).
+func _criar_pdm(id: String, pdm_id: String, c: Vector2i) -> Node3D:
+	var d: Dictionary = aventura.d.get("pdms", {}).get(pdm_id, {})
+	var base := str(d.get("base", pdm_id))
+	var a: Node3D = Ator.new(); a.grade = grade; a.lado = "pdm"; a.nome = str(d.get("nome", pdm_id))
+	a.set_meta("id", base); a.set_meta("retrato", str(d.get("retrato", base)))
+	var m: Dictionary = MONSTROS.get(base, {})
+	a.ca = int(d.get("ca", m.get("ca", 9))); a.thac0 = int(d.get("thac0", Regras.thac0_monstro(str(m.get("dv", "1"))) if not m.is_empty() else 19))
+	a.pv = int(d.get("pv", 4)); a.pv_max = a.pv
+	a.dano = str(d.get("dano", "1d4")); a.arma = str(d.get("arma", "arma"))
+	add_child(a); a.colocar(c)
+	var cri: Dictionary = Bibliotecas.criatura(base)
+	if not cri.is_empty() and ResourceLoader.exists(str(cri.modelo)):
+		var modelo: Node3D = load(str(cri.modelo)).instantiate()
+		modelo.scale = Vector3.ONE * float(cri.get("escala", 0.9))
+		Bibliotecas.preparar(modelo, str(cri.categoria))
+		a.passadas = PASSADA_GOBLIN
+		a.giro_anim = TESSA_GIRO
+		a.montar_modelo(modelo, TESSA_ANIM, 0.0)
+		var arma3d := str(d.get("arma3d", cri.get("arma", "")))
+		if arma3d != "":
+			var inf: Dictionary = Ficha.info({"id": arma3d, "qtd": 1})
+			a.armar(inf.get("modelo3d", {}))
+			a.aplicar_estilo(str(inf.get("estilo", "")))   # pose de guarda da arma (besta: besta-guarda)
+	else:
+		a.montar_modelo(Ator.goblin_provisorio(), {}, 0.0)
+	a.empunhar(bool(d.get("empunhar", false)))
+	if a.rotulo: a.rotulo.visible = false
+	a.olhar_para(heroi.position)
+	a.passo_iniciado.connect(_ao_iniciar_passo.bind(a))
+	a.chegou.connect(func(_c, _m): _atualizar_visao())
+	a.visible = mestre or visao.visiveis.has(c)
+	if pdms.has(id) and is_instance_valid(pdms[id]): pdms[id].queue_free()
+	pdms[id] = a
+	return a
+
+func _remover_pdm(id: String) -> void:
+	if pdms.has(id) and is_instance_valid(pdms[id]): pdms[id].queue_free()
+	pdms.erase(id)
+
 # ---------- entrada ----------
 
 func _unhandled_input(e: InputEvent) -> void:
+	if cena and cena.ativa:
+		# Durante a cena o jogador só assiste (a câmera continua livre); clique ou espaço pula a fala.
+		if (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and e.pressed) or \
+			(e is InputEventKey and e.pressed and not e.echo and e.keycode in [KEY_SPACE, KEY_ENTER]):
+			hud_ui.pular_fala()
+		elif e is InputEventKey and e.pressed and not e.echo and e.keycode == KEY_M: _alternar_mestre()
+		return
 	if e is InputEventKey and e.pressed and not e.echo:
 		match e.keycode:
 			KEY_R: get_tree().reload_current_scene(); return
@@ -801,6 +855,45 @@ func _abrir_porta(pt: Dictionary, de: Vector2i, quem := "") -> void:
 		_registrar("%s abre a porta %s." % [quem, pt.id] if quem != "" else "[color=#ff9a6a]Uma porta se abre (%s).[/color]" % pt.id)
 	_checar_avistamento()
 
+## Fecha a porta (evento): as folhas voltam, a luz e a visão deixam de passar (grade continua deixando ver).
+func _fechar_porta(pt: Dictionary) -> void:
+	var no := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
+	if no:
+		for folha in no.get_children():
+			if str(folha.name).begins_with("Folha"):
+				create_tween().tween_property(folha, "rotation:y", 0.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	if not grade.porta_aberta.has(pt.id): return
+	grade.fechar_porta(pt)
+	if porta_mat.has(str(pt.id)) and not (pt.tipo in ["grade", "cela"]): _porta_param(str(pt.id), "fechada", 1.0)
+	visao.recalcular_luz_fixa()
+	_atualizar_visao()
+	_registrar("[color=#ff9a6a]A porta %s bate e se fecha.[/color]" % pt.id if pt.tipo in ["porta", "dupla"] else "[color=#ff9a6a]A grade bate com um estrondo de ferro.[/color]")
+
+func _trancar_porta(pt: Dictionary) -> void:
+	var e: Dictionary = portas.de(pt)
+	e.estado = "trancada"
+	grade.barrar_porta(pt, true)
+	_registrar("[i]Uma chave gira na fechadura: a porta %s está trancada.[/i]" % pt.id)
+
+## Entreabre a folha só um pouco (só visual; a passagem continua fechada).
+func _entreabrir_porta(pt: Dictionary, graus: float, quem: Node3D) -> void:
+	var no := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
+	if no == null: return
+	var de: Vector2i = quem.celula if quem else grade.lados_da_porta(pt)[0][0]
+	var outro := de
+	for par in grade.lados_da_porta(pt):
+		if par[0] == de: outro = par[1]
+		elif par[1] == de: outro = par[0]
+	var sentido: Vector3 = grade.centro(outro) - grade.centro(de)
+	var eixo := Vector3(0, 0, 1) if pt.orient == "v" else Vector3(1, 0, 0)
+	for folha in no.get_children():
+		if not str(folha.name).begins_with("Folha"): continue
+		var dir := eixo if folha.name == "Folha0" else -eixo
+		var ang := deg_to_rad(graus)
+		if dir.rotated(Vector3.UP, ang).dot(sentido) < 0: ang = -ang
+		create_tween().tween_property(folha, "rotation:y", ang, 0.35).set_trans(Tween.TRANS_SINE)
+	await get_tree().create_timer(0.35).timeout
+
 func _previa(c: Vector2i, porta: Dictionary) -> void:
 	if heroi.andando(): return
 	marca_caminho.limpar()
@@ -873,6 +966,7 @@ func agente() -> Node3D:
 	return selecionado if is_instance_valid(selecionado) and selecionado.vivo() else heroi
 
 func _selecionar(h) -> void:
+	if cena and cena.ativa: return
 	if h != null and procurar.esta_no_fosso(h) and not combate.ativo:   # no fosso: volta à escolha (sair, ajudar, ficar)
 		if not procurar.ocupado: procurar.dialogo_fosso(h)
 		return
@@ -1078,6 +1172,9 @@ func _atualizar_visao() -> void:
 	_desenhar_mestre()
 
 func _atualizar_monstros_visiveis() -> void:
+	for id in pdms:
+		var p: Node3D = pdms[id]
+		if is_instance_valid(p): p.visible = mestre or visao.visiveis.has(p.celula) or visao.visiveis.has(p.proxima_celula())
 	for m in monstros:
 		if is_instance_valid(m) and m.vivo():
 			m.visible = mestre or visao.visiveis.has(m.celula)
@@ -1317,6 +1414,7 @@ func _registrar(txt: String) -> void:
 	print(txt)
 
 func _acao_hud(acao: String) -> void:
+	if cena and cena.ativa and acao != "ficha": return
 	match acao:
 		"atacar": combate.atacar_mais_proximo()
 		"encerrar": combate.encerrar_turno()
@@ -1447,6 +1545,10 @@ func _linha_de_comando() -> void:
 					var bb: AABB = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()
 					cx = bb if pr else cx.merge(bb); pr = false
 				camera.alvo = cx.get_center(); _alternar_mestre()
+		if a.begins_with("--alvo-casa="):   # captura: câmera numa casa (x,y)
+			var v2 := a.trim_prefix("--alvo-casa=").split(",")
+			camera.alvo = grade.centro(Vector2i(int(v2[0]), int(v2[1])))
+		if a == "--mestre": _alternar_mestre()
 		if a == "--alvo-tocha" and not luz.tochas_nos.is_empty():   # captura: câmera na primeira tocha de parede
 			camera.alvo = luz.tochas_nos[0].global_position + Vector3(0, 0.15, 0)
 		if a.begins_with("--camera="):   # distância,inclinação,guinada (capturas)
@@ -1454,6 +1556,9 @@ func _linha_de_comando() -> void:
 			camera.distancia = float(v[0]); camera.inclinacao = float(v[1]); camera.guinada = float(v[2])
 		if a.begins_with("--captura="): captura = a.trim_prefix("--captura=")
 		if a.begins_with("--teste="): teste = a.trim_prefix("--teste=")
+		if a.begins_with("--escolhas="): cena.escolhas_auto = Array(a.trim_prefix("--escolhas=").split(","))
+	for a in _args():
+		if a.begins_with("--cena=") and teste == "": cena.rodar_cena(a.trim_prefix("--cena="))   # roda a cena já (sem esperar o gatilho)
 	if captura == "" and teste == "": return
 	if teste == "frente":
 		camera.alvo = heroi.position + Vector3(0, 1, 0); camera.distancia = 4.0; camera.inclinacao = 15.0; camera.guinada = 180.0
@@ -2106,6 +2211,39 @@ func _linha_de_comando() -> void:
 		print("CELA caminho até o vestíbulo: ", fora.size(), " casas")
 		print("CELA props: ", aventura.props_em_cena.map(func(p): return "%s@%s" % [p.tipo, p.celulas[0]]))
 		print("CELA tochas acesas: ", _acesas().size(), " · visíveis: ", visao.visiveis.size(), " · tochas de parede: ", luz.tochas_cel, " luzes=", luz.tochas.size())
+	elif teste == "guarda_besta":
+		# Guarda da cena do carcereiro: entra em guarda com a besta (pose de combate do estilo "besta").
+		await cena.passo({"faz": "surgir", "quem": "g1", "pdm": "guarda", "area": "4", "pos": "C4"})
+		await cena.passo({"faz": "surgir", "quem": "g2", "pdm": "guarda", "area": "4", "pos": "E4"})
+		await cena.passo({"faz": "guarda", "quem": ["g1", "g2"], "para": "grupo", "mirar": "besta-mirar", "ate": 0.9})
+		camera.alvo = pdms.g1.position + Vector3(0.75, 0.8, 0); camera.distancia = 5.0; camera.inclinacao = 22.0; camera.guinada = -150.0
+		await get_tree().create_timer(2.0).timeout
+	elif teste == "deitar":
+		# Pose de deitado (cena do carcereiro): o grupo deita, foto de perto; --levantar levanta de novo.
+		camera.alvo = heroi.position; camera.distancia = 5.0; camera.inclinacao = 40.0; camera.guinada = -30.0
+		await cena.passo({"faz": "grupo", "acao": "deitar"})
+		await get_tree().create_timer(1.5).timeout
+		if _args().has("--levantar"): await cena.passo({"faz": "grupo", "acao": "levantar"})
+	elif teste == "carcereiro":
+		# Aventura 1, sala 2: a cena do carcereiro (--escolhas=recusar,forcar,deitar responde as escolhas;
+		# --fotos=prefixo grava uma imagem a cada 1,5 s).
+		var fotos := ""; var ritmo := 1.5
+		for x in _args():
+			if x.begins_with("--fotos="): fotos = x.trim_prefix("--fotos=")
+			if x.begins_with("--fotos-ritmo="): ritmo = float(x.trim_prefix("--fotos-ritmo="))
+		var feito := [false]
+		if _args().has("--medir-grupo"): cena.medir_grupo()
+		var rodar := func(): await cena.rodar_cena("carcereiro"); feito[0] = true
+		rodar.call()
+		var t0 := Time.get_ticks_msec(); var n := 0
+		while not feito[0] and Time.get_ticks_msec() - t0 < 180000:
+			await get_tree().create_timer(ritmo).timeout
+			if fotos != "":
+				n += 1; get_viewport().get_texture().get_image().save_png("%s-%02d.png" % [fotos, n])
+		var pt: Dictionary = portas.por_id["P17"]
+		print("CARCEREIRO fim=", feito[0], " P17 ", portas.de(pt).estado, " aberta=", grade.porta_aberta.has("P17"), " barrada=", grade.porta_barrada.has("P17"))
+		for id in pdms: print("CARCEREIRO pdm ", id, " ", pdms[id].nome, " em ", pdms[id].celula, " área ", grade.area_de(pdms[id].celula), " visível=", pdms[id].visible)
+		for h in grupo: print("CARCEREIRO ", h.nome, " pv ", h.pv, " em ", h.celula, " deitado=", h.get_meta("deitado", false))
 	elif teste == "combate":
 		_surgir_errantes(true)
 		await get_tree().create_timer(3.0).timeout
