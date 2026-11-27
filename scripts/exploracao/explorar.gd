@@ -692,6 +692,30 @@ func _vergas() -> void:
 		b.position = meio; b.name = "Verga_" + str(pt.id)
 		$Masmorra.add_child(b)
 
+## Porta em arco (AT1): a folha é alongada a partir de ESTICA_DE (acima das ferragens de cima) até o topo
+## do arco e recortada nele. O arco vem da planta (meta arco_* do nó da porta, tools/gerar_masmorra.gd).
+const ESTICA_DE := 1.85     # m
+const FOLGA_ARCO := 0.03    # a folha passa um pouco por trás das pedras do arco
+func _arco_da_folha(mm: ShaderMaterial, no: Node3D, mod: Node3D, esc: Vector3, alt_p: float) -> void:
+	if not no.has_meta("arco_r"): return
+	var ms := mod.find_children("*", "MeshInstance3D", true, false)
+	if ms.is_empty(): return
+	var mi: MeshInstance3D = ms[0]
+	var k := mi.transform.basis.get_scale().y   # a malha vem escalada (uniforme) dentro do modelo
+	var ab := mi.get_aabb()
+	var ey := esc.y * k; var ez := esc.z * k   # metros por unidade da malha
+	var cy := float(no.get_meta("arco_cy")); var r := float(no.get_meta("arco_r")) + FOLGA_ARCO
+	var topo := cy + r
+	mm.set_shader_parameter("arco", true)
+	mm.set_shader_parameter("base_y", ab.position.y)
+	mm.set_shader_parameter("estica_de", ab.position.y + ESTICA_DE / ey)
+	mm.set_shader_parameter("estica", maxf((topo - ESTICA_DE) / maxf(alt_p - ESTICA_DE, 0.05), 1.0))
+	mm.set_shader_parameter("esc", Vector2(ey, ez))
+	mm.set_shader_parameter("arco_zc", ab.get_center().z)
+	mm.set_shader_parameter("arco_mola", float(no.get_meta("arco_mola")))
+	mm.set_shader_parameter("arco_cy", cy)
+	mm.set_shader_parameter("arco_r", r)
+
 ## Centro (z) das malhas do modelo no espaço da própria malha, para o corte da porta dupla.
 func _centro_z_malha(mod: Node3D) -> float:
 	var ms := mod.find_children("*", "MeshInstance3D", true, false)
@@ -811,6 +835,7 @@ func _vestir_porta(no: Node3D) -> Array:
 			mm = mat.duplicate(); mats.append(mm)
 			mm.set_shader_parameter("corte", -1.0 if str(p.name) == "Folha0" else 1.0)
 			mm.set_shader_parameter("corte_centro", _centro_z_malha(mod))
+		_arco_da_folha(mm, no, mod, esc, alt_p)
 		for mi in mod.find_children("*", "MeshInstance3D", true, false):
 			var tex = null
 			var orig = (mi as MeshInstance3D).mesh.surface_get_material(0)

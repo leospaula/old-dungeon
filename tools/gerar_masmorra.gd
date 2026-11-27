@@ -71,6 +71,8 @@ func _run() -> void:
 			var c: Color = COR_CHAO.get(tipos[id], Color(0.6, 0.6, 0.6))
 			c = c.lightened(rnd.randf_range(-0.06, 0.06)) if rnd.randf() < 0.5 else c.darkened(rnd.randf_range(0, 0.08))
 			_bloco(chao, x, y).caixa(Vector3(x * CEL, -0.25, y * CEL), Vector3((x + 1) * CEL, 0.0, (y + 1) * CEL), c)
+			if tipos[id] in ["caverna", "mina"]:   # chão por baixo da rocha deformada (sem frestas na base)
+				_bloco(chao, x, y).caixa(Vector3(x * CEL - 0.4, -0.25, y * CEL - 0.4), Vector3((x + 1) * CEL + 0.4, -0.012, (y + 1) * CEL + 0.4), c.darkened(0.15))
 
 	# Rocha: blocos que encostam em chão (8 vizinhos). Perto de caverna, altura irregular.
 	for y in range(-1, H + 1):
@@ -87,7 +89,8 @@ func _run() -> void:
 			if not perto and not dentro: continue
 			var alt := ALT + (rnd.randf_range(-0.6, 0.9) if natural else rnd.randf_range(0.0, 0.15))
 			var c := COR_ROCHA.lightened(rnd.randf_range(0.0, 0.1)) if not natural else Color(0.36, 0.31, 0.27).lightened(rnd.randf_range(0, 0.12))
-			_bloco(rocha, x, y).caixa(Vector3(x * CEL, -0.25, y * CEL), Vector3((x + 1) * CEL, alt, (y + 1) * CEL), c)
+			if natural: _bloco(rocha, x, y).caixa_rugosa(Vector3(x * CEL, -0.25, y * CEL), Vector3((x + 1) * CEL, alt, (y + 1) * CEL), c, _campo_rocha)
+			else: _bloco(rocha, x, y).caixa(Vector3(x * CEL, -0.25, y * CEL), Vector3((x + 1) * CEL, alt, (y + 1) * CEL), c)
 
 	# Paredes finas entre áreas diferentes (bordas verticais e horizontais da grade)
 	for y in H:
@@ -126,6 +129,8 @@ func _run() -> void:
 	_instanciar_blocos(raiz, "Rocha", rocha)
 	_instanciar_blocos(raiz, "Paredes", paredes)
 	raiz.add_child(portas)
+	var arcos_no := Node3D.new(); arcos_no.name = "Arcos"; raiz.add_child(arcos_no)
+	for id in arcos: _instanciar(arcos_no, id, arcos[id], false)
 	for b in barras:
 		var m := Node3D.new(); m.name = "B%d" % gf.get_child_count(); gf.add_child(m)
 		m.set_meta("de", b[0]); m.set_meta("ate", b[1]); m.set_meta("y0", b[2]); m.set_meta("y1", b[3])
@@ -167,6 +172,16 @@ func _run() -> void:
 ## No Compatibility (WebGL) cada malha recebe no máximo 8 luzes: dividir chão, rocha e paredes
 ## em blocos de BLOCO × BLOCO células faz cada pedaço receber só as tochas próximas.
 const BLOCO := 8
+
+## Campo de deformação da rocha natural: empurra cada ponto da superfície (vizinhos andam igual).
+var _ruido: Array = []
+func _campo_rocha(q: Vector3) -> Vector3:
+	if _ruido.is_empty():
+		for k in 3:
+			var nz := FastNoiseLite.new(); nz.seed = 70 + k; nz.frequency = 0.45; nz.fractal_octaves = 4
+			_ruido.append(nz)
+	var alt := clampf((q.y + 0.25) / 0.6, 0.0, 1.0)   # rente ao chão mexe pouco
+	return Vector3(_ruido[0].get_noise_3dv(q) * 0.5, _ruido[1].get_noise_3dv(q) * 0.45 * alt, _ruido[2].get_noise_3dv(q) * 0.5) * (0.35 + 0.65 * alt)
 
 func _bloco(d: Dictionary, x: int, y: int) -> _St:
 	var k := Vector2i(floori(float(x) / BLOCO), floori(float(y) / BLOCO))
@@ -257,13 +272,83 @@ func _porta(pt: Dictionary, portas: Node3D, paredes: Dictionary, ferro: _St) -> 
 		var a := -lado * 0.08; var b := lado * 0.08 + Vector3(0, ALT_PORTA, 0) + eixo * (i1 - i0) * sentido
 		st.caixa(Vector3(minf(a.x, b.x), 0, minf(a.z, b.z)), Vector3(maxf(a.x, b.x), ALT_PORTA, maxf(a.z, b.z)), COR_MADEIRA.lightened(rnd.randf_range(0, 0.08)))
 		_instanciar(piv, "Malha", st, false)
-	# Verga de pedra por cima do vão
-	var v0: Vector3; var v1: Vector3
-	if pt.orient == "v":
-		v0 = Vector3(pt.x * CEL - ESP / 2, ALT_PORTA, pt.y * CEL); v1 = Vector3(pt.x * CEL + ESP / 2, ALT, pt.y * CEL + comp)
+	_arco(pt, no, paredes)
+
+## Arco da porta (escolha do Leonardo, 27/11: PS1 e PS2 nas simples, PD1 abatido nas duplas): anel de
+## pedras grandes e irregulares que saem da parede, batentes de pedra até o chão e parede fechando por
+## cima. A folha da porta é alongada e recortada em arco pelo jogo (porta_luz.gdshader), com os dados
+## guardados no nó da porta (meta arco_*). Estilo por porta: sorteio fixo pelo id.
+const MOLA_SIMPLES := 1.95   # onde o arco nasce (porta de 1 casa: semicírculo)
+const MOLA_DUPLA := 2.05     # porta larga: arco abatido
+const FLECHA_DUPLA := 0.55
+var arcos := {}              # id -> _St
+func _arco(pt: Dictionary, no: Node3D, paredes: Dictionary) -> void:
+	var n := int(pt.largura); var comp := n * CEL
+	var v := str(pt.orient) == "v"
+	var u_dir := Vector3(0, 0, 1) if v else Vector3(1, 0, 0)
+	var nrm := Vector3(1, 0, 0) if v else Vector3(0, 0, 1)
+	var base := Vector3(pt.x * CEL, 0, pt.y * CEL)
+	var meia := comp / 2.0
+	var vao := meia - ESP * 0.5   # meia largura do vão visível (as paredes vizinhas entram ESP/2 nele)
+	var mola: float; var cy: float; var r: float
+	if n == 1: mola = MOLA_SIMPLES; cy = mola; r = vao
 	else:
-		v0 = Vector3(pt.x * CEL, ALT_PORTA, pt.y * CEL - ESP / 2); v1 = Vector3(pt.x * CEL + comp, ALT, pt.y * CEL + ESP / 2)
-	_bloco(paredes, int(pt.x), int(pt.y)).caixa(v0, v1, COR_PAREDE)
+		mola = MOLA_DUPLA; r = (FLECHA_DUPLA * FLECHA_DUPLA + vao * vao) / (2.0 * FLECHA_DUPLA); cy = mola + FLECHA_DUPLA - r
+	var rr := RandomNumberGenerator.new(); rr.seed = hash(str(pt.id))
+	var estilo := "PS2" if rr.randi() % 2 == 1 else "PS1"
+	if n > 1: estilo = "PD1"
+	no.set_meta("arco_mola", mola); no.set_meta("arco_cy", cy); no.set_meta("arco_r", r); no.set_meta("arco_estilo", estilo)
+	var grosso := estilo == "PS2"
+	var st := _St.new()
+	var P := func(u: float, h: float) -> Vector3: return base + u_dir * (meia + u) + Vector3(0, h, 0)
+	var cor_pedra := func() -> Color:
+		var g := rr.randf_range(0.42, 0.58)
+		var c := Color(g, g * 0.98, g * 0.95)
+		return c.lerp(Color(0.3, 0.36, 0.22), rr.randf_range(0.0, 0.35 if grosso else 0.15))
+	# anel do arco
+	var a0 := 0.0; var a1 := PI
+	if n > 1: var th := asin(clampf(vao / r, 0.0, 1.0)); a0 = PI / 2.0 - th; a1 = PI / 2.0 + th
+	var qtd := (7 if grosso else 9) if n == 1 else (9 if grosso else 11)
+	var t_min := 99.0
+	for i in qtd:
+		var b0 := a0 + (a1 - a0) * float(i) / qtd + 0.016; var b1 := a0 + (a1 - a0) * float(i + 1) / qtd - 0.016
+		var chave := i == qtd / 2
+		var t := rr.randf_range(0.28, 0.4) if grosso else rr.randf_range(0.24, 0.3)
+		if chave: t += 0.07
+		t_min = minf(t_min, t)
+		var j := 0.05 if grosso else 0.02
+		var ro0 := r + t + rr.randf_range(-j, j); var ro1 := r + t + rr.randf_range(-j, j)
+		var dirb0 := Vector2(cos(b0), sin(b0)); var dirb1 := Vector2(cos(b1), sin(b1))
+		var f := [P.call(dirb0.x * r, cy + dirb0.y * r), P.call(dirb1.x * r, cy + dirb1.y * r),
+			P.call(dirb1.x * ro1, cy + dirb1.y * ro1), P.call(dirb0.x * ro0, cy + dirb0.y * ro0)]
+		var sai := (0.07 if grosso else 0.045) + rr.randf_range(0.0, 0.025) + (0.02 if chave else 0.0)
+		st.prisma(f, nrm, ESP + sai * 2.0, cor_pedra.call())
+	# batentes: pedras alternando longa e curta, do chão até onde o arco nasce
+	var mola_lado := cy + sin(a0) * r if n > 1 else mola
+	for lado in [-1.0, 1.0]:
+		var h := 0.0; var k := 0
+		while h < mola_lado - 0.05:
+			var alt := minf(rr.randf_range(0.36, 0.5) if grosso else rr.randf_range(0.32, 0.42), mola_lado - h)
+			var larg := (0.46 if k % 2 == 0 else 0.26) if grosso else (0.34 if k % 2 == 0 else 0.24)
+			larg += rr.randf_range(-0.03, 0.03)
+			var u_in: float = lado * vao; var u_out: float = lado * (vao + larg)
+			var f := [P.call(u_in, h + 0.012), P.call(u_out, h + 0.012), P.call(u_out, h + alt - 0.012), P.call(u_in, h + alt - 0.012)]
+			var sai := (0.06 if grosso else 0.04) + rr.randf_range(0.0, 0.02)
+			st.prisma(f, nrm, ESP + sai * 2.0, cor_pedra.call())
+			h += alt; k += 1
+	arcos[str(pt.id)] = st
+	# parede por cima do arco (faixas verticais que começam por fora do anel)
+	var faixas := 14
+	for i in faixas:
+		var u0 := -meia + comp * float(i) / faixas; var u1 := -meia + comp * float(i + 1) / faixas
+		var du := maxf(absf(u0), absf(u1)) if signf(u0) == signf(u1) else 0.0
+		var ro := r + t_min - 0.03
+		var y0 := cy + sqrt(maxf(ro * ro - du * du, 0.0)) if du < ro else mola
+		y0 = maxf(y0, mola)
+		if y0 >= ALT: continue
+		var q0 := base + u_dir * (meia + u0) - nrm * ESP * 0.5 + Vector3(0, y0, 0)
+		var q1 := base + u_dir * (meia + u1) + nrm * ESP * 0.5 + Vector3(0, ALT, 0)
+		_bloco(paredes, int(pt.x), int(pt.y)).caixa(Vector3(minf(q0.x, q1.x), q0.y, minf(q0.z, q1.z)), Vector3(maxf(q0.x, q1.x), q1.y, maxf(q0.z, q1.z)), COR_PAREDE)
 
 func _instanciar(raiz: Node3D, nome: String, st: _St, brilho: bool) -> void:
 	if st.vazio(): return
@@ -329,6 +414,47 @@ class _St:
 			var cor := c * Color(f[5], f[5], f[5], 1.0)
 			for idx in [0, 1, 2, 0, 2, 3]:
 				st.set_color(cor); st.set_normal(f[4]); st.add_vertex(v[f[idx]])
+	## Quadrilátero com a frente para fora (`fora`: ponto de dentro do sólido). Godot: frente = sentido horário.
+	func quad(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, c: Color, dentro: Vector3) -> void:
+		var nn := (p1 - p0).cross(p2 - p0).normalized()
+		var meio := (p0 + p1 + p2 + p3) * 0.25
+		if nn.dot(meio - dentro) > 0.0:   # a ordem dada aponta para fora: inverte para ficar horário visto de fora
+			var t := p1; p1 = p3; p3 = t; nn = -nn
+		for q in [p0, p1, p2, p0, p2, p3]:
+			st.set_color(c); st.set_normal(-nn); st.add_vertex(q)
+	## Prisma: face do meio com 4 pontos, extrudada ±`prof`/2 na direção `n`.
+	func prisma(f: Array, n_: Vector3, prof: float, c: Color) -> void:
+		n += 1
+		var a: Array = []; var b: Array = []; var centro := Vector3.ZERO
+		for q in f: a.append(q + n_ * prof * 0.5); b.append(q - n_ * prof * 0.5); centro += q * 0.25
+		quad(a[0], a[1], a[2], a[3], c, centro); quad(b[0], b[1], b[2], b[3], c, centro)
+		for i in 4:
+			var j := (i + 1) % 4
+			quad(a[i], a[j], b[j], b[i], c.darkened(0.08), centro)
+	## Caixa de rocha natural: faces subdivididas e deformadas por um campo de ruído no espaço do mundo
+	## (o mesmo ponto anda igual em blocos vizinhos: sem frestas). Normais por triângulo (rocha facetada).
+	func caixa_rugosa(a: Vector3, b: Vector3, c: Color, campo: Callable) -> void:
+		n += 1
+		var v := [Vector3(a.x, a.y, a.z), Vector3(b.x, a.y, a.z), Vector3(b.x, a.y, b.z), Vector3(a.x, a.y, b.z),
+			Vector3(a.x, b.y, a.z), Vector3(b.x, b.y, a.z), Vector3(b.x, b.y, b.z), Vector3(a.x, b.y, b.z)]
+		var faces := [[4, 5, 6, 7, 1.0], [0, 1, 5, 4, 0.8], [2, 3, 7, 6, 0.8], [1, 2, 6, 5, 0.7], [3, 0, 4, 7, 0.7]]
+		for f in faces:
+			var c0: Vector3 = v[f[0]]; var c1: Vector3 = v[f[1]]; var c3: Vector3 = v[f[3]]
+			var ns := maxi(2, ceili(c0.distance_to(c1) / 0.38)); var nt := maxi(2, ceili(c0.distance_to(c3) / 0.38))
+			var cor := c * Color(f[4], f[4], f[4], 1.0)
+			var g := []
+			for j in nt + 1:
+				var lin := []
+				for i in ns + 1:
+					var q: Vector3 = c0 + (c1 - c0) * (float(i) / ns) + (c3 - c0) * (float(j) / nt)
+					lin.append(q + campo.call(q))
+				g.append(lin)
+			for j in nt:
+				for i in ns:
+					var p0: Vector3 = g[j][i]; var p1: Vector3 = g[j][i + 1]; var p2: Vector3 = g[j + 1][i + 1]; var p3: Vector3 = g[j + 1][i]
+					for tri in [[p0, p1, p2], [p0, p2, p3]]:
+						var nn: Vector3 = -(tri[1] - tri[0]).cross(tri[2] - tri[0]).normalized()
+						for q in tri: st.set_color(cor); st.set_normal(nn); st.add_vertex(q)
 	func malha(mat: Material) -> ArrayMesh:
 		st.set_material(mat)
 		return st.commit()

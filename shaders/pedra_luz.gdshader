@@ -6,6 +6,8 @@ render_mode cull_back;
 uniform sampler2D cor_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D natural_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D caverna_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D caverna_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float escala = 2.4;
 // Envelhecimento (protótipo 27/11): manchas escuras grandes, escorridos de umidade, limo perto do chão e nas
 // juntas úmidas, e relevo irregular. Tudo procedural no espaço do mundo (não repete com a textura).
@@ -31,7 +33,14 @@ void fragment() {
 	vec3 n = normalize(n_mundo);
 	bool natural = COLOR.r - COLOR.b > 0.04;
 	vec2 uv = (abs(n.x) > 0.5 ? w.zy : (abs(n.z) > 0.5 ? w.xy : w.xz)) / escala;
-	vec3 c = natural ? texture(natural_tex, uv * 0.8).rgb * vec3(0.85, 0.78, 0.7) : texture(cor_tex, uv).rgb;
+	vec3 c = texture(cor_tex, uv).rgb;
+	vec3 nm = texture(normal_tex, uv).rgb;
+	if (natural) {   // rocha de caverna: textura própria pelos três eixos (a rocha deformada tem faces em todo ângulo)
+		vec3 pw = pow(abs(n), vec3(4.0)); pw /= (pw.x + pw.y + pw.z);
+		float e = escala * 1.1;
+		c = (texture(caverna_tex, w.zy / e).rgb * pw.x + texture(caverna_tex, w.xz / e).rgb * pw.y + texture(caverna_tex, w.xy / e).rgb * pw.z) * vec3(1.6, 1.5, 1.35);
+		nm = texture(caverna_normal, abs(n.x) > 0.5 ? w.zy / e : (abs(n.z) > 0.5 ? w.xy / e : w.xz / e)).rgb;
+	}
 	c *= vec3(0.9, 0.93, 1.0);
 	float relevo = 0.0;
 	if (velhice > 0.0 && n.y < 0.7) {
@@ -46,12 +55,12 @@ void fragment() {
 		c = mix(c, cor_limo * (0.8 + 0.7 * _r3(w * 11.0)), limo * 0.9 * velhice);
 		relevo = (_fbm(w * 1.7) - 0.5) * velhice;                        // pedra deformada
 	}
-	if (n.y > 0.7) c *= 0.35;                                           // topo da rocha: escuro
+	if (n.y > 0.7) c *= natural ? 0.6 : 0.35;                           // topo da rocha: escuro
 	c *= mix(0.6, 1.0, smoothstep(0.0, 1.0, w.y));                      // sombra de contato na base
 	float v = nevoa(w, n);
 	ALBEDO = lembranca(c, v);
 	SPECULAR = 0.5 * smoothstep(0.08, 0.43, v);
-	NORMAL_MAP = texture(normal_tex, uv).rgb;
+	NORMAL_MAP = nm;
 	NORMAL_MAP_DEPTH = (natural ? 0.8 : 1.4) * (1.0 + abs(relevo) * 1.6);
 	ROUGHNESS = 0.92 - 0.25 * velhice * smoothstep(1.2, 0.0, w.y);   // úmido perto do chão brilha um pouco
 }

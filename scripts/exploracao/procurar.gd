@@ -16,7 +16,7 @@ const Fosso = preload("res://scripts/visual/fosso.gd")
 const COR_CHAO := {"sala": Color(0.47, 0.44, 0.39), "corredor": Color(0.42, 0.40, 0.36), "cela": Color(0.36, 0.34, 0.31),
 	"prisao": Color(0.40, 0.38, 0.34), "caverna": Color(0.38, 0.32, 0.25), "mina": Color(0.42, 0.35, 0.27)}   # tools/gerar_masmorra.gd
 const ESP := 0.3     # espessura da parede (tools/gerar_masmorra.gd)
-const ALT_VAO := 2.4 # altura do vão da porta (a verga de pedra fica por cima)
+const ALT_VAO := 3.0 # o vão inteiro (com o arco): a parede falsa vai até o alto
 
 var ex: Node
 var armadilhas := {}   # Vector2i -> {tipo, dano, efeito, achada (texto), visto: bool, fora: bool}
@@ -67,6 +67,7 @@ func secreta(pt: Dictionary) -> bool:
 func _disfarcar(pt: Dictionary) -> void:
 	var no: Node3D = ex.get_node_or_null("Masmorra/Portas/" + str(pt.id))
 	if no: no.visible = false
+	_arco_visivel(pt.id, false)
 	var comp: float = float(pt.largura) * 1.5
 	var caixa := BoxMesh.new()
 	var mi := MeshInstance3D.new(); mi.mesh = caixa; mi.material_override = ex.luz.pedra_mat
@@ -85,9 +86,15 @@ func revelar(pt: Dictionary, quem: String) -> void:
 	if _tampas.has(pt.id): _tampas[pt.id].queue_free(); _tampas.erase(pt.id)
 	var no: Node3D = ex.get_node_or_null("Masmorra/Portas/" + str(pt.id))
 	if no: no.visible = true
+	_arco_visivel(pt.id, true)
 	ex._registrar("[color=#ffcf6a]%s encontra uma porta secreta[/color] (%s)!" % [quem, pt.id])
 	ex._diario("evento", "%s achou uma porta secreta (%s)." % [quem, pt.id])
 	ex._desenhar_portas()
+
+## As pedras do arco da porta (Masmorra/Arcos/<id>) somem junto com a porta secreta.
+func _arco_visivel(id, v: bool) -> void:
+	var a: Node3D = ex.get_node_or_null("Masmorra/Arcos/" + str(id))
+	if a: a.visible = v
 
 ## Portas secretas ainda escondidas nas paredes da área.
 func _secretas_da_area(area: String) -> Array:
@@ -110,6 +117,7 @@ func mostrar_tampas(v: bool) -> void:
 		_tampas[id].material_override = _mat_mestre if v else ex.luz.pedra_mat
 		var no: Node3D = ex.get_node_or_null("Masmorra/Portas/" + str(id))
 		if no: no.visible = v
+		_arco_visivel(id, v)
 
 # ---------- procurar na sala ----------
 

@@ -10,6 +10,7 @@ var tochas: Array[OmniLight3D] = []
 var tochas_nos: Array[Node3D] = []
 var tochas_cel: Array[Vector2i] = []
 var materiais: Array[ShaderMaterial] = []
+const VELHICE := 0.5
 var pedra_mat: ShaderMaterial   # material das paredes (portas secretas usam para se disfarçar)
 var luzes_tocha := {}           # ator -> OmniLight3D da tocha na mão dele
 var _raiz: Node3D
@@ -33,10 +34,22 @@ func configurar(raiz: Node3D, masmorra: Node3D, ambiente: WorldEnvironment, carr
 	pedra_mat = ShaderMaterial.new(); var pedra := pedra_mat; pedra.shader = load("res://shaders/pedra_luz.gdshader")
 	pedra.set_shader_parameter("cor_tex", parede); pedra.set_shader_parameter("normal_tex", parede_n); pedra.set_shader_parameter("natural_tex", laje)
 	_aplicar(masmorra.get_node("Rocha"), pedra, true)
-	for x in OS.get_cmdline_user_args():   # protótipo: --paredes-velhas=0.0..1.0
-		if x.begins_with("--paredes-velhas="): pedra.set_shader_parameter("velhice", float(x.get_slice("=", 1)))
+	# Caverna (CV2, 27/11): rocha cinza-escura em camadas na rocha natural (cor do bloco marca qual é).
+	pedra.set_shader_parameter("caverna_tex", tex.call("res://arte/texturas/caverna_cor.png"))
+	pedra.set_shader_parameter("caverna_normal", tex.call("res://arte/texturas/caverna_normal.png"))
+	# Pedras do arco e dos batentes das portas
+	var bloco := ShaderMaterial.new(); bloco.shader = load("res://shaders/pedra_bloco.gdshader")
+	bloco.set_shader_parameter("rocha_tex", tex.call("res://arte/texturas/caverna_cor.png"))
+	bloco.set_shader_parameter("rocha_normal", tex.call("res://arte/texturas/caverna_normal.png"))
+	if masmorra.has_node("Arcos"): _aplicar(masmorra.get_node("Arcos"), bloco, true)
+	materiais.append(bloco)
+	# Envelhecimento (EV50, 27/11): --paredes-velhas=0..1 testa outro nível.
+	var velhice := VELHICE
+	for x in OS.get_cmdline_user_args():
+		if x.begins_with("--paredes-velhas="): velhice = float(x.get_slice("=", 1))
+	pedra.set_shader_parameter("velhice", velhice); bloco.set_shader_parameter("velhice", velhice)
 	_aplicar(masmorra.get_node("Paredes"), pedra, true)
-	materiais = [chao_mat, pedra]
+	materiais.append_array([chao_mat, pedra])
 	var madeira := _objeto(0.0, 0.8)
 	for folha in masmorra.get_node("Portas").find_children("*", "MeshInstance3D", true, false):
 		folha.material_override = madeira
