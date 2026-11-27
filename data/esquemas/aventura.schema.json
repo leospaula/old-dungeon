@@ -912,7 +912,8 @@
       "jogo_dados",
       "pose",
       "interacao",
-      "fim_interacao"
+      "fim_interacao",
+      "som"
      ]
     },
     "quem": {
@@ -946,6 +947,26 @@
     },
     "id": {
      "type": "string"
+    },
+    "som": {
+     "type": "string",
+     "description": "evento de data/sons.json"
+    },
+    "volume": {
+     "type": "number",
+     "description": "dB a mais ou a menos"
+    },
+    "espera": {
+     "type": "number",
+     "description": "segundos antes do próximo passo"
+    },
+    "voz": {
+     "type": "string",
+     "description": "fala: momento de som da criatura (padrão voz)"
+    },
+    "muda": {
+     "type": "boolean",
+     "description": "fala sem grunhido"
     }
    },
    "description": "Passo de cena (scripts/exploracao/cena.gd documenta cada tipo e os parâmetros)."

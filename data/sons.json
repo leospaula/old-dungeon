@@ -98,32 +98,21 @@
     },
     "grade_bater": {
       "arquivos": [
-        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_000.ogg",
-        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_001.ogg",
-        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_002.ogg",
-        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_003.ogg",
-        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_004.ogg"
+        "res://arte/sons/freesound/grade-bater.ogg"
       ],
-      "volume_db": -3,
+      "volume_db": -2,
       "tom": 0.05,
       "espacial": true,
       "distancia": 40
     },
     "grade_abrir": {
       "arquivos": [
-        "res://arte/sons/kenney-rpg/Audio/creak1.ogg",
-        "res://arte/sons/kenney-rpg/Audio/creak2.ogg",
-        "res://arte/sons/kenney-rpg/Audio/creak3.ogg"
+        "res://arte/sons/freesound/grade-abrir.ogg"
       ],
-      "volume_db": -1,
-      "tom": 0.05,
-      "tom_base": 0.72,
+      "volume_db": -3,
+      "tom": 0.04,
       "espacial": true,
-      "distancia": 32,
-      "tambem": [
-        "grade_ferrolho"
-      ],
-      "_provisorio": "rangido de madeira mais grave + ferrolho: falta um rangido de dobradiça de ferro de verdade"
+      "distancia": 34
     },
     "trancar": {
       "arquivos": [
@@ -237,14 +226,10 @@
     },
     "dado": {
       "arquivos": [
-        "res://arte/sons/kenney-impactos/Audio/impactWood_light_000.ogg",
-        "res://arte/sons/kenney-impactos/Audio/impactWood_light_001.ogg",
-        "res://arte/sons/kenney-impactos/Audio/impactWood_light_002.ogg",
-        "res://arte/sons/kenney-impactos/Audio/impactWood_light_003.ogg",
-        "res://arte/sons/kenney-impactos/Audio/impactWood_light_004.ogg"
+        "res://arte/sons/freesound/dados-rolar.ogg"
       ],
-      "volume_db": -10,
-      "tom": 0.2,
+      "volume_db": -8,
+      "tom": 0.12,
       "espacial": false
     },
     "livro_abrir": {
@@ -307,26 +292,15 @@
       "espacial": true,
       "distancia": 30
     },
-    "grade_ferrolho": {
-      "arquivos": [
-        "res://arte/sons/kenney-rpg/Audio/metalLatch.ogg"
-      ],
-      "volume_db": -3,
-      "tom": 0.05,
-      "tom_base": 0.85,
-      "espacial": true,
-      "distancia": 26
-    },
     "grade_fresta": {
       "arquivos": [
-        "res://arte/sons/kenney-rpg/Audio/creak1.ogg",
-        "res://arte/sons/kenney-rpg/Audio/creak3.ogg"
+        "res://arte/sons/freesound/grade-abrir.ogg"
       ],
-      "volume_db": -7,
-      "tom": 0.05,
-      "tom_base": 0.7,
+      "volume_db": -11,
+      "tom": 0.04,
       "espacial": true,
-      "distancia": 24
+      "distancia": 24,
+      "tom_base": 1.1
     },
     "porta_fresta": {
       "arquivos": [
@@ -338,6 +312,336 @@
       "tom": 0.08,
       "espacial": true,
       "distancia": 24
+    },
+    "trancar_grade": {
+      "arquivos": [
+        "res://arte/sons/freesound/fechadura-grade.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.04,
+      "espacial": true,
+      "distancia": 24
+    },
+    "chaves": {
+      "arquivos": [
+        "res://arte/sons/freesound/chaves.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.05,
+      "espacial": true,
+      "distancia": 26
+    },
+    "chicote": {
+      "arquivos": [
+        "res://arte/sons/freesound/chicote.ogg"
+      ],
+      "volume_db": -3,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 34
+    },
+    "golpe_ar": {
+      "arquivos": [
+        "res://arte/sons/freesound/golpe-ar-1.ogg",
+        "res://arte/sons/freesound/golpe-ar-2.ogg"
+      ],
+      "volume_db": -8,
+      "tom": 0.12,
+      "espacial": true,
+      "distancia": 20
+    },
+    "besta_disparo": {
+      "arquivos": [
+        "res://arte/sons/freesound/besta-disparo.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 28
+    },
+    "arco_disparo": {
+      "arquivos": [
+        "res://arte/sons/freesound/arco-carregar.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 28
+    },
+    "funda_girar": {
+      "arquivos": [
+        "res://arte/sons/freesound/funda-girar.ogg"
+      ],
+      "volume_db": -7,
+      "tom": 0.1,
+      "espacial": true,
+      "distancia": 28
+    },
+    "flecha_acerto": {
+      "arquivos": [
+        "res://arte/sons/freesound/flecha-acerto.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.1,
+      "espacial": true,
+      "distancia": 28
+    },
+    "dados_mao": {
+      "arquivos": [
+        "res://arte/sons/freesound/dados-mao.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 20
+    },
+    "voz_monstro": {
+      "arquivos": [
+        "res://arte/sons/freesound/voz-monstro-1.ogg",
+        "res://arte/sons/freesound/voz-monstro-2.ogg",
+        "res://arte/sons/freesound/voz-monstro-3.ogg"
+      ],
+      "volume_db": -5,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 30
+    },
+    "voz_humano": {
+      "arquivos": [
+        "res://arte/sons/freesound/voz-humano-hm.ogg",
+        "res://arte/sons/freesound/voz-humano-hmmm.ogg",
+        "res://arte/sons/freesound/voz-humano-grunhido.ogg"
+      ],
+      "volume_db": -5,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 26
+    },
+    "voz_humano_riso": {
+      "arquivos": [
+        "res://arte/sons/freesound/voz-humano-riso.ogg"
+      ],
+      "volume_db": -5,
+      "tom": 0.04,
+      "espacial": true,
+      "distancia": 26
+    },
+    "dor_humano": {
+      "arquivos": [
+        "res://arte/sons/freesound/voz-humano-grunhido.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.12,
+      "espacial": true,
+      "distancia": 26
+    },
+    "passo_bota": {
+      "arquivos": [
+        "res://arte/sons/freesound/passo-bota-1.ogg",
+        "res://arte/sons/freesound/passo-bota-2.ogg",
+        "res://arte/sons/freesound/passo-bota-3.ogg",
+        "res://arte/sons/freesound/passo-bota-4.ogg",
+        "res://arte/sons/freesound/passo-bota-5.ogg",
+        "res://arte/sons/freesound/passo-bota-6.ogg",
+        "res://arte/sons/freesound/passo-bota-7.ogg",
+        "res://arte/sons/freesound/passo-bota-8.ogg",
+        "res://arte/sons/freesound/passo-bota-9.ogg"
+      ],
+      "volume_db": -15,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 24
+    },
+    "goblin_dor": {
+      "arquivos": [
+        "res://arte/sons/freesound/goblin-grito-1.ogg",
+        "res://arte/sons/freesound/goblin-grito-2.ogg",
+        "res://arte/sons/freesound/goblin-berro.ogg"
+      ],
+      "volume_db": -5,
+      "tom": 0.1,
+      "espacial": true,
+      "distancia": 30
+    },
+    "goblin_morte": {
+      "arquivos": [
+        "res://arte/sons/freesound/goblin-morte.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 30
+    },
+    "goblin_alerta": {
+      "arquivos": [
+        "res://arte/sons/freesound/goblin-berro.ogg",
+        "res://arte/sons/freesound/goblin-risada.ogg",
+        "res://arte/sons/freesound/goblin-grito-2.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.1,
+      "espacial": true,
+      "distancia": 40
+    },
+    "tocha_acender": {
+      "arquivos": [
+        "res://arte/sons/freesound/tocha-acender.ogg",
+        "res://arte/sons/freesound/tocha.ogg"
+      ],
+      "volume_db": -7,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 18
+    },
+    "tocha_apagar": {
+      "arquivos": [
+        "res://arte/sons/freesound/tocha-apagar.ogg"
+      ],
+      "volume_db": -7,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 18
+    },
+    "tocha_crepitar": {
+      "arquivos": [
+        "res://arte/sons/freesound/tocha-crepitar.ogg"
+      ],
+      "volume_db": -22,
+      "tom": 0.05,
+      "espacial": true,
+      "distancia": 7,
+      "laco": true
+    },
+    "correntes": {
+      "arquivos": [
+        "res://arte/sons/freesound/correntes.ogg"
+      ],
+      "volume_db": -7,
+      "tom": 0.05,
+      "espacial": true,
+      "distancia": 24
+    },
+    "corda": {
+      "arquivos": [
+        "res://arte/sons/freesound/corda.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 18
+    },
+    "pocao_beber": {
+      "arquivos": [
+        "res://arte/sons/freesound/pocao-beber.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 18
+    },
+    "magia_missil": {
+      "arquivos": [
+        "res://arte/sons/freesound/magia-missil.ogg"
+      ],
+      "volume_db": -5,
+      "tom": 0.05,
+      "espacial": true,
+      "distancia": 34
+    },
+    "magia": {
+      "arquivos": [
+        "res://arte/sons/freesound/magia-leve.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.05,
+      "espacial": true,
+      "distancia": 30
+    },
+    "armadilha": {
+      "arquivos": [
+        "res://arte/sons/freesound/armadilha-laco.ogg",
+        "res://arte/sons/freesound/armadilha-espetos.ogg"
+      ],
+      "volume_db": -3,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 30
+    },
+    "clique": {
+      "arquivos": [
+        "res://arte/sons/freesound/clique-madeira.ogg"
+      ],
+      "volume_db": -12,
+      "tom": 0.08,
+      "espacial": false
+    }
+  },
+  "fundo": {
+    "_doc": "Camadas que tocam o tempo todo (sem posição): sorteia um arquivo e emenda no fim. Tecla N liga/desliga a música.",
+    "ambiente": {
+      "arquivos": [
+        "res://arte/sons/freesound/ambiente-masmorra.ogg",
+        "res://arte/sons/freesound/ambiente-masmorra-loop.ogg"
+      ],
+      "volume_db": -20
+    },
+    "musica": {
+      "arquivos": [
+        "res://arte/sons/freesound/musica-caverna.ogg",
+        "res://arte/sons/freesound/musica-eco-masmorra.ogg"
+      ],
+      "volume_db": -24
+    }
+  },
+  "criaturas": {
+    "_doc": "Som por criatura (meta id do ator; \"grupo\" = personagens): voz (falas de cena), dor, morte, alerta (início do combate), passo.",
+    "grupo": {
+      "dor": "dor_humano"
+    },
+    "goblin": {
+      "dor": "goblin_dor",
+      "morte": "goblin_morte",
+      "alerta": "goblin_alerta"
+    },
+    "kobold": {
+      "dor": "goblin_dor",
+      "morte": "goblin_morte",
+      "alerta": "goblin_alerta"
+    },
+    "chefe_kobold": {
+      "dor": "goblin_dor",
+      "morte": "goblin_morte",
+      "alerta": "goblin_alerta"
+    },
+    "hobgoblin": {
+      "voz": "voz_monstro",
+      "dor": "voz_monstro",
+      "morte": "voz_monstro",
+      "alerta": "voz_monstro",
+      "passo": "passo_bota"
+    },
+    "chefe_hobgoblin": {
+      "voz": "voz_monstro",
+      "dor": "voz_monstro",
+      "morte": "voz_monstro",
+      "alerta": "voz_monstro",
+      "passo": "passo_bota"
+    },
+    "guarda": {
+      "voz": "voz_humano",
+      "dor": "dor_humano",
+      "passo": "passo_bota"
+    },
+    "bandido": {
+      "voz": "voz_humano",
+      "dor": "dor_humano",
+      "passo": "passo_bota"
+    },
+    "prisioneiro": {
+      "voz": "voz_humano",
+      "riso": "voz_humano_riso",
+      "dor": "dor_humano",
+      "passo": "passo_bota"
     }
   }
 }

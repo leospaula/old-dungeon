@@ -16,6 +16,7 @@ var selecionado: Node = null
 var _acoes: PopupMenu
 var _acoes_ids: Array = []
 
+const Sons = preload("res://scripts/visual/sons.gd")
 const Ficha = preload("res://scripts/regras/ficha.gd")
 const E = preload("res://scripts/interface/estilo.gd")
 const ICONES := "res://arte/final/interface/icones/%s.png"
@@ -201,6 +202,7 @@ func _med(rotulo: String, sigla := "", icone := "", tecla := "", contador := "",
 	m.balao_texto = texto
 	m.mouse_entered.connect(func(): _mostrar_balao(m))
 	m.mouse_exited.connect(_esconder_balao)
+	m.pressed.connect(func(): Sons.tocar("clique"))
 	_barra.add_child(m); _medalhoes.append(m)
 	return m
 

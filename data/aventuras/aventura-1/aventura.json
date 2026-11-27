@@ -139,6 +139,17 @@
     "texto": "Passos pesados no corredor. O tilintar de chaves se aproxima."
    },
    {
+    "faz": "som",
+    "som": "passo_bota",
+    "volume": -4
+   },
+   {
+    "faz": "som",
+    "som": "chaves",
+    "volume": -6,
+    "espera": 1.2
+   },
+   {
     "faz": "camera",
     "area": "2",
     "pos": "C2",
@@ -207,6 +218,24 @@
     "faz": "grupo",
     "acao": "recuar",
     "porta": "P17"
+   },
+   {
+    "faz": "som",
+    "som": "chicote",
+    "quem": "carcereiro"
+   },
+   {
+    "faz": "som",
+    "som": "grade_bater",
+    "quem": "carcereiro",
+    "volume": -8,
+    "espera": 0.4
+   },
+   {
+    "faz": "som",
+    "som": "chaves",
+    "quem": "carcereiro",
+    "volume": -4
    },
    {
     "faz": "escolha",

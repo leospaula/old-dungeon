@@ -39,6 +39,7 @@ extends RefCounted
 ##   cena     {id}                          roda outra cena
 ## "quem" é o id de um PdM da cena, "agente" (quem age no grupo) ou "mais_forte" (maior FOR).
 
+const Sons = preload("res://scripts/visual/sons.gd")
 const Dados = preload("res://scripts/regras/dados.gd")
 const Ator = preload("res://scripts/exploracao/ator.gd")
 const Efeitos = preload("res://scripts/visual/efeitos.gd")
@@ -154,7 +155,12 @@ func passo(p: Dictionary) -> void:
 			var nome: String = q.nome if q else ""
 			var fala_txt := _trocar(str(p.texto))
 			ex._registrar("[b]%s:[/b] “%s”" % [nome, fala_txt])
+			if q and not p.get("muda", false): Sons.criatura(q, str(p.get("voz", "voz")))   # grunhido ou murmúrio curto
 			if q: await ex.hud_ui.fala(q, ex.camera, nome, str(q.get_meta("retrato", "")), fala_txt, q.altura_texto() + 0.5)
+		"som":   # {som, quem?}: efeito de data/sons.json no lugar de quem (ou sem posição)
+			var q := quem(p)
+			Sons.tocar(str(p.som), q, float(p.get("volume", 0.0)))
+			if p.has("espera"): await ex.get_tree().create_timer(float(p.espera)).timeout
 		"mensagem":
 			ex._registrar("[i]%s[/i]" % _trocar(str(p.texto)))
 		"camera":
@@ -237,7 +243,7 @@ func pose(q: Node3D, nome: String) -> void:
 		"solto":
 			var m: Node = sk.get_node_or_null("MaosAmarradas") if sk else null
 			q.set_meta("amarrado", false)
-			if m: await m.soltar()
+			if m: Sons.tocar("corda", q); await m.soltar()
 		"sentado":   # sentado no chão (pose do Mixamo "Male Sitting Pose"); sem ela, o "levantar" parado no meio
 			if q.player != null and q.player.has_animation(SENTADO):
 				q.tocar_anim(SENTADO, 0.6)
@@ -656,6 +662,8 @@ func _jogo_dados(p: Dictionary) -> void:
 			return
 		rodada += 1
 		# Cada um rola o seu dado; o número gira em cima da cabeça.
+		Sons.tocar("dados_mao", q)
+		await ex.get_tree().create_timer(0.7).timeout
 		var r_pdm := Dados.d(dado_pdm)
 		var melhor := 0; var quem_melhor: Node3D = null
 		var rolagens: Array = []; var rs: Array = []
@@ -678,6 +686,7 @@ func _jogo_dados(p: Dictionary) -> void:
 			ex._diario("pista", info)
 		elif melhor < r_pdm:
 			for x in quem_dado: dividas[x[0].nome] = int(dividas.get(x[0].nome, 0)) + aposta
+			Sons.criatura(q, "riso")
 			if falas.has("perde"): await _falar(q, _trocar(str(falas.perde)))
 		else:
 			if falas.has("empate"): await _falar(q, _trocar(str(falas.empate)))

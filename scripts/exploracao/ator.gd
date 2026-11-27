@@ -68,7 +68,8 @@ var _passo := 0.0         # tempo do balanço do modelo provisório
 var _meio_passo := false
 func _som_passo() -> void:
 	if not visible: return
-	var ev := "passo_monstro" if lado == "monstros" else ("passo_furtivo" if papel_andar == "andar_furtivo" else "passo")
+	if lado != "grupo" and Sons.criatura(self, "passo"): return
+	var ev := "passo_monstro" if lado != "grupo" else ("passo_furtivo" if papel_andar == "andar_furtivo" else "passo")
 	Sons.tocar(ev, self)
 
 func vivo() -> bool:

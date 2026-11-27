@@ -264,8 +264,10 @@ func pisou(h: Node3D, c: Vector2i) -> void:
 	a.visto = true; a.fora = str(a.tipo) != "fosso"   # o fosso continua lá, aberto
 	if fossos.has(c):
 		await cair(h, c, a); return
+	Sons.tocar("armadilha", h)
 	var dd := Dados.detalhar(str(a.get("dano", "1d6"))); var dano := maxi(1, int(dd.total))
 	h.pv -= dano
+	Sons.criatura(h, "dor")
 	var txt := "[color=#ff7a5a]Armadilha![/color] %s %s sofre %s = [b]%d[/b] de dano." % [str(a.get("efeito", "")), h.nome, dd.texto, dano]
 	h.piscar(Color(1, 0.25, 0.2, 0.6))
 	if h.pv <= 0: h.animar_morte(); txt += " [color=#ff7a5a]%s cai.[/color]" % h.nome

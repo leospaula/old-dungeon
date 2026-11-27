@@ -134,6 +134,8 @@ func _ready() -> void:
 	var av := _aventura_pedida()
 	pacotes = Pacotes.new(); add_child(pacotes)
 	add_child(Sons.new())   # efeitos sonoros (data/sons.json)
+	Sons.atual.musica_ligada = _musica_salva
+	if not _args().has("--sem-fundo"): Sons.comecar_fundo()   # ambiente da masmorra e música (tecla N)
 	if av != "": aventura = Aventura.new(grade, av)
 	if aventura:
 		set_process(false); set_process_unhandled_input(false)
@@ -376,10 +378,13 @@ func _acender(h: Node3D) -> bool:
 		if not h.ficha.gastar("tocha"): return false
 		h.tocha_resto = TURNOS_POR_TOCHA
 	h.tocha_acesa = true; luz.set_tocha(h, true)
+	if is_instance_valid(heroi): Sons.tocar("tocha_acender", h); Sons.laco("tocha_crepitar", h)
 	return true
 
 func _apagar(h: Node3D) -> void:
 	h.tocha_acesa = false; luz.set_tocha(h, false)
+	Sons.parar_laco("tocha_crepitar", h)
+	if h.vivo(): Sons.tocar("tocha_apagar", h)
 
 ## Clique no ícone da tocha na carta.
 func _alternar_tocha(h: Node3D) -> void:
@@ -536,6 +541,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_T: if not fim: _arsenal_teste()
 			KEY_I: _acao_hud("ficha")
 			KEY_D: _alternar_dados()
+			KEY_N: _alternar_musica()
 			KEY_ESCAPE: _selecionar(null)
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
 				# Atalhos dos medalhões (a tecla aparece no canto de cada um).
@@ -924,7 +930,7 @@ func _trancar_porta(pt: Dictionary) -> void:
 	e.estado = "trancada"
 	grade.barrar_porta(pt, true)
 	var no_t := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
-	if no_t: Sons.tocar("trancar", no_t.global_position + Vector3(0, 1, 0))
+	if no_t: Sons.tocar("trancar_grade" if pt.tipo in ["grade", "cela"] else "trancar", no_t.global_position + Vector3(0, 1, 0))
 	_registrar("[i]Uma chave gira na fechadura: a porta %s está trancada.[/i]" % pt.id)
 
 ## Entreabre a folha só um pouco (só visual; a passagem continua fechada).
@@ -1457,9 +1463,19 @@ func _alternar_dados() -> void:
 	cf.set_value("visual", "dados", Efeitos.dados_ligados); cf.save(OPCOES)
 	_registrar("[i]Dados rolando na tela: %s (tecla D).[/i]" % ("ligados" if Efeitos.dados_ligados else "desligados"))
 
+var _musica_salva := true
+
+func _alternar_musica() -> void:
+	var lig := Sons.alternar_musica()
+	var cf := ConfigFile.new(); cf.load(OPCOES)
+	cf.set_value("som", "musica", lig); cf.save(OPCOES)
+	_registrar("[i]Música: %s (tecla N).[/i]" % ("ligada" if lig else "desligada"))
+
 func _carregar_opcoes() -> void:
 	var cf := ConfigFile.new()
-	if cf.load(OPCOES) == OK: Efeitos.dados_ligados = bool(cf.get_value("visual", "dados", true))
+	if cf.load(OPCOES) == OK:
+		Efeitos.dados_ligados = bool(cf.get_value("visual", "dados", true))
+		_musica_salva = bool(cf.get_value("som", "musica", true))
 
 func _comemorar(lista: Array) -> void:
 	var sacola: Array = []

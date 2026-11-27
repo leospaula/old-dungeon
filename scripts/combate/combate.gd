@@ -57,6 +57,8 @@ func iniciar(g: Array, m: Array, surpreso_grupo: bool, surpreso_monstros: bool) 
 	var vistos := monstros.filter(func(x): return _ve(x))
 	var nomes := ", ".join(vistos.map(func(x): return x.nome)) if not vistos.is_empty() else "algo no escuro"
 	registro.emit("[b]Combate![/b] %s." % nomes)
+	for x in vistos:   # um dos monstros grita ao ver o grupo
+		if Sons.criatura(x, "alerta"): break
 	if surpreso_grupo and not surpreso_monstros: registro.emit("O grupo foi [color=#ff9a6a]surpreendido[/color]: os monstros agem primeiro, sozinhos.")
 	elif surpreso_monstros and not surpreso_grupo: registro.emit("Os monstros foram [color=#9ad0ff]surpreendidos[/color]: o grupo tem uma rodada livre.")
 	await _laco(surpreso_grupo != surpreso_monstros, surpreso_grupo)
@@ -307,6 +309,8 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 		var para: Vector3 = alvo.global_position + Vector3(0, alvo.altura_texto() * 0.8, 0)
 		var voo := maxf(de.distance_to(para) / 24.0, 0.12)
 		if defesa != "": alvo.defender(defesa, a.global_position, a.tempo_tiro() + voo)
+		var arma_tiro := str(a.dist_arma).to_lower()
+		Sons.tocar("besta_disparo" if arma_tiro.contains("besta") else ("funda_girar" if arma_tiro.contains("funda") else "arco_disparo"), a)
 		await a.animar_tiro(alvo)
 		if not is_instance_valid(alvo): return
 		await Efeitos.flecha(a.get_parent(), de, para)
@@ -334,6 +338,7 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 		alvo.recuar(a.global_position, 0.18 + 0.12 * forca)
 		if camera: camera.tremer((0.09 if no_grupo else 0.06) * forca)
 		Sons.tocar(_som_golpe(a, distancia), alvo)
+		Sons.criatura(alvo, "morte" if alvo.pv <= 0 else "dor", -2.0)
 		if alvo.ca <= 4 and not distancia: Sons.tocar("acerto_armadura", alvo, -3.0)
 		Efeitos.texto(alvo.get_parent(), topo, ("CRÍTICO!  %d" % dano) if critico else str(dano),
 			Color(1, 0.35, 0.25) if no_grupo else Color(1, 0.85, 0.35), minf(0.9 + 0.1 * minf(dano, 6) + (0.15 if critico else 0.0), 1.4))
@@ -355,6 +360,7 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 		elif not alvo._tem("esquivar"):
 			alvo.recuar(a.global_position, 0.35, true)
 		Sons.tocar("esquiva" if at.falha else {"bloquear": "bloqueio_escudo", "aparar": "aparar"}.get(defesa, "esquiva"), alvo)
+		if not distancia: Sons.tocar("chicote" if str(a.estilo) == "chicote" else "golpe_ar", a, -4.0)   # a arma corta o ar
 		Efeitos.texto(alvo.get_parent(), topo, o_que, Color(0.78, 0.8, 0.85), 0.75, 0.6, 0.85)
 		registro.emit(txt + "[color=#9aa4b0]erra (%s).[/color]" % o_que.trim_suffix("!").to_lower())
 	await get_tree().create_timer(0.55).timeout
@@ -363,7 +369,8 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 
 ## Som do golpe que acerta: lâmina corta; porrete, maça, chicote, mãos e projéteis batem.
 func _som_golpe(a: Node, distancia: bool) -> String:
-	if distancia: return "golpe_impacto"
+	if distancia: return "golpe_impacto" if str(a.dist_arma).to_lower().contains("funda") else "flecha_acerto"
+	if str(a.estilo) == "chicote": return "chicote"
 	return "golpe_corte" if str(a.estilo) in ["espada", "faca", "duas_maos", "haste", "machado_grande", "arremesso"] else "golpe_impacto"
 
 func _baixa(x: Node) -> void:

@@ -150,6 +150,7 @@ def main():
     # Cenas: passos com área/posição, portas, PdMs e cenas citadas.
     cenas = av.get("cenas", {})
     surgem = set()
+    SONS = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "sons.json")))["eventos"]
     def passos_ok(onde, passos):
         for j, p_ in enumerate(passos):
             o = f"{onde}[{j}]"
@@ -159,6 +160,7 @@ def main():
                 if p_.get("pdm", p_.get("quem")) not in pdms: E(o, f"pdm '{p_.get('pdm', p_.get('quem'))}' não está em 'pdms'")
                 surgem.add(p_.get("pdm", p_.get("quem")))
             if p_.get("faz") == "cena" and p_.get("id") not in cenas: E(o, f"cena '{p_.get('id')}' não existe")
+            if p_.get("faz") == "som" and p_.get("som") not in SONS: E(o, f"som '{p_.get('som')}' não existe em data/sons.json")
             if p_.get("faz") == "escolha":
                 for k, op in enumerate(p_.get("opcoes", [])): passos_ok(f"{o}.opcoes[{k}]", op.get("faz", []))
                 passos_ok(f"{o}.ao_limite", p_.get("ao_limite", []))

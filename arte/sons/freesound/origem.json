@@ -1,0 +1,212 @@
+{
+ "voz-humano-riso": {
+  "id": 134720,
+  "s": 2.77,
+  "arquivo_original": "134720__ptrmax__evil-man-laughing.wav"
+ },
+ "fechadura-grade": {
+  "id": 146348,
+  "s": 3.83,
+  "arquivo_original": "146348__colinpoh__door-metal-grate-lockunlock.wav"
+ },
+ "besta-disparo": {
+  "id": 163453,
+  "s": 0.19,
+  "arquivo_original": "163453__lemudcrab__crossbow-shot.wav"
+ },
+ "goblin-risada": {
+  "id": 202096,
+  "s": 1.8,
+  "arquivo_original": "202096__spookymodem__goblin-cackle.wav"
+ },
+ "goblin-grito-1": {
+  "id": 202100,
+  "s": 2.44,
+  "arquivo_original": "202100__spookymodem__goblin-scream.wav"
+ },
+ "grade-bater": {
+  "id": 214233,
+  "s": 2.52,
+  "arquivo_original": "214233__kd_jack__cell-door-5.aiff"
+ },
+ "golpe-ar-2": {
+  "id": 240640,
+  "s": 0.34,
+  "arquivo_original": "240640__misscellany__metallic-whoosh.wav"
+ },
+ "tocha-agitar": {
+  "id": 249809,
+  "s": 3.99,
+  "arquivo_original": "249809__spookymodem__waving-torch.wav"
+ },
+ "goblin-morte": {
+  "id": 249813,
+  "s": 1.19,
+  "arquivo_original": "249813__spookymodem__goblin-death.wav"
+ },
+ "magia-missil": {
+  "id": 249817,
+  "s": 2.52,
+  "arquivo_original": "249817__spookymodem__magic-missiles.wav"
+ },
+ "voz-humano-grunhido": {
+  "id": 257710,
+  "s": 0.85,
+  "arquivo_original": "257710__vmgraw__grunt-1.wav"
+ },
+ "voz-humano-hmmm": {
+  "id": 275808,
+  "s": 1.21,
+  "arquivo_original": "275808__gotska81__hmmmm-male.wav"
+ },
+ "armadilha-laco": {
+  "id": 278983,
+  "s": 2.0,
+  "arquivo_original": "278983__dflee4__snare-trap.wav"
+ },
+ "clique-madeira": {
+  "id": 321083,
+  "s": 0.09,
+  "arquivo_original": "321083__benjaminnelan__wooden-click.wav"
+ },
+ "chicote": {
+  "id": 351267,
+  "s": 2.79,
+  "arquivo_original": "351267__peterbullmusic__mixed-whip-crack-1.wav"
+ },
+ "correntes": {
+  "id": 370877,
+  "s": 6.16,
+  "arquivo_original": "370877__cribbler__chains.wav"
+ },
+ "flecha-acerto": {
+  "id": 384914,
+  "s": 0.31,
+  "arquivo_original": "384914__ali_6868__arrow-impact-1.wav"
+ },
+ "corda": {
+  "id": 391946,
+  "s": 3.14,
+  "arquivo_original": "391946__ssierra1202__ropes.wav"
+ },
+ "voz-monstro-3": {
+  "id": 42201,
+  "s": 4.03,
+  "arquivo_original": "42201__smallquadruped__snarl.wav"
+ },
+ "ambiente-masmorra-loop": {
+  "id": 422720,
+  "s": 28.9,
+  "arquivo_original": "422720__grubzyy__a_dungeon_ambience_loop.wav"
+ },
+ "voz-monstro-1": {
+  "id": 432194,
+  "s": 0.98,
+  "arquivo_original": "432194__surfaceknight68__single-monster-grunt.wav"
+ },
+ "voz-monstro-2": {
+  "id": 432197,
+  "s": 3.43,
+  "arquivo_original": "432197__surfaceknight68__monster-chase-grunts.wav"
+ },
+ "goblin-grito-2": {
+  "id": 442816,
+  "s": 1.64,
+  "arquivo_original": "442816__qubodup__goblin-scream.wav"
+ },
+ "armadilha-espetos": {
+  "id": 443806,
+  "s": 0.24,
+  "arquivo_original": "443806__deathscyp__spiketrap.wav"
+ },
+ "tocha": {
+  "id": 479338,
+  "s": 3.52,
+  "arquivo_original": "479338__danielvega__torch.wav"
+ },
+ "tocha-acende-apaga": {
+  "id": 491178,
+  "s": 5.74,
+  "arquivo_original": "491178__sidequesting__torchlitthenblownout.wav"
+ },
+ "magia-leve": {
+  "id": 506939,
+  "s": 2.77,
+  "arquivo_original": "506939__nakhas__magic-spell-small-positive.wav"
+ },
+ "ambiente-masmorra": {
+  "id": 516566,
+  "s": 180.04,
+  "arquivo_original": "516566__kinoton__dark-dungeon-ambience.wav"
+ },
+ "voz-humano-hm": {
+  "id": 519112,
+  "s": 0.73,
+  "arquivo_original": "519112__trimono__approving-hm.wav"
+ },
+ "passos-botas": {
+  "id": 530588,
+  "s": 10.75,
+  "arquivo_original": "530588__nox_sound__footsteps_boots_tile_mono.wav"
+ },
+ "arco-carregar": {
+  "id": 536067,
+  "s": 0.45,
+  "arquivo_original": "536067__eminyildirim__bow-loading.wav"
+ },
+ "musica-caverna": {
+  "id": 553953,
+  "s": 311.2,
+  "arquivo_original": "553953__szegvari__cave_dungeon_secret_temle.wav"
+ },
+ "chaves": {
+  "id": 565909,
+  "s": 5.35,
+  "arquivo_original": "565909__fenodyrie__keys-jingling.wav"
+ },
+ "pocao-beber": {
+  "id": 574077,
+  "s": 1.01,
+  "arquivo_original": "574077__valentinpetiteau__potion-drink-swallow.wav"
+ },
+ "golpe-ar-1": {
+  "id": 60004,
+  "s": 0.37,
+  "arquivo_original": "60004__qubodup__fast-sword-swing-sound.flac"
+ },
+ "dados-rolar": {
+  "id": 629982,
+  "s": 1.0,
+  "arquivo_original": "629982__flem0527__dice-rolling-on-table.wav"
+ },
+ "dados-mao": {
+  "id": 629983,
+  "s": 1.11,
+  "arquivo_original": "629983__flem0527__dice-shaking-in-hand.wav"
+ },
+ "goblin-berro": {
+  "id": 643655,
+  "s": 0.77,
+  "arquivo_original": "643655__snowfightstudios__goblin_yell.mp3"
+ },
+ "tocha-crepitar": {
+  "id": 650574,
+  "s": 5.0,
+  "arquivo_original": "650574__soundofsong__fire-crackling-loop.wav"
+ },
+ "grade-abrir": {
+  "id": 682776,
+  "s": 3.87,
+  "arquivo_original": "682776__thomasanthony321__metal-gate-opening.wav"
+ },
+ "funda-girar": {
+  "id": 735907,
+  "s": 1.53,
+  "arquivo_original": "735907__erikcruzdev__whip-woosh.wav"
+ },
+ "musica-eco-masmorra": {
+  "id": 816416,
+  "s": 66.76,
+  "arquivo_original": "816416__darklitstudio__dark-ambienceatmosphere-cave-dungeon-echo.wav"
+ }
+}
