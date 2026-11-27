@@ -99,6 +99,9 @@ A tabela do texto ("ação dos PJs → reação do PdM") vira uma `escolha`:
 - o "último recurso" do texto vira `limite` + `ao_limite`: depois de N escolhas sem fim, ele acontece
   (os 12 guardas com bestas) e só sobram as opções com fim;
 - `{agente}` e `{mais_forte}` nos textos viram nomes (quem age, maior FOR).
+- **Dicas das opções (regra do Leonardo, 27/11):** o resultado de uma opção fica em suspense. A `dica`
+  só aparece quando as opções envolvem **personagens diferentes** (quem age: "{agente} desfaz o nó") ou
+  **testes** (a chance), para o jogador decidir quem é melhor para aquilo. Nunca descreve o que vai acontecer.
 - **Ataques de cena são de verdade** (d20 contra THAC0 − CA, dano da arma), mas **a cena não derruba
   ninguém** (PV mínimo 1). Quem decide a luta é o combate, não a cena.
 
@@ -136,6 +139,9 @@ prisioneiro virou `jogo_dados`:
   `--fotos-ritmo=`). Para estudar um ângulo: `--camera-fixa --alvo-casa=x,y --camera=d,i,g`.
 
 ### 5.4 Movimento
+- Ritmo de cena: quem anda numa cena vai a 72% do passo normal (correndo, 130%): `VEL_CENA` em
+  `cena.gd`. No ritmo do jogador, os PdMs pareciam apressados (Leonardo, 27/11).
+- Jogar dados não tem animação: os números só giram em cima das cabeças.
 - Um ator só: `andar` (vai para a casa pedida ou para a livre mais perto; `junto` = não espera chegar).
 - **Grupo de PdMs: `andar_grupo`**, a mesma mecânica da fila do grupo do jogador. Pedido do Leonardo:
   controlar o grupo, e não um de cada vez, para ficar fluido e ninguém montar em ninguém.
@@ -157,7 +163,8 @@ prisioneiro virou `jogo_dados`:
   "deitado no chão", e não "de cara no chão".
 - **Levantar de joelhos:** `"anim": "ajoelhar:reverso"`. A animação `levantar` é para quem está **deitado
   no chão**: usada depois de ajoelhar, ela derruba o personagem antes de levantar.
-- **Mãos amarradas:** `pose: "amarrado"` liga uma IK de dois ossos nos braços
+- **Mãos amarradas:** a mão direita um pouco acima e à frente da esquerda; com as duas na mesma altura, uma
+  atravessava a outra. `pose: "amarrado"` liga uma IK de dois ossos nos braços
   (`scripts/visual/maos_amarradas.gd`), que funciona por cima de qualquer animação (parado, andando,
   sentado), com uma corda nos pulsos. `pose: "solto"` solta aos poucos. Sem isso, a opção "desamarrar"
   não faz sentido na tela.

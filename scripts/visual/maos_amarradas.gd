@@ -45,7 +45,8 @@ func _process_modification() -> void:
 	var pulsos := {}
 	for lado in ["Right", "Left"]:
 		var sinal := -1.0 if lado == "Right" else 1.0
-		var alvo := centro + lado_v * sinal * h * 0.035
+		# Uma mão um pouco acima da outra (a direita por cima): os pulsos não se atravessam.
+		var alvo := centro + lado_v * sinal * h * 0.03 + Vector3.UP * (h * 0.055 if lado == "Right" else 0.0) + _frente * (h * 0.02 if lado == "Right" else 0.0)
 		_ik(sk, _ossos[lado], alvo, lado_v * sinal)
 		pulsos[lado] = sk.get_bone_global_pose(_ossos[lado][2]).origin
 	_desenhar(sk, pulsos.Right, pulsos.Left, h)

@@ -219,7 +219,6 @@
      {
       "id": "deitar",
       "texto": "Deitar no chão",
-      "dica": "Obedecer. Ele abre a grade, empurra o prisioneiro para dentro e tranca de novo.",
       "fim": true,
       "faz": [
        {
@@ -306,7 +305,6 @@
      {
       "id": "recusar",
       "texto": "Recusar-se a deitar",
-      "dica": "Ficar de pé, encarando o carcereiro.",
       "faz": [
        {
         "faz": "fala",
@@ -324,7 +322,7 @@
      {
       "id": "correr",
       "texto": "Correr para a grade quando ele destrancar",
-      "dica": "{agente} espera a chave girar e salta para a saída.",
+      "dica": "{agente} tenta passar pela grade quando a chave girar.",
       "faz": [
        {
         "faz": "pausa",
@@ -368,7 +366,7 @@
      {
       "id": "fingir",
       "texto": "Fingir que está doente e rastejar até a grade",
-      "dica": "{agente} geme, se arrasta pelo chão e espera a grade abrir.",
+      "dica": "{agente} finge que passa mal e rasteja até a grade.",
       "fim": true,
       "faz": [
        {
@@ -438,7 +436,7 @@
      {
       "id": "forcar",
       "texto": "Forçar as barras",
-      "dica": "{mais_forte} agarra as barras e tenta entortá-las.",
+      "dica": "{mais_forte} agarra as barras.",
       "faz": [
        {
         "faz": "pj",
@@ -656,7 +654,7 @@
      {
       "id": "desamarrar",
       "texto": "Desamarrar as mãos dele",
-      "dica": "{agente} vai até ele e desfaz o nó.",
+      "dica": "{agente} desfaz o nó.",
       "fim": true,
       "faz": [
        {
@@ -672,7 +670,6 @@
      {
       "id": "deixar",
       "texto": "Deixar amarrado",
-      "dica": "Ninguém conhece esse sujeito.",
       "fim": true,
       "faz": [
        {
@@ -704,7 +701,7 @@
      {
       "id": "desamarrar",
       "texto": "Desamarrar as mãos dele",
-      "dica": "{agente} vai até ele e desfaz o nó.",
+      "dica": "{agente} desfaz o nó.",
       "fim": true,
       "faz": [
        {
@@ -720,7 +717,6 @@
      {
       "id": "deixar",
       "texto": "Deixar amarrado",
-      "dica": "Ele vai ficar no canto dele. Dá para falar com ele depois (clique nele).",
       "fim": true,
       "faz": [
        {
@@ -769,7 +765,7 @@
      {
       "id": "desamarrar",
       "texto": "Desamarrar as mãos dele",
-      "dica": "{agente} vai até ele e desfaz o nó.",
+      "dica": "{agente} desfaz o nó.",
       "fim": true,
       "faz": [
        {
@@ -794,7 +790,6 @@
      {
       "id": "deixar",
       "texto": "Deixar amarrado",
-      "dica": "Ele continua no canto.",
       "fim": true,
       "faz": [
        {
@@ -849,7 +844,6 @@
      {
       "id": "aceitar",
       "texto": "Aceitar o jogo",
-      "dica": "Ele explica as regras e pega o d20; vocês dividem os outros dados.",
       "fim": true,
       "faz": [
        {
@@ -880,7 +874,6 @@
      {
       "id": "recusar",
       "texto": "Recusar",
-      "dica": "Dá para falar com ele depois (clique nele).",
       "fim": true,
       "faz": [
        {

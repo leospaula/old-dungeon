@@ -44,6 +44,8 @@ const Ator = preload("res://scripts/exploracao/ator.gd")
 const Efeitos = preload("res://scripts/visual/efeitos.gd")
 const MaosAmarradas = preload("res://scripts/visual/maos_amarradas.gd")
 const ICONE_FALAR := "res://arte/final/interface/icones/falar.png"
+const VEL_CENA := 0.72        # ritmo de quem anda numa cena (mais calmo que o do jogador)
+const VEL_CENA_CORRER := 1.3
 const Sistema = preload("res://scripts/regras/sistema.gd")
 
 var ex: Node
@@ -309,7 +311,7 @@ func _andar(q: Node3D, c: Vector2i, correr: bool, junto: bool) -> void:
 	if cam.is_empty(): cam = ex.grade.caminho(q.proxima_celula(), destino, {}, true)
 	if cam.is_empty(): return
 	q.papel_andar = "correr" if correr else "andar"
-	q.velocidade = Ator.VEL_BASE * (1.8 if correr else 1.0)
+	q.velocidade = Ator.VEL_BASE * (VEL_CENA_CORRER if correr else VEL_CENA)
 	q.seguir(cam)
 	if not junto: await q.parou
 	if not junto: q.papel_andar = "andar"; q.velocidade = Ator.VEL_BASE
@@ -348,7 +350,7 @@ func _andar_grupo(p: Dictionary) -> void:
 		destinos.sort_custom(func(a, b):
 			return dist_cam.call(orig, ex.aventura.cel(str(a.area), str(a.pos))) > dist_cam.call(orig, ex.aventura.cel(str(b.area), str(b.pos))))
 	for m in membros:
-		m.papel_andar = "correr" if correr else "andar"; m.velocidade = Ator.VEL_BASE * (1.8 if correr else 1.0)
+		m.papel_andar = "correr" if correr else "andar"; m.velocidade = Ator.VEL_BASE * (VEL_CENA_CORRER if correr else VEL_CENA)
 	_menor_dist = INF
 	var lider: Node3D = membros[0]
 	var puxar := func(de: Vector2i, _para: Vector2i):
@@ -635,8 +637,7 @@ func _jogo_dados(p: Dictionary) -> void:
 		if not escolhas_auto.is_empty(): id = str(escolhas_auto.pop_front()); ex._registrar("[color=#b9a3e3](teste) escolha: %s[/color]" % id)
 		else:
 			ex.hud_ui.dialogo(_trocar(str(p.get("titulo", "Jogo de dados"))), texto, [
-				{"id": "jogar", "texto": "Jogar uma rodada", "dica": "Se alguém tirar mais que ele, ele conta a próxima coisa. Se ele tirar mais, cada um fica devendo %d po." % aposta},
-				{"id": "parar", "texto": "Parar de jogar", "dica": "Ele guarda os dados. Dá para voltar a jogar depois."}],
+				{"id": "jogar", "texto": "Jogar uma rodada"}, {"id": "parar", "texto": "Parar de jogar"}],
 				func(x): _escolheu.emit(x), str(q.get_meta("retrato", "")))
 			id = await _escolheu
 		if id != "jogar":
@@ -652,15 +653,12 @@ func _jogo_dados(p: Dictionary) -> void:
 			var r := Dados.d(int(x[1]))
 			rs.append(r); rolagens.append("%s d%d = %d" % [x[0].nome, x[1], r])
 			if r > melhor: melhor = r; quem_melhor = x[0]
-		q.tocar_anim("arremessar", 0.2)
-		await ex.get_tree().create_timer(0.45).timeout
 		Efeitos.dado(q, r_pdm, r_pdm < melhor, 0.7, dado_pdm)
 		for i in quem_dado.size():
 			var x: Array = quem_dado[i]
 			var rx: int = rs[i]
 			Efeitos.dado(x[0], rx, rx > r_pdm, 0.7 + 0.12 * i, int(x[1]))
 		await ex.get_tree().create_timer(1.4 + 0.12 * quem_dado.size()).timeout
-		if q.vivo(): q.tocar("parado", 0.3)
 		ex._registrar("Jogo de dados: %s d%d = [b]%d[/b] · %s" % [q.nome, dado_pdm, r_pdm, " · ".join(rolagens)])
 		if melhor > r_pdm:
 			var info := _trocar(str(revela[contadas]))
