@@ -1695,6 +1695,12 @@ func _atualizar_hud() -> void:
 func _linha_de_comando() -> void:
 	var captura := ""; var teste := ""
 	for a in _args():
+		if a == "--passeio":   # só a masmorra: tudo visível, sem grupo nem HUD; câmera livre (WASD, Q/E, roda)
+			if not mestre: _alternar_mestre()
+			for h in grupo: h.visible = false
+			$HUD.visible = false
+			set_process_unhandled_input(false)
+			camera.alvo = grade.centro(Vector2i(29, 21)); camera.distancia = 12.0; camera.inclinacao = 50.0; camera.guinada = -200.0
 		if a.begins_with("--abrir="):   # captura: abre a porta (testa as folhas do modelo 3D)
 			var ptx: Dictionary = portas.por_id.get(a.trim_prefix("--abrir="), {})
 			if not ptx.is_empty(): _abrir_porta(ptx, grade.lados_da_porta(ptx)[0][0])
