@@ -936,6 +936,7 @@ func _entreabrir_porta(pt: Dictionary, graus: float, quem: Node3D) -> void:
 	for par in grade.lados_da_porta(pt):
 		if par[0] == de: outro = par[1]
 		elif par[1] == de: outro = par[0]
+	Sons.tocar("grade_fresta" if pt.tipo in ["grade", "cela"] else "porta_fresta", no.global_position + Vector3(0, 1, 0))
 	var sentido: Vector3 = grade.centro(outro) - grade.centro(de)
 	var eixo := Vector3(0, 0, 1) if pt.orient == "v" else Vector3(1, 0, 0)
 	for folha in no.get_children():

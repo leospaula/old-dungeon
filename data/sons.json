@@ -1,306 +1,343 @@
 {
- "_doc": "Sons do jogo: evento -> {arquivos (sorteia um), volume_db, tom (variação ± no pitch), espacial (toca na posição de quem faz), distancia (m até sumir)}. Pacotes CC0 da Kenney (arte/sons/; prioridade: RPG Audio, depois Impact Sounds). Tocar: Sons.tocar(evento, onde) em scripts/visual/sons.gd.",
- "eventos": {
-  "passo": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/footstep00.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep01.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep02.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep03.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep04.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep05.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep06.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep07.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep08.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep09.ogg"
-   ],
-   "volume_db": -16,
-   "tom": 0.12,
-   "espacial": true,
-   "distancia": 22
-  },
-  "passo_furtivo": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/footstep00.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep01.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep02.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep03.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep04.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep05.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep06.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep07.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep08.ogg",
-    "res://arte/sons/kenney-rpg/Audio/footstep09.ogg"
-   ],
-   "volume_db": -25,
-   "tom": 0.08,
-   "espacial": true,
-   "distancia": 14
-  },
-  "passo_monstro": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/footstep_concrete_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/footstep_concrete_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/footstep_concrete_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/footstep_concrete_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/footstep_concrete_004.ogg"
-   ],
-   "volume_db": -15,
-   "tom": 0.15,
-   "espacial": true,
-   "distancia": 24
-  },
-  "porta_abrir": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/doorOpen_1.ogg",
-    "res://arte/sons/kenney-rpg/Audio/doorOpen_2.ogg"
-   ],
-   "volume_db": -4,
-   "tom": 0.06,
-   "espacial": true,
-   "distancia": 30
-  },
-  "porta_fechar": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/doorClose_1.ogg",
-    "res://arte/sons/kenney-rpg/Audio/doorClose_2.ogg",
-    "res://arte/sons/kenney-rpg/Audio/doorClose_3.ogg",
-    "res://arte/sons/kenney-rpg/Audio/doorClose_4.ogg"
-   ],
-   "volume_db": -3,
-   "tom": 0.06,
-   "espacial": true,
-   "distancia": 30
-  },
-  "porta_ranger": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/creak1.ogg",
-    "res://arte/sons/kenney-rpg/Audio/creak2.ogg",
-    "res://arte/sons/kenney-rpg/Audio/creak3.ogg"
-   ],
-   "volume_db": -8,
-   "tom": 0.1,
-   "espacial": true,
-   "distancia": 24
-  },
-  "porta_forcar": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_004.ogg"
-   ],
-   "volume_db": -2,
-   "tom": 0.08,
-   "espacial": true,
-   "distancia": 40
-  },
-  "grade_bater": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_004.ogg"
-   ],
-   "volume_db": -3,
-   "tom": 0.05,
-   "espacial": true,
-   "distancia": 40
-  },
-  "grade_abrir": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/creak1.ogg",
-    "res://arte/sons/kenney-rpg/Audio/creak2.ogg",
-    "res://arte/sons/kenney-rpg/Audio/creak3.ogg"
-   ],
-   "volume_db": -6,
-   "tom": 0.05,
-   "espacial": true,
-   "distancia": 26
-  },
-  "trancar": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/metalLatch.ogg",
-    "res://arte/sons/kenney-rpg/Audio/metalClick.ogg"
-   ],
-   "volume_db": -4,
-   "tom": 0.05,
-   "espacial": true,
-   "distancia": 20
-  },
-  "sacar_arma": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/drawKnife1.ogg",
-    "res://arte/sons/kenney-rpg/Audio/drawKnife2.ogg",
-    "res://arte/sons/kenney-rpg/Audio/drawKnife3.ogg"
-   ],
-   "volume_db": -10,
-   "tom": 0.1,
-   "espacial": true,
-   "distancia": 20
-  },
-  "golpe_corte": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/knifeSlice.ogg",
-    "res://arte/sons/kenney-rpg/Audio/knifeSlice2.ogg",
-    "res://arte/sons/kenney-rpg/Audio/chop.ogg"
-   ],
-   "volume_db": -4,
-   "tom": 0.1,
-   "espacial": true,
-   "distancia": 28
-  },
-  "golpe_impacto": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_004.ogg"
-   ],
-   "volume_db": -4,
-   "tom": 0.1,
-   "espacial": true,
-   "distancia": 28
-  },
-  "acerto_armadura": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_004.ogg"
-   ],
-   "volume_db": -7,
-   "tom": 0.1,
-   "espacial": true,
-   "distancia": 28
-  },
-  "bloqueio_escudo": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/impactWood_medium_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_medium_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_medium_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_medium_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_medium_004.ogg"
-   ],
-   "volume_db": -4,
-   "tom": 0.08,
-   "espacial": true,
-   "distancia": 28
-  },
-  "aparar": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_004.ogg"
-   ],
-   "volume_db": -6,
-   "tom": 0.08,
-   "espacial": true,
-   "distancia": 28
-  },
-  "esquiva": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/cloth1.ogg",
-    "res://arte/sons/kenney-rpg/Audio/cloth2.ogg",
-    "res://arte/sons/kenney-rpg/Audio/cloth3.ogg",
-    "res://arte/sons/kenney-rpg/Audio/cloth4.ogg"
-   ],
-   "volume_db": -8,
-   "tom": 0.15,
-   "espacial": true,
-   "distancia": 18
-  },
-  "cair": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_004.ogg",
-    "res://arte/sons/kenney-rpg/Audio/dropLeather.ogg"
-   ],
-   "volume_db": -3,
-   "tom": 0.08,
-   "espacial": true,
-   "distancia": 30
-  },
-  "dado": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/impactWood_light_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_light_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_light_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_light_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactWood_light_004.ogg"
-   ],
-   "volume_db": -10,
-   "tom": 0.2,
-   "espacial": false
-  },
-  "livro_abrir": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/bookOpen.ogg"
-   ],
-   "volume_db": -6,
-   "tom": 0.04,
-   "espacial": false
-  },
-  "livro_fechar": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/bookClose.ogg"
-   ],
-   "volume_db": -6,
-   "tom": 0.04,
-   "espacial": false
-  },
-  "livro_pagina": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/bookFlip1.ogg",
-    "res://arte/sons/kenney-rpg/Audio/bookFlip2.ogg",
-    "res://arte/sons/kenney-rpg/Audio/bookFlip3.ogg"
-   ],
-   "volume_db": -8,
-   "tom": 0.08,
-   "espacial": false
-  },
-  "equipar": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/beltHandle1.ogg",
-    "res://arte/sons/kenney-rpg/Audio/beltHandle2.ogg",
-    "res://arte/sons/kenney-rpg/Audio/clothBelt.ogg",
-    "res://arte/sons/kenney-rpg/Audio/clothBelt2.ogg",
-    "res://arte/sons/kenney-rpg/Audio/handleSmallLeather.ogg"
-   ],
-   "volume_db": -6,
-   "tom": 0.08,
-   "espacial": false
-  },
-  "moedas": {
-   "arquivos": [
-    "res://arte/sons/kenney-rpg/Audio/handleCoins.ogg",
-    "res://arte/sons/kenney-rpg/Audio/handleCoins2.ogg"
-   ],
-   "volume_db": -6,
-   "tom": 0.06,
-   "espacial": false
-  },
-  "queda_fosso": {
-   "arquivos": [
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_000.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_001.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_002.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_003.ogg",
-    "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_004.ogg"
-   ],
-   "volume_db": -2,
-   "tom": 0.06,
-   "espacial": true,
-   "distancia": 30
+  "_doc": "Sons do jogo: evento -> {arquivos (sorteia um), volume_db, tom (variação ± no pitch), espacial (toca na posição de quem faz), distancia (m até sumir)}. Pacotes CC0 da Kenney (arte/sons/; prioridade: RPG Audio, depois Impact Sounds). Tocar: Sons.tocar(evento, onde) em scripts/visual/sons.gd.",
+  "eventos": {
+    "passo": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/footstep00.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep01.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep02.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep03.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep04.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep05.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep06.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep07.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep08.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep09.ogg"
+      ],
+      "volume_db": -16,
+      "tom": 0.12,
+      "espacial": true,
+      "distancia": 22
+    },
+    "passo_furtivo": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/footstep00.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep01.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep02.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep03.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep04.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep05.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep06.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep07.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep08.ogg",
+        "res://arte/sons/kenney-rpg/Audio/footstep09.ogg"
+      ],
+      "volume_db": -25,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 14
+    },
+    "passo_monstro": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/footstep_concrete_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/footstep_concrete_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/footstep_concrete_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/footstep_concrete_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/footstep_concrete_004.ogg"
+      ],
+      "volume_db": -15,
+      "tom": 0.15,
+      "espacial": true,
+      "distancia": 24
+    },
+    "porta_abrir": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/doorOpen_1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/doorOpen_2.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 30
+    },
+    "porta_fechar": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/doorClose_1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/doorClose_2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/doorClose_3.ogg",
+        "res://arte/sons/kenney-rpg/Audio/doorClose_4.ogg"
+      ],
+      "volume_db": -3,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 30
+    },
+    "porta_ranger": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/creak1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/creak2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/creak3.ogg"
+      ],
+      "volume_db": -8,
+      "tom": 0.1,
+      "espacial": true,
+      "distancia": 24
+    },
+    "porta_forcar": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_heavy_004.ogg"
+      ],
+      "volume_db": -2,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 40
+    },
+    "grade_bater": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_heavy_004.ogg"
+      ],
+      "volume_db": -3,
+      "tom": 0.05,
+      "espacial": true,
+      "distancia": 40
+    },
+    "grade_abrir": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/creak1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/creak2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/creak3.ogg"
+      ],
+      "volume_db": -1,
+      "tom": 0.05,
+      "tom_base": 0.72,
+      "espacial": true,
+      "distancia": 32,
+      "tambem": [
+        "grade_ferrolho"
+      ],
+      "_provisorio": "rangido de madeira mais grave + ferrolho: falta um rangido de dobradiça de ferro de verdade"
+    },
+    "trancar": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/metalLatch.ogg",
+        "res://arte/sons/kenney-rpg/Audio/metalClick.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.05,
+      "espacial": true,
+      "distancia": 20
+    },
+    "sacar_arma": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/drawKnife1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/drawKnife2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/drawKnife3.ogg"
+      ],
+      "volume_db": -10,
+      "tom": 0.1,
+      "espacial": true,
+      "distancia": 20
+    },
+    "golpe_corte": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/knifeSlice.ogg",
+        "res://arte/sons/kenney-rpg/Audio/knifeSlice2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/chop.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.1,
+      "espacial": true,
+      "distancia": 28
+    },
+    "golpe_impacto": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactPunch_heavy_004.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.1,
+      "espacial": true,
+      "distancia": 28
+    },
+    "acerto_armadura": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactPlate_medium_004.ogg"
+      ],
+      "volume_db": -7,
+      "tom": 0.1,
+      "espacial": true,
+      "distancia": 28
+    },
+    "bloqueio_escudo": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/impactWood_medium_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_medium_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_medium_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_medium_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_medium_004.ogg"
+      ],
+      "volume_db": -4,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 28
+    },
+    "aparar": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactMetal_medium_004.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 28
+    },
+    "esquiva": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/cloth1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/cloth2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/cloth3.ogg",
+        "res://arte/sons/kenney-rpg/Audio/cloth4.ogg"
+      ],
+      "volume_db": -8,
+      "tom": 0.15,
+      "espacial": true,
+      "distancia": 18
+    },
+    "cair": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_004.ogg",
+        "res://arte/sons/kenney-rpg/Audio/dropLeather.ogg"
+      ],
+      "volume_db": -3,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 30
+    },
+    "dado": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/impactWood_light_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_light_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_light_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_light_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactWood_light_004.ogg"
+      ],
+      "volume_db": -10,
+      "tom": 0.2,
+      "espacial": false
+    },
+    "livro_abrir": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/bookOpen.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.04,
+      "espacial": false
+    },
+    "livro_fechar": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/bookClose.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.04,
+      "espacial": false
+    },
+    "livro_pagina": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/bookFlip1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/bookFlip2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/bookFlip3.ogg"
+      ],
+      "volume_db": -8,
+      "tom": 0.08,
+      "espacial": false
+    },
+    "equipar": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/beltHandle1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/beltHandle2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/clothBelt.ogg",
+        "res://arte/sons/kenney-rpg/Audio/clothBelt2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/handleSmallLeather.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.08,
+      "espacial": false
+    },
+    "moedas": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/handleCoins.ogg",
+        "res://arte/sons/kenney-rpg/Audio/handleCoins2.ogg"
+      ],
+      "volume_db": -6,
+      "tom": 0.06,
+      "espacial": false
+    },
+    "queda_fosso": {
+      "arquivos": [
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_000.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_001.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_002.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_003.ogg",
+        "res://arte/sons/kenney-impactos/Audio/impactSoft_heavy_004.ogg"
+      ],
+      "volume_db": -2,
+      "tom": 0.06,
+      "espacial": true,
+      "distancia": 30
+    },
+    "grade_ferrolho": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/metalLatch.ogg"
+      ],
+      "volume_db": -3,
+      "tom": 0.05,
+      "tom_base": 0.85,
+      "espacial": true,
+      "distancia": 26
+    },
+    "grade_fresta": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/creak1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/creak3.ogg"
+      ],
+      "volume_db": -7,
+      "tom": 0.05,
+      "tom_base": 0.7,
+      "espacial": true,
+      "distancia": 24
+    },
+    "porta_fresta": {
+      "arquivos": [
+        "res://arte/sons/kenney-rpg/Audio/creak1.ogg",
+        "res://arte/sons/kenney-rpg/Audio/creak2.ogg",
+        "res://arte/sons/kenney-rpg/Audio/creak3.ogg"
+      ],
+      "volume_db": -8,
+      "tom": 0.08,
+      "espacial": true,
+      "distancia": 24
+    }
   }
- }
 }

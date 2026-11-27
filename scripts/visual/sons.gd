@@ -34,7 +34,8 @@ func _tocar(evento: String, onde, volume_extra: float) -> void:
 		if not ResourceLoader.exists(arq): return
 		_cache[arq] = load(arq)
 	if get_child_count() >= MAX_SIMULTANEOS: return
-	var tom := 1.0 + randf_range(-1.0, 1.0) * float(e.get("tom", 0.0))
+	for outro in e.get("tambem", []): _tocar(str(outro), onde, volume_extra)   # camadas (ex.: ferrolho + rangido)
+	var tom := float(e.get("tom_base", 1.0)) * (1.0 + randf_range(-1.0, 1.0) * float(e.get("tom", 0.0)))
 	var vol := float(e.get("volume_db", 0.0)) + volume_extra
 	if bool(e.get("espacial", false)) and onde != null:
 		var p := AudioStreamPlayer3D.new()
