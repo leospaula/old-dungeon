@@ -152,6 +152,16 @@ func vestir(f, catalogo: Callable) -> void:
 	_mostrar_armas()
 	if not andando() and vivo(): tocar("parado", 0.0)
 
+## Arma fixa de criatura (sem ficha): modelo3d do catálogo preso à mão direita.
+func armar(m: Dictionary) -> void:
+	if modelo == null or player == null or m.is_empty(): return
+	var sk: Skeleton3D = modelo.find_children("*", "Skeleton3D", true, false)[0]
+	var no := Armas3D.montar(sk, player, m, modelo.scale.x)
+	if no == null: return
+	no.set_meta("escudo", false)
+	_vestidos["mao_d"] = ["arma", no]
+	_mostrar_armas()
+
 ## Armas só aparecem no combate; o escudo fica sempre no braço.
 var _escondida := false
 func _mostrar_armas() -> void:

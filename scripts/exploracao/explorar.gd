@@ -32,9 +32,10 @@ const Procurar = preload("res://scripts/exploracao/procurar.gd")
 const Aventura = preload("res://scripts/exploracao/aventura.gd")
 const EscolherGrupo = preload("res://scripts/interface/escolher_grupo.gd")
 const Pacotes = preload("res://scripts/exploracao/pacotes.gd")
+const Bibliotecas = preload("res://scripts/visual/bibliotecas.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
-const TESSA_GLB := "res://arte/final/3d/tessa-heroica-biblioteca.glb"
+const TESSA_GLB := "res://arte/final/3d/norm/tessa-heroica.glb"
 const TESSA_ANIM := {"parado": "parado", "parado_combate": "parado-espada-escudo", "andar": "andar", "correr": "correr", "andar_furtivo": "andar-furtivo", "parado_furtivo": "parado-agachado", "andar_combate": "andar-combate", "golpe": "golpe", "dano": "levar-golpe", "morrer": "morrer", "vitoria": "vitoria", "bloquear": "bloquear", "esquivar": "esquivar"}
 ## Para onde o corpo aponta em cada animação (tools/medir_frente.gd); o modelo gira o contrário. Nas posturas
 ## de lado (guarda, dano, bloqueio, esquiva) vale para onde a cabeça olha (--teste=mirar), não o quadril.
@@ -49,7 +50,7 @@ const TESSA_GIRO := {"parado-espada-escudo": 76.0, "parado": 45.0, "andar": 90.0
 	"pular": 68.0, "examinar-ajoelhado": 65.0, "olhar-em-volta": 95.0, "sair-do-buraco": 90.0, "levantar": 90.0, "ouvir": 86.0,
 	"faca-guarda": 74.0, "faca-estocada": 81.0, "besta-guarda": 88.0, "besta-disparo": 89.0, "machado-guarda": 76.0,
 	"haste-bloquear": 91.0, "arco-bloquear": 85.0}
-const GOBLIN_GLB := "res://arte/final/3d/goblin-biblioteca.glb"
+const GOBLIN_GLB := "res://arte/final/3d/norm/goblin.glb"
 const GOBLIN_ESCALA := 0.95
 ## Velocidade natural de cada animação de deslocamento já na escala do jogo (tools/medir_passada.gd).
 const PASSADA_TESSA := {"andar": 1.25, "correr": 2.11, "andar_furtivo": 0.97, "andar_combate": 0.70, "arco-andar": 0.79}
@@ -175,14 +176,14 @@ func _ready() -> void:
 ## Personagens em jogo (fichas em data/personagens/grupo-inicial.json). Todos usam as animações da Tessa
 ## (mesmo esqueleto Mixamo e o mesmo giro); `passo` ajusta a passada ao tamanho de cada um.
 const HEROIS := {
-	"tessa": {"glb": "res://arte/final/3d/tessa-heroica-biblioteca.glb", "escala": 1.5, "passo": 1.0, "mao": "mixamorig_RightHand"},
-	"caco": {"glb": "res://arte/final/3d/caco-biblioteca.glb", "escala": 0.9, "passo": 1.08, "mao": "mixamorig_RightHand"},
-	"lianne": {"glb": "res://arte/final/3d/lianne-biblioteca.glb", "escala": 0.86, "passo": 1.0, "mao": "mixamorig_LeftHand",
+	"tessa": {"glb": "res://arte/final/3d/norm/tessa-heroica.glb", "escala": 1.5, "passo": 1.0, "mao": "mixamorig_RightHand"},
+	"caco": {"glb": "res://arte/final/3d/norm/caco.glb", "escala": 0.9, "passo": 1.08, "mao": "mixamorig_RightHand"},
+	"lianne": {"glb": "res://arte/final/3d/norm/lianne.glb", "escala": 0.86, "passo": 1.0, "mao": "mixamorig_LeftHand",
 		"distancia": "arco curto"},
-	"durgo": {"glb": "res://arte/final/3d/anao-biblioteca.glb", "escala": 0.9, "passo": 0.8, "mao": "mixamorig_RightHand"},
-	"mirela": {"glb": "res://arte/final/3d/maga-biblioteca.glb", "escala": 0.9, "passo": 1.0, "mao": "mixamorig_RightHand"},
-	"anselmo": {"glb": "res://arte/final/3d/clerigo-biblioteca.glb", "escala": 0.9, "passo": 1.08, "mao": "mixamorig_RightHand"},
-	"bento": {"glb": "res://arte/final/3d/halfling-biblioteca.glb", "escala": 0.9, "passo": 0.62, "mao": "mixamorig_RightHand"},
+	"durgo": {"glb": "res://arte/final/3d/norm/anao.glb", "escala": 0.9, "passo": 0.8, "mao": "mixamorig_RightHand"},
+	"mirela": {"glb": "res://arte/final/3d/norm/maga.glb", "escala": 0.9, "passo": 1.0, "mao": "mixamorig_RightHand"},
+	"anselmo": {"glb": "res://arte/final/3d/norm/clerigo.glb", "escala": 0.9, "passo": 1.08, "mao": "mixamorig_RightHand"},
+	"bento": {"glb": "res://arte/final/3d/norm/halfling.glb", "escala": 0.9, "passo": 0.62, "mao": "mixamorig_RightHand"},
 }
 const GRUPO_EM_JOGO := ["tessa", "caco", "lianne"]
 
@@ -288,6 +289,7 @@ func _criar_heroi(p: Dictionary, cfg: Dictionary, onde: Vector2i) -> Node3D:
 	a.giro_anim = TESSA_GIRO
 	var modelo: Node3D = load(cfg.glb).instantiate()
 	modelo.scale = Vector3.ONE * float(cfg.escala)
+	Bibliotecas.preparar(modelo, "pj")
 	var pas := {}
 	for k in PASSADA_TESSA: pas[k] = PASSADA_TESSA[k] * float(cfg.passo)
 	a.passadas = pas
@@ -419,13 +421,16 @@ func _criar_monstro(id: String, nome: String, c: Vector2i) -> Node3D:
 	a.tem_escudo = bool(d.get("escudo", false))
 	a.mov_combate_m = Regras.taxa_combate_m(float(d.mov_m))
 	add_child(a); a.colocar(c)
-	if id == "goblin":
-		# Modelo de verdade, com as mesmas animações (e o mesmo giro) dos personagens; espada curta sempre na mão.
-		var modelo: Node3D = load(GOBLIN_GLB).instantiate()
-		modelo.scale = Vector3.ONE * GOBLIN_ESCALA
+	var cri: Dictionary = Bibliotecas.criatura(id)
+	if not cri.is_empty() and ResourceLoader.exists(str(cri.modelo)):
+		# Modelo normalizado com a biblioteca da categoria (mesmo giro dos personagens); arma sempre na mão.
+		var modelo: Node3D = load(str(cri.modelo)).instantiate()
+		modelo.scale = Vector3.ONE * float(cri.get("escala", 0.9))
+		Bibliotecas.preparar(modelo, str(cri.categoria))
 		a.passadas = PASSADA_GOBLIN
 		a.giro_anim = TESSA_GIRO
 		a.montar_modelo(modelo, TESSA_ANIM, 0.0)
+		if cri.has("arma"): a.armar(Ficha.info({"id": cri.arma, "qtd": 1}).get("modelo3d", {}))
 		a.empunhar(true)
 	else:
 		a.montar_modelo(Ator.goblin_provisorio(), {}, 0.0)

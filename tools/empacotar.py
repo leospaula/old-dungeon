@@ -47,7 +47,9 @@ def lista_base():
                     "arte/texturas/*.png", "arte/final/interface/**/*.png", "arte/final/retratos/*.jpg",
                     "assets/fontes/*.ttf", "assets/fontes/*.otf")
     for id_, glb in HEROIS_GLB.items():
-        base.append(f"arte/final/3d/{glb}-biblioteca.glb")
+        base.append(f"arte/final/3d/norm/{glb}.glb")
+    for b in ler("data/regras/animacoes.json")["bibliotecas"].values():   # bibliotecas de animação (uma por arquivo)
+        base.append(b["arquivo"].replace("res://", ""))
     itens = ler("data/catalogos/itens.json")["itens"]
     for it in itens.values():
         arq = it.get("modelo3d", {}).get("arquivo", "")
@@ -66,8 +68,9 @@ def listas_partes():
                 for pr in d.get("areas", {}).get(a, {}).get("props", []):
                     arq = props.get(pr["tipo"], {}).get("modelo3d", {}).get("arquivo", "")
                     if arq: lst.append(arq.replace("res://", ""))
+            cri = ler("data/regras/animacoes.json")["criaturas"]
             for c in p.get("criaturas", []):
-                lst.append(f"arte/final/3d/{c}-biblioteca.glb")
+                lst.append(cri[c]["modelo"].replace("res://", "") if c in cri else f"arte/final/3d/norm/{c}.glb")
             partes[p["id"]] = sorted(set(lst))
     return partes
 
