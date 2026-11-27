@@ -695,7 +695,7 @@
    "x": 12,
    "y": 0,
    "largura": 2,
-   "tipo": "porta"
+   "tipo": "dupla"
   },
   {
    "id": "P02",
@@ -845,7 +845,7 @@
    "x": 15,
    "y": 20,
    "largura": 2,
-   "tipo": "porta"
+   "tipo": "dupla"
   },
   {
    "id": "P17",
@@ -1025,7 +1025,7 @@
    "x": 35,
    "y": 33,
    "largura": 2,
-   "tipo": "porta"
+   "tipo": "dupla"
   },
   {
    "id": "P35",

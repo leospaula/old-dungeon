@@ -134,20 +134,22 @@ func _tocha(raiz: Node3D, pos: Vector3, dentro: Vector3) -> void:
 		var mm := StandardMaterial3D.new(); mm.albedo_color = Color(0.25, 0.15, 0.08); cabo.material_override = mm
 		cabo.rotation_degrees = Vector3(-25, 0, 0) if absf(dentro.z) > 0.5 else Vector3(0, 0, -25)
 		t.add_child(cabo)
-	var chama := MeshInstance3D.new(); var sm := SphereMesh.new(); sm.radius = 0.055; sm.height = 0.17; chama.mesh = sm
+	# Chama: quad com shader de fogo (shaders/fogo.gdshader), em pé sobre o pano da tocha.
+	var chama := MeshInstance3D.new(); var qf := QuadMesh.new(); qf.size = Vector2(0.26, 0.4); chama.mesh = qf
 	chama.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var mc := StandardMaterial3D.new(); mc.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED; mc.albedo_color = Color(1.0, 0.7, 0.3)
-	mc.emission_enabled = true; mc.emission = Color(1.0, 0.6, 0.2); mc.emission_energy_multiplier = 1.3
-	chama.material_override = mc; chama.position = pos_chama; t.add_child(chama)
-	var luz := OmniLight3D.new(); luz.position = chama.position + dentro * 0.3; luz.light_color = Color(1.0, 0.68, 0.38)
+	var mf := ShaderMaterial.new(); mf.shader = load("res://shaders/fogo.gdshader")
+	mf.set_shader_parameter("semente", randf() * 10.0); chama.material_override = mf
+	chama.position = pos_chama + Vector3(0, 0.09, 0); t.add_child(chama)
+	var luz := OmniLight3D.new(); luz.position = pos_chama + Vector3(0, 0.1, 0) + dentro * 0.3; luz.light_color = Color(1.0, 0.68, 0.38)
+	luz.set_meta("base", 2.1); luz.set_meta("fase", randf() * 100.0)
 	luz.light_energy = 2.1; luz.omni_range = 8.5; luz.omni_attenuation = 1.6; t.add_child(luz)
 	_sombra_suave(luz)
 	tochas.append(luz)
-	var f := CPUParticles3D.new(); f.position = chama.position; f.amount = 14; f.lifetime = 1.6; f.direction = Vector3.UP; f.spread = 25
+	var f := CPUParticles3D.new(); f.position = pos_chama + Vector3(0, 0.25, 0); f.amount = 8; f.lifetime = 1.6; f.direction = Vector3.UP; f.spread = 25
 	f.initial_velocity_min = 0.3; f.initial_velocity_max = 0.8; f.gravity = Vector3(0, 0.2, 0); f.preprocess = 2.0
-	var qm := QuadMesh.new(); qm.size = Vector2(0.035, 0.035)
+	var qm := QuadMesh.new(); qm.size = Vector2(0.014, 0.014)
 	var fm := StandardMaterial3D.new(); fm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED; fm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	fm.albedo_color = Color(1.0, 0.75, 0.35); fm.emission_enabled = true; fm.emission = Color(1, 0.6, 0.2); fm.emission_energy_multiplier = 1.2
+	fm.albedo_color = Color(1.0, 0.55, 0.2); fm.emission_enabled = true; fm.emission = Color(1, 0.45, 0.1); fm.emission_energy_multiplier = 1.2
 	qm.material = fm; f.mesh = qm; f.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF; t.add_child(f)
 
 func _objeto(metalico: float, rugosidade: float, emissao := Color.BLACK, forca := 0.0) -> ShaderMaterial:
@@ -197,6 +199,12 @@ func set_grade(combate: bool) -> void:
 	chao_mat.set_shader_parameter("grade_forca", 0.6 if combate else 0.12)
 
 func _process(_dt: float) -> void:
+	# Tochas de parede tremulam: a luz oscila junto com a chama.
+	var s := Time.get_ticks_msec() / 1000.0
+	for l in tochas:
+		if l.has_meta("base"):
+			var fz: float = l.get_meta("fase")
+			l.light_energy = float(l.get_meta("base")) * (0.9 + 0.06 * sin(s * 7.3 + fz) + 0.04 * sin(s * 13.1 + fz * 1.7))
 	if alvo == null: return
 	var p := alvo.global_position
 	for a in luzes_tocha:

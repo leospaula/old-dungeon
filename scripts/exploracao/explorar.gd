@@ -1409,7 +1409,7 @@ func _linha_de_comando() -> void:
 					cx = bb if pr else cx.merge(bb); pr = false
 				camera.alvo = cx.get_center(); _alternar_mestre()
 		if a == "--alvo-tocha" and not luz.tochas_nos.is_empty():   # captura: câmera na primeira tocha de parede
-			camera.alvo = luz.tochas_nos[0].global_position + Vector3(0, -0.3, 0)
+			camera.alvo = luz.tochas_nos[0].global_position + Vector3(0, 0.15, 0)
 		if a.begins_with("--camera="):   # distância,inclinação,guinada (capturas)
 			var v := a.trim_prefix("--camera=").split(",")
 			camera.distancia = float(v[0]); camera.inclinacao = float(v[1]); camera.guinada = float(v[2])
