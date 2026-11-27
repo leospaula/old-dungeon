@@ -219,7 +219,7 @@ func atalho(tecla: String) -> bool:
 func _barra_exploracao(modos: Dictionary, modo: String, lider: Node) -> void:
 	_limpar_barra()
 	var i := 1
-	for k in ["cauteloso", "devagar", "normal", "rapido"]:
+	for k in ["cauteloso", "normal", "rapido"]:
 		var nome: String = modos[k].nome
 		var ic: String = k if ResourceLoader.exists("res://arte/final/interface/icones/%s.png" % k) else ""
 		var m := _med(nome, nome.substr(0, 2) if ic == "" else "", ic, str(i), "", nome, str(modos[k].dica))

@@ -60,7 +60,7 @@ const GOBLIN_ESCALA := 0.95
 const PASSADA_TESSA := {"andar": 1.25, "correr": 2.11, "andar_furtivo": 0.97, "andar_combate": 0.70, "arco-andar": 0.79}
 const PASSADA_GOBLIN := {"andar": 0.88, "correr": 1.47, "andar_furtivo": 0.67, "andar_combate": 0.50}
 ## Animação de deslocamento de cada modo de movimento (em combate é sempre "andar").
-const PAPEL_DO_MODO := {"cauteloso": "andar_furtivo", "devagar": "andar_furtivo", "normal": "andar", "rapido": "correr"}
+const PAPEL_DO_MODO := {"cauteloso": "andar_furtivo", "normal": "andar", "rapido": "correr"}
 const TESSA_ESCALA := 1.5   # o modelo heroico veio com ~1,03 m; no jogo ela tem ~1,55 m
 const INICIO := Vector2i(7, 5)
 const TURNOS_POR_TOCHA := 6
@@ -95,7 +95,7 @@ var ENCONTROS := {}
 
 var mestre := false
 var MOV := {}               # data/regras/movimento.json
-var modo := "normal"       # devagar · normal · rapido
+var modo := "normal"       # cauteloso · normal · rapido
 var fichas: Array = []     # fichas (dicionários) do grupo em jogo
 var botoes_modo := {}
 var _goblins_brotados := 0
@@ -1186,7 +1186,7 @@ func _mudar_modo(novo: String, avisar := true) -> void:
 		for h in vivos():
 			h.velocidade = Ator.VEL_BASE * float(m.velocidade)
 			h.papel_andar = PAPEL_DO_MODO.get(modo, "andar")
-			if not h.andando(): h.tocar("parado")   # devagar: ficam agachados
+			if not h.andando(): h.tocar("parado")   # cauteloso: ficam agachados
 	if avisar: _registrar("Movimento: [b]%s[/b] (%s)." % [m.nome, m.dica])
 	# Correndo, os errantes que ainda não tinham notado o grupo passam a ouvir.
 	if modo == "rapido":
@@ -1655,14 +1655,14 @@ func _linha_de_comando() -> void:
 		if not _args().has("--parado"): heroi.tocar(papel)
 		for _f in 40: await get_tree().process_frame
 	elif teste == "modos":
-		for k in ["devagar", "rapido"]:
+		for k in ["cauteloso", "rapido"]:
 			_mudar_modo(k)
 			for i in 8:
 				_passar_turno()
 				if not errantes.is_empty():
 					print("   errantes cientes: ", errantes.map(func(x): return x.get_meta("ciente")))
 					for e in errantes.duplicate(): errantes.erase(e); monstros.erase(e); e.queue_free()
-		_mudar_modo("devagar")
+		_mudar_modo("cauteloso")
 		for i in 3: _rolar_furtividade()
 		_surgir_errantes(false, false)
 		print("   errantes: ", errantes.size(), " cientes: ", errantes.map(func(x): return x.get_meta("ciente")))
@@ -1685,7 +1685,7 @@ func _linha_de_comando() -> void:
 		for _f in 25: await get_tree().process_frame
 	elif teste == "andar" or teste == "correr" or teste == "furtivo":
 		camera.distancia = 8.0; camera.inclinacao = 40.0
-		if teste != "andar": _mudar_modo("rapido" if teste == "correr" else "devagar", false)
+		if teste != "andar": _mudar_modo("rapido" if teste == "correr" else "cauteloso", false)
 		_andar_para(Vector2i(10, 2))
 		for _f in 70: await get_tree().process_frame
 	elif teste == "porta":

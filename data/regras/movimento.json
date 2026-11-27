@@ -3,16 +3,7 @@
   "modos": {
     "cauteloso": {
       "nome": "Cauteloso",
-      "dica": "quem lidera procura armadilhas nas casas à frente a cada passo: um terço da velocidade (bom em corredores)",
-      "velocidade": 0.34,
-      "errantes_em_6": 1,
-      "furtivo": false,
-      "surpreender": 0,
-      "ser_surpreendido": 0
-    },
-    "devagar": {
-      "nome": "Devagar",
-      "dica": "furtivo: metade da velocidade; o grupo tenta passar despercebido",
+      "dica": "metade da velocidade: o grupo tenta passar despercebido e quem lidera procura armadilhas nas casas à frente",
       "velocidade": 0.5,
       "errantes_em_6": 1,
       "furtivo": true,
@@ -39,7 +30,7 @@
     }
   },
   "furtividade": {
-    "_doc": "Chance, em 6, de cada personagem passar despercebido andando devagar, pela armadura. O grupo só passa se TODOS passarem (o mais barulhento entrega o grupo). O ladrão usa o maior entre a tabela e o seu Mover em Silêncio.",
+    "_doc": "Chance, em 6, de cada personagem passar despercebido no modo Cauteloso, pela armadura. O grupo só passa se TODOS passarem (o mais barulhento entrega o grupo). O ladrão usa o maior entre a tabela e o seu Mover em Silêncio.",
     "sem_armadura": 4,
     "couro": 4,
     "cota_de_malha": 3,

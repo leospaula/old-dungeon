@@ -30,7 +30,7 @@ static func thac0_monstro(dv: String) -> int:
 static func pv_monstro(dv: String) -> int:
 	return Sistema.pv_monstro(dv)
 
-## Chance (0–1) de um personagem passar despercebido andando devagar: tabela por armadura
+## Chance (0–1) de um personagem passar despercebido no modo Cauteloso: tabela por armadura
 ## (data/regras/movimento.json) e, para o ladrão, o maior entre ela e o Mover em Silêncio.
 static func furtividade(p: Dictionary, tabela: Dictionary) -> float:
 	var em6 := float(tabela.sem_armadura)
