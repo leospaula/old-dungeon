@@ -10,6 +10,7 @@ extends RefCounted
 ## Dados de teste: data/masmorra/estado-teste.json ("portas" com estado "secreta" e "armadilhas").
 
 const Sistema = preload("res://scripts/regras/sistema.gd")
+const Sons = preload("res://scripts/visual/sons.gd")
 const Dados = preload("res://scripts/regras/dados.gd")
 const Fosso = preload("res://scripts/visual/fosso.gd")
 const COR_CHAO := {"sala": Color(0.47, 0.44, 0.39), "corredor": Color(0.42, 0.40, 0.36), "cela": Color(0.36, 0.34, 0.31),
@@ -290,6 +291,7 @@ func cair(h: Node3D, c: Vector2i, a: Dictionary) -> void:
 	var f: Node3D = fossos[c]
 	f.abrir()
 	ex._registrar("[color=#ff7a5a]O chão cede![/color] %s cai num fosso." % h.nome)
+	h.get_tree().create_timer(0.45).timeout.connect(func(): Sons.tocar("queda_fosso", h))
 	if h.player: h.tocar("dano", 0.05)
 	var t := h.create_tween()
 	t.tween_property(h, "position:y", f.fundo_y(), 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)

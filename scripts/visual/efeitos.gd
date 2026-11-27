@@ -3,6 +3,7 @@ extends RefCounted
 ## rolando sobre o atacante. Só visual; as regras ficam no combate.gd.
 
 const FONTE_TAM := 64
+const Sons = preload("res://scripts/visual/sons.gd")
 
 ## Congela o jogo por um instante (hit-stop). `dur` em segundos de tempo real.
 static func congelar(no: Node, dur: float) -> void:
@@ -44,6 +45,7 @@ static func dado(ator: Node3D, resultado: int, acerta: bool, dur := 0.5, lados :
 		d.queue_free(); return
 	await d.rolar(resultado, cam, maxf(dur, 0.5) + 0.35, cor)
 	if not is_instance_valid(d): return
+	Sons.tocar("dado")
 	# O resultado grande ao lado do dado, legível de longe.
 	var l := Label3D.new()
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED; l.no_depth_test = true; l.render_priority = 9

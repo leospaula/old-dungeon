@@ -8,6 +8,7 @@ extends Node
 const Dados = preload("res://scripts/regras/dados.gd")
 const Sistema = preload("res://scripts/regras/sistema.gd")
 const Efeitos = preload("res://scripts/visual/efeitos.gd")
+const Sons = preload("res://scripts/visual/sons.gd")
 
 signal registro(texto: String)
 signal mudou
@@ -332,6 +333,8 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 		alvo.piscar(Color(1, 0.25, 0.2, 0.6) if no_grupo else Color(1, 0.95, 0.85, 0.7))
 		alvo.recuar(a.global_position, 0.18 + 0.12 * forca)
 		if camera: camera.tremer((0.09 if no_grupo else 0.06) * forca)
+		Sons.tocar(_som_golpe(a, distancia), alvo)
+		if alvo.ca <= 4 and not distancia: Sons.tocar("acerto_armadura", alvo, -3.0)
 		Efeitos.texto(alvo.get_parent(), topo, ("CRÍTICO!  %d" % dano) if critico else str(dano),
 			Color(1, 0.35, 0.25) if no_grupo else Color(1, 0.85, 0.35), minf(0.9 + 0.1 * minf(dano, 6) + (0.15 if critico else 0.0), 1.4))
 		if alvo.pv <= 0:
@@ -351,11 +354,17 @@ func _atacar(a: Node, alvo: Node, distancia := false) -> void:
 			if camera: camera.tremer(0.025)
 		elif not alvo._tem("esquivar"):
 			alvo.recuar(a.global_position, 0.35, true)
+		Sons.tocar("esquiva" if at.falha else {"bloquear": "bloqueio_escudo", "aparar": "aparar"}.get(defesa, "esquiva"), alvo)
 		Efeitos.texto(alvo.get_parent(), topo, o_que, Color(0.78, 0.8, 0.85), 0.75, 0.6, 0.85)
 		registro.emit(txt + "[color=#9aa4b0]erra (%s).[/color]" % o_que.trim_suffix("!").to_lower())
 	await get_tree().create_timer(0.55).timeout
 	if is_instance_valid(a) and a.vivo(): a.tocar("parado")
 	mudou.emit()
+
+## Som do golpe que acerta: lâmina corta; porrete, maça, chicote, mãos e projéteis batem.
+func _som_golpe(a: Node, distancia: bool) -> String:
+	if distancia: return "golpe_impacto"
+	return "golpe_corte" if str(a.estilo) in ["espada", "faca", "duas_maos", "haste", "machado_grande", "arremesso"] else "golpe_impacto"
 
 func _baixa(x: Node) -> void:
 	if x.lado != "monstros": return

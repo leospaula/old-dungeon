@@ -11,6 +11,7 @@ signal fechou
 
 const Ficha = preload("res://scripts/regras/ficha.gd")
 const E = preload("res://scripts/interface/estilo.gd")
+const Sons = preload("res://scripts/visual/sons.gd")
 const ICONES := "res://arte/final/interface/icones/%s.png"
 const LIVRO := Rect2(92, 52, 1096, 632)
 const PAG_ESQ := Rect2(26, 44, 514, 566)     # relativo ao livro
@@ -96,6 +97,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		fechar(); get_viewport().set_input_as_handled()
 
 func fechar() -> void:
+	if visible: Sons.tocar("livro_fechar")
 	visible = false; fechou.emit()
 
 # ---------- peças no pergaminho ----------
@@ -141,6 +143,7 @@ func mostrar(h: Node, nova_aba := "") -> void:
 	heroi = h
 	if nova_aba != "": aba = {"ficha": "habilidades", "inventario": "equipamento"}.get(nova_aba, nova_aba)
 	if aba == "magias" and not h.ficha.lanca_magia(): aba = "habilidades"
+	if not visible: Sons.tocar("livro_abrir")
 	visible = true
 	_aviso.text = "Em combate o livro só mostra; para trocar de arma use a barra de ações." if em_combate and aba == "equipamento" else ""
 	_montar_abas()

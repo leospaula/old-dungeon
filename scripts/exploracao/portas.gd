@@ -8,6 +8,7 @@ extends RefCounted
 
 const Dados = preload("res://scripts/regras/dados.gd")
 const Efeitos = preload("res://scripts/visual/efeitos.gd")
+const Sons = preload("res://scripts/visual/sons.gd")
 const ARQ := "res://data/masmorra/estado-teste.json"
 const RODADA := 1.0 / 60.0   # turno de 10 min = 60 rodadas de 10 s
 const BARRAM := ["trancada", "pregada", "secreta"]   # monstros não passam
@@ -236,6 +237,7 @@ func _forcar(pt: Dictionary, q: Node3D) -> void:
 	var n := _chance_forcar(e, f); var r := Dados.d(6)
 	var ok := r <= n
 	Efeitos.dado_opcional(q, r, ok, 0.5, 6)
+	q.get_tree().create_timer(0.55).timeout.connect(func(): Sons.tocar("porta_forcar", q.global_position + q.frente_vetor() * 0.7 + Vector3(0, 1, 0)))
 	await _animar(q, "chutar-porta")   # chuta, abrindo ou não
 	ex._gastar_tempo(RODADA)
 	var faixa := "1" if n == 1 else "1–%d" % n

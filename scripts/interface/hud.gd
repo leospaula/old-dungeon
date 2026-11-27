@@ -230,11 +230,11 @@ func _barra_exploracao(modos: Dictionary, modo: String, lider: Node) -> void:
 	var quem: Node = selecionado if is_instance_valid(selecionado) and selecionado.vivo() else lider   # quem age
 	if quem and quem.get("ficha"):
 		for x in quem.ficha.habilidades_exploracao(): hab[x[0]] = x[1]
-	var ou := _med("Ouvir", "Ou", "", "O", str(hab.get("Ouvir", "")), "Ouvir",
+	var ou := _med("Ouvir", "", "ouvir", "O", str(hab.get("Ouvir", "")), "Ouvir",
 		"Aqui: %s e quem estiver perto param e escutam (1 rodada, até 18 m). Numa porta: clique nela.\nOuvir %s · Forçar %s. Correndo não dá." % [quem.nome if quem else "quem lidera", hab.get("Ouvir", "?"), hab.get("Forçar porta", "?")])
 	ou.disabled = modo == "rapido"
 	ou.pressed.connect(func(): acao_pedida.emit("ouvir"))
-	var pr := _med("Procurar", "Pr", "", "P", str(hab.get("Achar porta secreta", "")), "Procurar nesta área",
+	var pr := _med("Procurar", "", "procurar", "P", str(hab.get("Achar porta secreta", "")), "Procurar nesta área",
 		"Todos desta área vasculham paredes e chão: portas secretas (%s) e armadilhas de sala (%s). 1 turno por trecho de 3 m de parede, repartido entre quem procura. Rolagens secretas; cada um, uma vez por área." % [hab.get("Achar porta secreta", "?"), "2 em 6" if quem and str(quem.ficha.p.classe) == "anao" else "1 em 6"])
 	pr.pressed.connect(func(): acao_pedida.emit("procurar"))
 	var fi := _med("Ficha", "", "bolsa-moedas", "I", "", "Livro da ficha", "Atributos, habilidades, magias, equipamento e diário.")
@@ -262,13 +262,13 @@ func _barra_combate(h: Node, alvo: Dictionary) -> void:
 	match str(f.p.classe):
 		"ladrao":
 			var hl: Dictionary = f.p.habilidades_ladrao
-			_med("Ataque\nfurtivo", "Fu", "", "", "+4 ×2", "Ataque furtivo", "+4 no acerto e dano ×2, pelas costas de quem não notou o %s.\nChega com as habilidades." % h.nome).disabled = true
+			_med("Ataque\nfurtivo", "", "ataque-furtivo", "", "+4 ×2", "Ataque furtivo", "+4 no acerto e dano ×2, pelas costas de quem não notou o %s.\nChega com as habilidades." % h.nome).disabled = true
 			_med("Esconder-se", "Es", "", "", "%d%%" % int(hl.esconder), "Esconder-se nas sombras", "Teste oculto: você não sabe se falhou.\nChega com as habilidades.").disabled = true
 			_med("Mover em\nsilêncio", "Si", "", "", "%d%%" % int(hl.silencio), "Mover em silêncio", "Teste oculto: você não sabe se falhou.\nChega com as habilidades.").disabled = true
 		"mago", "elfo":
 			var n: int = f.magias_por_dia()
 			var nomes: Array = f.memorizadas().map(func(x): return str(Ficha.magias_catalogo().magias.get(x, {}).get("nome", x)))
-			var mg := _med("Magia", "Mg", "", "", "%d/%d" % [maxi(n - f.magias_gastas, 0), n], "Magia",
+			var mg := _med("Magia", "", "magia", "", "%d/%d" % [maxi(n - f.magias_gastas, 0), n], "Magia",
 				"Memorizada: %s.\nDeclarada antes da iniciativa; se for atingido antes de agir, perde a magia.\nChega com as habilidades." % ", ".join(nomes))
 			mg.cor_sigla = E.ARCANA; mg.disabled = true
 		"clerigo":

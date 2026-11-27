@@ -1,4 +1,5 @@
 extends Node3D
+const Sons = preload("res://scripts/visual/sons.gd")
 ## Quem anda e luta na grade: personagem do grupo ou monstro.
 ## Guarda a ficha de combate, anda célula a célula por um caminho e toca as animações.
 ## Modelos com AnimationPlayer (Tessa) usam a biblioteca de animações; modelos provisórios
@@ -62,6 +63,13 @@ var rotulo: Label3D
 var _caminho: Array[Vector2i] = []
 var _de := Vector2i.ZERO
 var _passo := 0.0         # tempo do balanço do modelo provisório
+
+## Passo no chão (só de quem está à vista: o som não entrega quem está no escuro).
+var _meio_passo := false
+func _som_passo() -> void:
+	if not visible: return
+	var ev := "passo_monstro" if lado == "monstros" else ("passo_furtivo" if papel_andar == "andar_furtivo" else "passo")
+	Sons.tocar(ev, self)
 
 func vivo() -> bool:
 	return pv > 0 and not fugindo
@@ -177,6 +185,7 @@ func guardar_armas() -> void:
 
 ## Saca (combate) ou guarda a arma (exploração).
 func empunhar(sim: bool) -> void:
+	if sim and not em_combate and vivo() and visible: Sons.tocar("sacar_arma", self)
 	em_combate = sim
 	for a in armas_na_mao: a.visible = sim and arma_visivel
 	_mostrar_armas()
@@ -276,6 +285,7 @@ func _process(dt: float) -> void:
 		position = alvo
 		var antes := _de
 		celula = _caminho.pop_front(); _de = celula
+		_som_passo(); _meio_passo = false
 		chegou.emit(celula, grade.custo(antes, celula))
 		if _caminho.is_empty():
 			tocar("parado")
@@ -284,6 +294,8 @@ func _process(dt: float) -> void:
 			passo_iniciado.emit(celula, _caminho[0])
 	else:
 		position += d.normalized() * passo
+		if not _meio_passo and d.length() <= 0.75:   # dois passos por casa
+			_meio_passo = true; _som_passo()
 
 ## Golpe: anima e devolve quando a lâmina "acerta" (para o dano aparecer na hora certa).
 ## Instante em que a lâmina chega no alvo na animação "golpe" (a mão desce mais rápido em ~0,86 s;
@@ -407,6 +419,7 @@ func animar_morte() -> void:
 			tocar("dano", 0.05)
 			await get_tree().create_timer(DANO_ANTES_DE_CAIR).timeout
 		tocar("morrer", 0.3)
+		get_tree().create_timer(0.75).timeout.connect(func(): if is_instance_valid(self) and visible: Sons.tocar("cair", self))
 		if _tem("morrer"): player.seek(MORRER_INICIO, false)
 		if lado != "grupo":
 			var resta: float = player.get_animation(anim.get("morrer", "")).length - MORRER_INICIO if _tem("morrer") else 1.5

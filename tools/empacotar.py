@@ -45,7 +45,8 @@ def arquivos(*padroes):
 def lista_base():
     base = arquivos("scenes/**/*.tscn", "scenes/**/*.scn", "scripts/**/*.gd", "shaders/**/*.gdshader", "shaders/**/*.gdshaderinc",
                     "arte/texturas/*.png", "arte/final/interface/**/*.png", "arte/final/retratos/*.jpg",
-                    "assets/fontes/*.ttf", "assets/fontes/*.otf")
+                    "assets/fontes/*.ttf", "assets/fontes/*.otf",
+                    "arte/sons/**/*.ogg")   # efeitos sonoros (data/sons.json)
     for id_, glb in HEROIS_GLB.items():
         base.append(f"arte/final/3d/norm/{glb}.glb")
     for cen in ["tocha-parede", "porta", "porta-dupla", "portao"]:   # cenário da masmorra (em toda parte)

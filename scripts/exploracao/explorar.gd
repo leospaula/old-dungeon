@@ -35,6 +35,7 @@ const Pacotes = preload("res://scripts/exploracao/pacotes.gd")
 const Bibliotecas = preload("res://scripts/visual/bibliotecas.gd")
 const Cena = preload("res://scripts/exploracao/cena.gd")
 const Efeitos = preload("res://scripts/visual/efeitos.gd")
+const Sons = preload("res://scripts/visual/sons.gd")
 const Sistema = preload("res://scripts/regras/sistema.gd")
 
 const LAYOUT := "res://data/masmorra/layout.json"
@@ -132,6 +133,7 @@ func _ready() -> void:
 	MOV = JSON.parse_string(FileAccess.get_file_as_string("res://data/regras/movimento.json"))
 	var av := _aventura_pedida()
 	pacotes = Pacotes.new(); add_child(pacotes)
+	add_child(Sons.new())   # efeitos sonoros (data/sons.json)
 	if av != "": aventura = Aventura.new(grade, av)
 	if aventura:
 		set_process(false); set_process_unhandled_input(false)
@@ -877,6 +879,12 @@ func _abrir_porta(pt: Dictionary, de: Vector2i, quem := "") -> void:
 		if par[0] == de: outro = par[1]
 		elif par[1] == de: outro = par[0]
 	grade.abrir_porta(pt)
+	var no_som := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
+	if no_som:
+		if pt.tipo in ["grade", "cela"]: Sons.tocar("grade_abrir", no_som.global_position + Vector3(0, 1, 0))
+		else:
+			Sons.tocar("porta_abrir", no_som.global_position + Vector3(0, 1, 0))
+			if randf() < 0.35: Sons.tocar("porta_ranger", no_som.global_position + Vector3(0, 1, 0), -2.0)
 	if porta_mat.has(str(pt.id)):
 		_porta_param(str(pt.id), "fechada", 0.0); _porta_param(str(pt.id), "destaque", 0.0)
 	var no := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
@@ -898,6 +906,8 @@ func _abrir_porta(pt: Dictionary, de: Vector2i, quem := "") -> void:
 ## Fecha a porta (evento): as folhas voltam, a luz e a visão deixam de passar (grade continua deixando ver).
 func _fechar_porta(pt: Dictionary) -> void:
 	var no := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
+	if no and grade.porta_aberta.has(pt.id):
+		Sons.tocar("grade_bater" if pt.tipo in ["grade", "cela"] else "porta_fechar", no.global_position + Vector3(0, 1, 0))
 	if no:
 		for folha in no.get_children():
 			if str(folha.name).begins_with("Folha"):
@@ -913,6 +923,8 @@ func _trancar_porta(pt: Dictionary) -> void:
 	var e: Dictionary = portas.de(pt)
 	e.estado = "trancada"
 	grade.barrar_porta(pt, true)
+	var no_t := $Masmorra.get_node_or_null("Portas/" + str(pt.id))
+	if no_t: Sons.tocar("trancar", no_t.global_position + Vector3(0, 1, 0))
 	_registrar("[i]Uma chave gira na fechadura: a porta %s está trancada.[/i]" % pt.id)
 
 ## Entreabre a folha só um pouco (só visual; a passagem continua fechada).
@@ -1521,6 +1533,7 @@ func _arsenal_teste() -> void:
 func _trocar_arma(h: Node3D, item) -> void:
 	if combate.ativo and (combate.vez != h or combate.ocupado or bool(h.get_meta("trocou", false))): return
 	h.ficha.empunhar(item)
+	Sons.tocar("equipar")
 	_aplicar_ficha(h)
 	h.set_meta("trocou", true)
 	_registrar("%s empunha: %s." % [h.nome, Ficha.info(item).nome])
