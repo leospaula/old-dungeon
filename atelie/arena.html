@@ -219,8 +219,8 @@ function desmontar() {
 
 // ---------- funda desenhada (mesma ideia de scripts/visual/funda.gd: pêndulo preso à mão) ----------
 function criarFunda(m) {
-  const corda = new THREE.MeshStandardMaterial({ color: 0x543823, roughness: 0.95 });
-  const couro = new THREE.MeshStandardMaterial({ color: 0x5c301c, roughness: 1.0 });
+  const corda = couroEnvelhecido(new THREE.Color(0.85, 0.8, 0.75), 1, 6);
+  const couro = couroEnvelhecido(0xffffff, 2, 1);
   const geo = new THREE.CylinderGeometry(0.004, 0.004, 1, 5, 1);
   const a = new THREE.Mesh(geo, corda), b = new THREE.Mesh(geo, corda);
   const bolsa = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 6), couro); bolsa.scale.y = 0.6;
@@ -243,12 +243,21 @@ function atualizarFunda(dt) {
 // ---------- chicote desenhado (mesma conta de scripts/visual/chicote.gd) ----------
 // Cabo trançado no punho (linha dos nós dos dedos, saindo pelo polegar) e tira de couro que afina, em
 // corrente de pontos com gravidade, pouco atrito e chão: chicoteia no golpe e deita no chão parado.
-const CH = { N: 18, ATRITO: 0.965, IT: 8, CABO: 0.26, ATRAS: 0.06, RB: 0.011, RP: 0.0025 };
+const CH = { N: 18, ATRITO: 0.95, IT: 8, CABO: 0.34, ATRAS: 0.08, RB: 0.014, RP: 0.003, RIG_BASE: 0.985, RIG_PONTA: 0.86 };
+// Couro envelhecido (tools/gerar_couro.py): a mesma textura do jogo, no chicote e na funda.
+const _texLoader = new THREE.TextureLoader();
+function couroEnvelhecido(tom, rx, ry) {
+  // uma textura por material (cada um tem a sua repetição); o navegador baixa o arquivo uma vez só
+  const cor = _texLoader.load("arena/couro_cor.png"), nrm = _texLoader.load("arena/couro_normal.png");
+  cor.encoding = THREE.sRGBEncoding;
+  for (const t of [cor, nrm]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); }
+  return new THREE.MeshStandardMaterial({ map: cor, normalMap: nrm, normalScale: new THREE.Vector2(0.8, 0.8), color: tom, roughness: 0.82 });
+}
 function criarChicote(m) {
   const k = 1 / (D.personagens[S.pers].escala || 1);   // a arena mostra o modelo no tamanho dele (sem a escala do jogo)
-  const trancado = new THREE.MeshStandardMaterial({ color: 0x381f12, roughness: 0.9 });
-  const couro = new THREE.MeshStandardMaterial({ color: 0x572e1a, roughness: 1.0 });
-  const cabo = new THREE.Mesh(new THREE.CylinderGeometry(0.014 * k, 0.017 * k, 1, 8, 1), trancado);
+  const trancado = couroEnvelhecido(new THREE.Color(0.62, 0.55, 0.5), 1, 4);
+  const couro = couroEnvelhecido(0xffffff, 1, 1);
+  const cabo = new THREE.Mesh(new THREE.CylinderGeometry(0.021 * k, 0.025 * k, 1, 10, 1), trancado);
   const segs = [];
   for (let i = 0; i < CH.N - 1; i++) {
     const f0 = i / (CH.N - 1), f1 = (i + 1) / (CH.N - 1);
@@ -283,6 +292,17 @@ function atualizarChicote(dt) {
         const d = c.p[i + 1].clone().sub(c.p[i]); const dl = d.length(); if (dl < 1e-5) continue;
         const corr = d.multiplyScalar(1 - c.l / dl);
         if (i === 0) c.p[i + 1].sub(corr); else { c.p[i].add(corr.clone().multiplyScalar(0.5)); c.p[i + 1].sub(corr.multiplyScalar(0.5)); }
+      }
+      // couro enrijecido: dois segmentos seguidos não dobram além do limite; o primeiro sai na direção do cabo
+      const dirCabo = ponta.clone().sub(base).normalize();
+      c.p[1].lerp(ponta.clone().add(dirCabo.multiplyScalar(c.l)), 0.35);
+      for (let i = 0; i < CH.N - 2; i++) {
+        const minimo = 2 * c.l * (CH.RIG_BASE + (CH.RIG_PONTA - CH.RIG_BASE) * i / (CH.N - 3));
+        const d2 = c.p[i + 2].clone().sub(c.p[i]); const dl2 = d2.length();
+        if (dl2 < minimo && dl2 > 1e-5) {
+          const c2 = d2.multiplyScalar((1 - minimo / dl2) * 0.5);
+          if (i === 0) c.p[i + 2].sub(c2.multiplyScalar(2)); else { c.p[i].add(c2); c.p[i + 2].sub(c2); }
+        }
       }
       for (let i = 1; i < CH.N; i++) if (c.p[i].y < chao) { c.p[i].y = chao; c.ant[i].lerp(c.p[i], 0.3); }
     }

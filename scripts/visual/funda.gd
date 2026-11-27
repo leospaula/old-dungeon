@@ -3,6 +3,7 @@ extends Node3D
 ## balança como pêndulo (Verlet com gravidade). O movimento da mão no arremesso faz a bolsinha girar.
 ## Fica num BoneAttachment3D da mão; a simulação roda no espaço do mundo.
 
+const Chicote = preload("res://scripts/visual/chicote.gd")
 const RAIO_CORDA := 0.004
 const GRAVIDADE := Vector3(0, -9.8, 0)
 const ATRITO := 0.88          # bem amortecido: corda de couro firme, não elástico
@@ -19,8 +20,8 @@ var _bolsa: MeshInstance3D
 
 func _ready() -> void:
 	_dedo = sk.find_bone("mixamorig_RightHandIndex1") if sk else -1
-	var couro := StandardMaterial3D.new(); couro.albedo_color = Color(0.36, 0.19, 0.11); couro.roughness = 1.0   # couro gasto, cor das botas
-	var corda := StandardMaterial3D.new(); corda.albedo_color = Color(0.33, 0.22, 0.14); corda.roughness = 0.95
+	var couro := Chicote.couro_envelhecido(Color.WHITE, Vector3(2.0, 1.0, 1.0))   # couro envelhecido (tools/gerar_couro.py)
+	var corda := Chicote.couro_envelhecido(Color(0.85, 0.8, 0.75), Vector3(1.0, 6.0, 1.0))   # tiras finas do mesmo couro
 	for i in 2:
 		var m := MeshInstance3D.new(); var c := CylinderMesh.new()
 		c.top_radius = RAIO_CORDA; c.bottom_radius = RAIO_CORDA; c.height = 1.0; c.radial_segments = 5; c.rings = 1

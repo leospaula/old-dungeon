@@ -9,12 +9,16 @@ extends Node3D
 
 const N := 18                   # pontos da tira (N-1 segmentos)
 const GRAVIDADE := Vector3(0, -9.8, 0)
-const ATRITO := 0.965           # pouco amortecido: a tira corre e chicoteia
+const ATRITO := 0.95            # couro curtido: corre no golpe, mas sem balançar à toa
 const ITERACOES := 8
-const CABO := 0.26              # m reais
-const CABO_ATRAS := 0.06        # quanto do cabo sai pelo lado do dedo mínimo
-const RAIO_BASE := 0.011
-const RAIO_PONTA := 0.0025
+const CABO := 0.34              # m reais
+const CABO_ATRAS := 0.08        # quanto do cabo sai pelo lado do dedo mínimo
+const RAIO_BASE := 0.014
+const RAIO_PONTA := 0.003
+const RIGIDEZ_BASE := 0.985     # couro enrijecido: perto do cabo quase não dobra...
+const RIGIDEZ_PONTA := 0.86     # ...e a ponta continua viva
+const TEX_COR := "res://arte/texturas/couro_cor.png"
+const TEX_NORMAL := "res://arte/texturas/couro_normal.png"
 
 var sk: Skeleton3D
 var comprimento := 1.5          # tira, no espaço do personagem (já dividido pela escala)
@@ -30,10 +34,10 @@ func _ready() -> void:
 		_mao = sk.find_bone("mixamorig_RightHand")
 		_ind = sk.find_bone("mixamorig_RightHandIndex1")
 		_min = sk.find_bone("mixamorig_RightHandPinky1")
-	var trancado := StandardMaterial3D.new(); trancado.albedo_color = Color(0.22, 0.12, 0.07); trancado.roughness = 0.9
-	var couro := StandardMaterial3D.new(); couro.albedo_color = Color(0.34, 0.18, 0.1); couro.roughness = 1.0
+	var trancado := couro_envelhecido(Color(0.62, 0.55, 0.5), Vector3(1.0, 4.0, 1.0))   # cabo: couro mais escuro e gasto
+	var couro := couro_envelhecido(Color.WHITE, Vector3(1.0, 1.0, 1.0))
 	_cabo = MeshInstance3D.new(); var c := CylinderMesh.new()
-	c.top_radius = 0.014; c.bottom_radius = 0.017; c.height = 1.0; c.radial_segments = 8; c.rings = 1
+	c.top_radius = 0.021; c.bottom_radius = 0.025; c.height = 1.0; c.radial_segments = 10; c.rings = 1
 	c.material = trancado; _cabo.mesh = c; _cabo.top_level = true; add_child(_cabo)
 	for i in N - 1:
 		var m := MeshInstance3D.new(); var cm := CylinderMesh.new()
@@ -42,6 +46,14 @@ func _ready() -> void:
 		cm.height = 1.0; cm.radial_segments = 6; cm.rings = 1; cm.material = couro
 		m.mesh = cm; m.top_level = true; m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		add_child(m); _segs.append(m)
+
+## Couro envelhecido (tools/gerar_couro.py), o mesmo do chicote e da funda.
+static func couro_envelhecido(tom: Color, uv: Vector3) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(TEX_COR); m.albedo_color = tom
+	m.normal_enabled = true; m.normal_texture = load(TEX_NORMAL); m.normal_scale = 0.8
+	m.roughness = 0.82; m.uv1_scale = uv
+	return m
 
 func _osso(i: int) -> Vector3:
 	return sk.global_transform * sk.get_bone_global_pose(i).origin
@@ -83,6 +95,17 @@ func _physics_process(dt: float) -> void:
 			var corr := d * (1.0 - l / dl)
 			if i == 0: _p[i + 1] -= corr
 			else: _p[i] += corr * 0.5; _p[i + 1] -= corr * 0.5
+		# Couro enrijecido: dois segmentos seguidos não dobram além do limite (mais rígido perto do cabo),
+		# e o primeiro sai na direção do cabo.
+		var dir_cabo: Vector3 = ((pc[1] - pc[0]) as Vector3).normalized()
+		_p[1] = _p[1].lerp(ponta + dir_cabo * l, 0.35)
+		for i in N - 2:
+			var minimo: float = 2.0 * l * lerpf(RIGIDEZ_BASE, RIGIDEZ_PONTA, float(i) / (N - 3))
+			var d2 := _p[i + 2] - _p[i]; var dl2 := d2.length()
+			if dl2 < minimo and dl2 > 0.00001:
+				var c2 := d2 * (1.0 - minimo / dl2) * 0.5
+				if i == 0: _p[i + 2] -= c2 * 2.0
+				else: _p[i] += c2; _p[i + 2] -= c2
 		for i in range(1, N):
 			if _p[i].y < chao:   # deita no chão e arrasta com atrito
 				_p[i].y = chao
