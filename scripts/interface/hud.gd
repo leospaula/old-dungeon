@@ -221,7 +221,8 @@ func _barra_exploracao(modos: Dictionary, modo: String, lider: Node) -> void:
 	var i := 1
 	for k in ["cauteloso", "devagar", "normal", "rapido"]:
 		var nome: String = modos[k].nome
-		var m := _med(nome, nome.substr(0, 2), "", str(i), "", nome, str(modos[k].dica))
+		var ic: String = k if ResourceLoader.exists("res://arte/final/interface/icones/%s.png" % k) else ""
+		var m := _med(nome, nome.substr(0, 2) if ic == "" else "", ic, str(i), "", nome, str(modos[k].dica))
 		m.ativo = k == modo
 		m.pressed.connect(func(): modo_pedido.emit(k))
 		i += 1
@@ -263,8 +264,8 @@ func _barra_combate(h: Node, alvo: Dictionary) -> void:
 		"ladrao":
 			var hl: Dictionary = f.p.habilidades_ladrao
 			_med("Ataque\nfurtivo", "", "ataque-furtivo", "", "+4 ×2", "Ataque furtivo", "+4 no acerto e dano ×2, pelas costas de quem não notou o %s.\nChega com as habilidades." % h.nome).disabled = true
-			_med("Esconder-se", "Es", "", "", "%d%%" % int(hl.esconder), "Esconder-se nas sombras", "Teste oculto: você não sabe se falhou.\nChega com as habilidades.").disabled = true
-			_med("Mover em\nsilêncio", "Si", "", "", "%d%%" % int(hl.silencio), "Mover em silêncio", "Teste oculto: você não sabe se falhou.\nChega com as habilidades.").disabled = true
+			_med("Esconder-se", "", "esconder", "", "%d%%" % int(hl.esconder), "Esconder-se nas sombras", "Teste oculto: você não sabe se falhou.\nChega com as habilidades.").disabled = true
+			_med("Mover em\nsilêncio", "", "silencio", "", "%d%%" % int(hl.silencio), "Mover em silêncio", "Teste oculto: você não sabe se falhou.\nChega com as habilidades.").disabled = true
 		"mago", "elfo":
 			var n: int = f.magias_por_dia()
 			var nomes: Array = f.memorizadas().map(func(x): return str(Ficha.magias_catalogo().magias.get(x, {}).get("nome", x)))
@@ -272,10 +273,10 @@ func _barra_combate(h: Node, alvo: Dictionary) -> void:
 				"Memorizada: %s.\nDeclarada antes da iniciativa; se for atingido antes de agir, perde a magia.\nChega com as habilidades." % ", ".join(nomes))
 			mg.cor_sigla = E.ARCANA; mg.disabled = true
 		"clerigo":
-			_med("Afastar\nmortos-vivos", "Af", "", "", "2d6", "Afastar mortos-vivos", "2d6: esqueleto 7+, zumbi 9+, carniçal 11+.\nChega com as habilidades.").disabled = true
-			_med("Orar", "Or", "", "", "nível 2", "Orar", "A primeira oração chega no 2º nível.").disabled = true
+			_med("Afastar\nmortos-vivos", "", "afastar", "", "2d6", "Afastar mortos-vivos", "2d6: esqueleto 7+, zumbi 9+, carniçal 11+.\nChega com as habilidades.").disabled = true
+			_med("Orar", "", "orar", "", "nível 2", "Orar", "A primeira oração chega no 2º nível.").disabled = true
 	_filete()
-	var tr := _med("Trocar arma", "Tr", "", "2", "", "Trocar arma", "Empunhar outra arma do cinto ou da mochila (uma vez por vez, sem gastar o ataque).")
+	var tr := _med("Trocar arma", "", "trocar-arma", "2", "", "Trocar arma", "Empunhar outra arma do cinto ou da mochila (uma vez por vez, sem gastar o ataque).")
 	tr.disabled = f.armas_guardadas().is_empty() or bool(h.get_meta("trocou", false))
 	tr.pressed.connect(func(): _abrir_menu(h, f.armas_guardadas(), "trocar", tr))
 	var cin: Array = f.cinto.filter(func(x): return x != null)
@@ -285,7 +286,7 @@ func _barra_combate(h: Node, alvo: Dictionary) -> void:
 	us.disabled = cin.is_empty()
 	us.pressed.connect(func(): _abrir_menu(h, cin, "usar", us))
 	_filete()
-	var en := _med("Encerrar", "Fim", "", "Esp", "", "Encerrar a vez", "Espaço ou Enter.")
+	var en := _med("Encerrar", "", "encerrar", "Esp", "", "Encerrar a vez", "Espaço ou Enter.")
 	en.pressed.connect(func(): acao_pedida.emit("encerrar"))
 
 func _abrir_menu(h: Node, itens: Array, tipo: String, perto: Control) -> void:
