@@ -124,6 +124,12 @@
    "arma3d": "besta",
    "empunhar": false,
    "retrato": "guarda"
+  },
+  "feiticeiro": {
+   "nome": "Zastan Tem",
+   "atitude": "hostil",
+   "quer": "Escravos para as minas de sal.",
+   "base": "prisioneiro"
   }
  },
  "cenas": {
@@ -610,6 +616,118 @@
     "area": "4",
     "pos": "B4"
    }
+  ],
+  "prisioneiro-dados": [
+   {
+    "faz": "camera",
+    "area": "1",
+    "pos": "C2",
+    "distancia": 9.0,
+    "inclinacao": 55.0,
+    "guinada": -30.0
+   },
+   {
+    "faz": "olhar",
+    "quem": "prisioneiro",
+    "para": "grupo"
+   },
+   {
+    "faz": "fala",
+    "quem": "prisioneiro",
+    "texto": "Ei, novatos. Alguém aí desamarra essas mãos? Tá me dando cãibra."
+   },
+   {
+    "faz": "escolha",
+    "quem": "prisioneiro",
+    "titulo": "Prisioneiro",
+    "texto": "O homem musculoso estende as mãos amarradas, com um sorriso torto de quem já viu muita cela.",
+    "opcoes": [
+     {
+      "id": "desamarrar",
+      "texto": "Desamarrar as mãos dele",
+      "dica": "{agente} vai até ele e desfaz o nó.",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "pj",
+        "quem": "agente",
+        "ir": "pdm:prisioneiro",
+        "anim": "ajoelhar",
+        "ate": 1.0,
+        "mensagem": "{nome} desfaz o nó apertado. As mãos do prisioneiro estão roxas."
+       },
+       {
+        "faz": "anim",
+        "quem": "pj",
+        "anim": "ajoelhar:reverso",
+        "ritmo": 1.3
+       },
+       {
+        "faz": "olhar",
+        "quem": "prisioneiro",
+        "para": "grupo"
+       },
+       {
+        "faz": "fala",
+        "quem": "prisioneiro",
+        "texto": "Bem melhor. Agora sim dá pra fazer negócio."
+       }
+      ]
+     },
+     {
+      "id": "deixar",
+      "texto": "Deixar amarrado",
+      "dica": "Ninguém conhece esse sujeito.",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "fala",
+        "quem": "prisioneiro",
+        "texto": "Desconfiados, é? Tudo bem. A boca continua solta."
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "faz": "fala",
+    "quem": "prisioneiro",
+    "texto": "Querem saber onde estão? Informação custa 2 peças de ouro."
+   },
+   {
+    "faz": "fala",
+    "quem": "prisioneiro",
+    "texto": "Ah, ninguém aqui tem um tostão, né? Então vamos jogar."
+   },
+   {
+    "faz": "jogo_dados",
+    "quem": "prisioneiro",
+    "titulo": "O jogo do prisioneiro",
+    "dado_pdm": 20,
+    "dados_grupo": [
+     12,
+     10,
+     8,
+     6,
+     4
+    ],
+    "aposta": 1,
+    "texto": "Ele tira um d20 gasto da bota e espalha uns dados tortos no chão: cada um de vocês pega um diferente. Se alguém tirar mais que ele, ele conta uma coisa. Se ele tirar mais, cada um fica devendo 1 peça de ouro.",
+    "revela": [
+     "Isto aqui é uma masmorra, caso ainda não tenham reparado.",
+     "E não é de um qualquer: é a masmorra de um feiticeiro.",
+     "O feiticeiro se chama {pdm:feiticeiro}.",
+     "Ele sequestra gente na estrada e compra prisioneiros. Gente como nós.",
+     "E põe todo mundo pra trabalhar de escravo nas minas de sal. Até cair."
+    ],
+    "falas": {
+     "ganha": "Tsc. Sorte de {nome}. Tá bom, tá bom…",
+     "perde": "Hah! A casa ganha. Uma peça de ouro de cada, anotado.",
+     "empate": "Empate não conta. De novo.",
+     "parar": "Medrosos. Quando quiserem saber mais, os dados estão aqui.",
+     "fim": "Chega de jogo, já contei o que sei. E não esqueçam: cada um me deve o que perdeu."
+    }
+   }
   ]
  },
  "eventos": [
@@ -621,6 +739,18 @@
    "faz": [
     {
      "cena": "carcereiro"
+    }
+   ]
+  },
+  {
+   "id": "prisioneiro-dados",
+   "quando": {
+    "evento": "carcereiro-chega"
+   },
+   "atraso": 2.0,
+   "faz": [
+    {
+     "cena": "prisioneiro-dados"
     }
    ]
   }

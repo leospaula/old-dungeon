@@ -25,12 +25,18 @@ extends RefCounted
 ##   escolha  {quem, titulo, texto, opcoes: [{id, texto, dica, faz, fim}], limite, ao_limite}
 ##            repete até uma opção com fim; depois de `limite` escolhas sem fim, roda ao_limite e só
 ##            sobram as opções com fim
+##   jogo_dados {quem, dado_pdm, dados_grupo, aposta, revela: [...], titulo, texto, falas: {ganha, perde,
+##            empate, parar, fim}}   jogo de dados contra um PdM (Seção 3 da aventura 1): a cada rodada o PdM
+##            rola o dado dele e cada personagem o seu (um dado diferente para cada um, na ordem de marcha);
+##            se alguém do grupo tirar mais, o PdM conta a próxima informação de `revela` (vai para o diário);
+##            se ele tirar mais, cada um fica devendo `aposta` po (aventura.estado.dividas). Pode-se parar.
 ##   sumir    {quem}
 ##   cena     {id}                          roda outra cena
 ## "quem" é o id de um PdM da cena, "agente" (quem age no grupo) ou "mais_forte" (maior FOR).
 
 const Dados = preload("res://scripts/regras/dados.gd")
 const Ator = preload("res://scripts/exploracao/ator.gd")
+const Efeitos = preload("res://scripts/visual/efeitos.gd")
 const Sistema = preload("res://scripts/regras/sistema.gd")
 
 var ex: Node
@@ -59,6 +65,12 @@ func disparar(ev: Dictionary) -> void:
 	for f in ev.get("faz", []):
 		if (f as Dictionary).has("cena"): await rodar_cena(str(f.cena))
 		elif (f as Dictionary).has("mensagem"): ex._registrar(str(f.mensagem))
+	# Eventos encadeados: gatilho {"evento": id} roda depois deste (com "atraso" em segundos, se houver).
+	for outro in eventos():
+		if str(outro.get("quando", {}).get("evento", "")) == id:
+			var atraso := float(outro.get("atraso", 0.0))
+			if atraso > 0.0: await ex.get_tree().create_timer(atraso).timeout
+			disparar(outro)
 
 func rodar_cena(id: String) -> void:
 	var passos: Array = ex.aventura.d.get("cenas", {}).get(id, [])
@@ -106,10 +118,11 @@ func passo(p: Dictionary) -> void:
 		"fala":
 			var q := quem(p)
 			var nome: String = q.nome if q else ""
-			ex._registrar("[b]%s:[/b] “%s”" % [nome, str(p.texto)])
-			if q: await ex.hud_ui.fala(q, ex.camera, nome, str(q.get_meta("retrato", "")), str(p.texto), q.altura_texto() + 0.5)
+			var fala_txt := _trocar(str(p.texto))
+			ex._registrar("[b]%s:[/b] “%s”" % [nome, fala_txt])
+			if q: await ex.hud_ui.fala(q, ex.camera, nome, str(q.get_meta("retrato", "")), fala_txt, q.altura_texto() + 0.5)
 		"mensagem":
-			ex._registrar("[i]%s[/i]" % str(p.texto))
+			ex._registrar("[i]%s[/i]" % _trocar(str(p.texto)))
 		"camera":
 			if ex._args().has("--camera-fixa"): return   # capturas: a câmera fica onde a linha de comando pôs
 			# Leva a câmera até o ponto da cena (só desliza; o jogador continua podendo girar e afastar).
@@ -141,6 +154,8 @@ func passo(p: Dictionary) -> void:
 			await _ataque(p)
 		"escolha":
 			await _escolha(p)
+		"jogo_dados":
+			await _jogo_dados(p)
 		"sumir":
 			var q := quem(p); if q == null: return
 			ex._remover_pdm(str(p.quem))
@@ -270,6 +285,14 @@ func medir_grupo() -> void:
 
 ## Anima e espera; `ate` > 0 segura a pose nesse tempo da animação.
 func _anim(q: Node3D, nome: String, ate: float, ritmo: float) -> void:
+	if nome.ends_with(":reverso"):   # de trás para a frente (ajoelhar:reverso = levantar de joelhos)
+		nome = nome.trim_suffix(":reverso")
+		if q.player == null or not q.player.has_animation(nome): return
+		var dur: float = q.player.get_animation(nome).length
+		q.player.play_backwards(nome, 0.1); q.player.speed_scale = ritmo
+		await ex.get_tree().create_timer(dur * 0.7 / ritmo).timeout
+		if q.vivo(): q.tocar("parado", 0.4)
+		return
 	var t: float = q.tocar_anim(nome, 0.2)
 	if q.player == null: return
 	q.player.speed_scale = ritmo
@@ -346,7 +369,10 @@ func _pj(p: Dictionary) -> void:
 	_alvo_pj = h
 	if p.has("ir"):
 		var c: Vector2i
-		if str(p.ir) == "porta":
+		if p.ir is String and str(p.ir).begins_with("pdm:"):   # ao lado de um PdM
+			var o: Node3D = ex.pdms.get(str(p.ir).trim_prefix("pdm:"), null)
+			c = _livre_perto(o.celula, h) if o else h.celula
+		elif str(p.ir) == "porta":
 			var pt: Dictionary = ex.portas.por_id[str(p.porta)]
 			var dentro: Array = []
 			for par in ex.grade.lados_da_porta(pt):
@@ -433,4 +459,83 @@ func _escolha(p: Dictionary) -> void:
 ## {agente} e {mais_forte} viram nomes.
 func _trocar(t: String) -> String:
 	var mf := _mais_forte()
-	return t.replace("{agente}", ex.agente().nome).replace("{mais_forte}", mf.nome if mf else "")
+	t = t.replace("{agente}", ex.agente().nome).replace("{mais_forte}", mf.nome if mf else "")
+	var pd: Dictionary = ex.aventura.d.get("pdms", {}) if ex.aventura else {}
+	for k in pd: t = t.replace("{pdm:%s}" % k, str(pd[k].get("nome", k)))   # nome do PdM num lugar só
+	return t
+
+# ---------- jogo de dados contra um PdM ----------
+
+func _falar(q: Node3D, txt: String) -> void:
+	await passo({"faz": "fala", "quem": _id_de(q), "texto": txt})
+
+func _id_de(q: Node3D) -> String:
+	for k in ex.pdms:
+		if ex.pdms[k] == q: return k
+	return ""
+
+func _jogo_dados(p: Dictionary) -> void:
+	var q := quem(p); if q == null: return
+	var dado_pdm := int(p.get("dado_pdm", 20))
+	var dados: Array = p.get("dados_grupo", [12, 10, 8, 6, 4])
+	var revela: Array = p.get("revela", [])
+	var aposta := int(p.get("aposta", 1))
+	var falas: Dictionary = p.get("falas", {})
+	var est: Dictionary = ex.aventura.estado
+	if not est.has("dividas"): est["dividas"] = {}
+	var dividas: Dictionary = est.dividas
+	var chave := "jogo_%s" % _id_de(q)
+	var contadas := int(est.get(chave, 0))   # informações já reveladas (volta de onde parou)
+	var rodada := 0
+	while contadas < revela.size():
+		var vivos: Array = ex.vivos()
+		var quem_dado: Array = []
+		for i in vivos.size(): quem_dado.append([vivos[i], int(dados[mini(i, dados.size() - 1)])])
+		var lista := ", ".join(quem_dado.map(func(x): return "%s d%d" % [x[0].nome, x[1]]))
+		var deve := ", ".join(dividas.keys().map(func(k): return "%s %d" % [k, int(dividas[k])])) if not dividas.is_empty() else "nada"
+		var texto := "%s\n\n[b]Dados:[/b] %s d%d contra %s.\n[b]Ele já contou:[/b] %d de %d · [b]Vocês devem (po):[/b] %s" % [
+			_trocar(str(p.get("texto", ""))) if rodada == 0 else "Mais uma rodada?", q.nome, dado_pdm, lista, contadas, revela.size(), deve]
+		var id: String
+		if not escolhas_auto.is_empty(): id = str(escolhas_auto.pop_front()); ex._registrar("[color=#b9a3e3](teste) escolha: %s[/color]" % id)
+		else:
+			ex.hud_ui.dialogo(_trocar(str(p.get("titulo", "Jogo de dados"))), texto, [
+				{"id": "jogar", "texto": "Jogar uma rodada", "dica": "Se alguém tirar mais que ele, ele conta a próxima coisa. Se ele tirar mais, cada um fica devendo %d po." % aposta},
+				{"id": "parar", "texto": "Parar de jogar", "dica": "Ele guarda os dados. Dá para voltar a jogar depois."}],
+				func(x): _escolheu.emit(x), str(q.get_meta("retrato", "")))
+			id = await _escolheu
+		if id != "jogar":
+			if falas.has("parar"): await _falar(q, _trocar(str(falas.parar)))
+			return
+		rodada += 1
+		# Cada um rola o seu dado; o número gira em cima da cabeça.
+		var r_pdm := Dados.d(dado_pdm)
+		var melhor := 0; var quem_melhor: Node3D = null
+		var rolagens: Array = []; var rs: Array = []
+		for x in quem_dado:
+			var r := Dados.d(int(x[1]))
+			rs.append(r); rolagens.append("%s d%d = %d" % [x[0].nome, x[1], r])
+			if r > melhor: melhor = r; quem_melhor = x[0]
+		q.tocar_anim("arremessar", 0.2)
+		await ex.get_tree().create_timer(0.45).timeout
+		Efeitos.dado(q, r_pdm, r_pdm < melhor, 0.7, dado_pdm)
+		for i in quem_dado.size():
+			var x: Array = quem_dado[i]
+			var rx: int = rs[i]
+			Efeitos.dado(x[0], rx, rx > r_pdm, 0.7 + 0.12 * i, int(x[1]))
+		await ex.get_tree().create_timer(1.4 + 0.12 * quem_dado.size()).timeout
+		if q.vivo(): q.tocar("parado", 0.3)
+		ex._registrar("Jogo de dados: %s d%d = [b]%d[/b] · %s" % [q.nome, dado_pdm, r_pdm, " · ".join(rolagens)])
+		if melhor > r_pdm:
+			var info := _trocar(str(revela[contadas]))
+			contadas += 1; est[chave] = contadas
+			if falas.has("ganha"): await _falar(q, _trocar(str(falas.ganha)).replace("{nome}", quem_melhor.nome))
+			await _falar(q, info)
+			ex._diario("pista", info)
+		elif melhor < r_pdm:
+			for x in quem_dado: dividas[x[0].nome] = int(dividas.get(x[0].nome, 0)) + aposta
+			if falas.has("perde"): await _falar(q, _trocar(str(falas.perde)))
+		else:
+			if falas.has("empate"): await _falar(q, _trocar(str(falas.empate)))
+	if falas.has("fim"): await _falar(q, _trocar(str(falas.fim)))
+	if not dividas.is_empty():
+		ex._registrar("[i]Dívidas com %s: %s.[/i]" % [q.nome, ", ".join(dividas.keys().map(func(k): return "%s %d po" % [k, int(dividas[k])]))])

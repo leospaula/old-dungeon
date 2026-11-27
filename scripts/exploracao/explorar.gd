@@ -2257,6 +2257,19 @@ func _linha_de_comando() -> void:
 		await cena.passo({"faz": "guarda", "quem": ["g1", "g2"], "para": "grupo", "mirar": "besta-mirar", "ate": 0.9})
 		camera.alvo = pdms.g1.position + Vector3(0.75, 0.8, 0); camera.distancia = 5.0; camera.inclinacao = 22.0; camera.guinada = -150.0
 		await get_tree().create_timer(2.0).timeout
+	elif teste == "eventos":
+		# Roda a aventura a partir do primeiro evento, com os encadeados (--escolhas= responde tudo).
+		var fotos := ""
+		for x in _args():
+			if x.begins_with("--fotos="): fotos = x.trim_prefix("--fotos=")
+		cena.disparar(cena.eventos()[0])
+		var parada := 0.0; var n := 0
+		while parada < 5.0:
+			await get_tree().create_timer(0.5).timeout
+			parada = 0.0 if cena.ativa else parada + 0.5
+			n += 1
+			if fotos != "" and n % 3 == 0: get_viewport().get_texture().get_image().save_png("%s-%03d.png" % [fotos, n / 3])
+		print("EVENTOS estado: ", aventura.estado, " · diário: ", diario.filter(func(x): return x.tipo == "pista").map(func(x): return x.texto))
 	elif teste == "deitar":
 		# Pose de deitado (cena do carcereiro): o grupo deita, foto de perto; --levantar levanta de novo.
 		camera.alvo = heroi.position; camera.distancia = 5.0; camera.inclinacao = 40.0; camera.guinada = -30.0

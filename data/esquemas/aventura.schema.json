@@ -828,6 +828,10 @@
        }
       }
      }
+    },
+    "atraso": {
+     "type": "number",
+     "description": "Segundos de espera depois do gatilho."
     }
    }
   },
@@ -858,7 +862,8 @@
       "ataque",
       "escolha",
       "sumir",
-      "cena"
+      "cena",
+      "jogo_dados"
      ]
     },
     "quem": {

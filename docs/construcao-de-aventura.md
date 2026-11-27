@@ -83,6 +83,15 @@ mão vazia), `empunhar` e `retrato`.
   trancar) e `carcereiro-sai` (guardas saem, depois o carcereiro) são usadas por mais de uma reação.
   **Separar "trancar" de "sair"** foi preciso porque uma reação tem uma fala entre as duas.
 
+### 5.0 Encadear eventos e guardar o que a aventura muda
+- Um evento pode esperar outro: `"quando": {"evento": "<id>"}` com `"atraso"` em segundos. A Seção 3
+  começa 2 s depois de a cena do carcereiro terminar.
+- O que a aventura muda e precisa ser lembrado (dívidas, informações já contadas, jogos interrompidos) vai
+  em `aventura.estado`, que é o que entra no save.
+- Informação que o grupo descobre vai para o **diário** (`tipo: "pista"`).
+- Nome de PdM nos textos: `{pdm:<id>}` (por exemplo `{pdm:feiticeiro}`). O nome fica num lugar só
+  (`pdms.<id>.nome`) e o Leonardo troca quando decidir.
+
 ### 5.1 Tabela de reações → passo `escolha`
 A tabela do texto ("ação dos PJs → reação do PdM") vira uma `escolha`:
 - cada linha vira uma opção (`texto`, `dica`, `faz`); a que encerra a situação leva `fim: true`;
@@ -92,6 +101,16 @@ A tabela do texto ("ação dos PJs → reação do PdM") vira uma `escolha`:
 - `{agente}` e `{mais_forte}` nos textos viram nomes (quem age, maior FOR).
 - **Ataques de cena são de verdade** (d20 contra THAC0 − CA, dano da arma), mas **a cena não derruba
   ninguém** (PV mínimo 1). Quem decide a luta é o combate, não a cena.
+
+### 5.1b Minijogos com PdM → passo próprio e genérico
+Mecânica nova da aventura vira um **passo reutilizável**, e não código da sala. O jogo de dados do
+prisioneiro virou `jogo_dados`:
+- o PdM rola o dado dele, e cada personagem rola um dado diferente na ordem de marcha
+  (`dados_grupo` [12, 10, 8, 6, 4]: o texto dizia "cada um escolhe outro dado");
+- se alguém tirar mais, o PdM conta a próxima informação; se ele tirar mais, cada um deve `aposta` po;
+  empate não conta;
+- dá para parar e voltar depois (o progresso fica em `estado`);
+- o dado gira em cima da cabeça de cada um (o mesmo efeito do d20 do ataque, com o número de lados).
 
 ### 5.2 Falas
 - Balão sobre a cabeça de quem fala (retrato, nome e a fala entre aspas), que acompanha o personagem na
@@ -129,6 +148,8 @@ A tabela do texto ("ação dos PJs → reação do PdM") vira uma `escolha`:
 - **Deitar no chão:** a animação `levantar` de trás para a frente, segura no tempo 0 (estendido de
   costas). Segurar a 55% deixava o personagem sentado. Como não há animação de bruços, a fala diz
   "deitado no chão", e não "de cara no chão".
+- **Levantar de joelhos:** `"anim": "ajoelhar:reverso"`. A animação `levantar` é para quem está **deitado
+  no chão**: usada depois de ajoelhar, ela derruba o personagem antes de levantar.
 - **Ameaça armada:** quem ameaça entra em **pose de combate do estilo da arma** (`guarda`: saca a arma
   e usa a guarda do estilo; besta = `besta-guarda`) e então **mira** (`mirar: "besta-mirar"`, segura em
   0,9 s). Na pose normal, a besta ficava solta na mão, num ângulo errado (print do Leonardo).
@@ -175,3 +196,14 @@ equipamento na sala 4 (F5). Retratos e modelos dos PdMs criados antes (arte no p
   - **Último recurso:** 4 guardas com bestas (o texto fala em "uma dúzia enche o vestíbulo e o corredor")
     vêm em grupo, tomam a guarda de besta e miram na cela.
 - O prisioneiro fica na cela como PdM, para a seção 3 (o jogo de dados).
+
+### Seção 3 — o jogo de dados do prisioneiro (27/11)
+- Evento `prisioneiro-dados` encadeado na cena do carcereiro (2 s depois).
+- O prisioneiro pede para desamarrar as mãos: escolha "desamarrar" (quem age vai até ele, ajoelha, desfaz o
+  nó, se levanta) ou "deixar amarrado". As duas seguem.
+- "Informação custa 2 po… ninguém tem, então vamos jogar" → `jogo_dados` com as 5 informações do texto, na
+  ordem. Depois da 5ª ele para e lembra as dívidas.
+- **Decisão de leitura:** "cada PJ escolhe outro dado" = cada um com um dado **diferente** (d12, d10, d8, d6,
+  d4), que fecha com os 5 personagens. Ganha quem passar o d20 dele.
+- Conferência: `--teste=eventos --escolhas=deitar,desamarrar,jogar,…` roda a aventura a partir do primeiro
+  evento, com os encadeados; imprime o `estado` e as pistas do diário.

@@ -15,6 +15,7 @@ var leituras_feitas := {}        # área -> true
 var props_em_cena: Array = []    # [{tipo, area, celulas, no}]
 var parte_atual := ""            # id da parte em que o grupo está (pacote de download)
 var escolhidos: Array = []       # ids escolhidos na tela de escolha, na ordem de marcha
+var estado := {}                 # estado do mundo que a aventura muda (dívidas, jogos, conversas…): vai no save
 
 func _init(g: RefCounted, aventura_id: String) -> void:
 	grade = g; id = aventura_id

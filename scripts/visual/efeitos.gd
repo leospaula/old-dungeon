@@ -25,8 +25,9 @@ static func texto(pai: Node, pos: Vector3, txt: String, cor: Color, escala := 1.
 	t.parallel().tween_property(l, "modulate:a", 0.0, dur * 0.45).set_delay(dur * 0.55)
 	t.tween_callback(l.queue_free)
 
-## O d20 rola sobre o atacante e para no resultado (verde acerta, cinza erra; 20 dourado, 1 vermelho).
-static func dado(ator: Node3D, resultado: int, acerta: bool, dur := 0.5) -> void:
+## O dado rola sobre o ator e para no resultado (verde acerta, cinza erra; máximo dourado, 1 vermelho).
+## `lados`: qual dado (d20 no ataque; qualquer outro nos jogos e testes).
+static func dado(ator: Node3D, resultado: int, acerta: bool, dur := 0.5, lados := 20) -> void:
 	var l := Label3D.new()
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED; l.no_depth_test = true; l.render_priority = 9
 	l.font_size = FONTE_TAM; l.outline_size = 14; l.pixel_size = 0.005
@@ -36,11 +37,11 @@ static func dado(ator: Node3D, resultado: int, acerta: bool, dur := 0.5) -> void
 	l.global_position = ator.global_position + Vector3(0, alto, 0)
 	var t0 := Time.get_ticks_msec()
 	while (Time.get_ticks_msec() - t0) / 1000.0 < dur:
-		l.text = "d20 · %d" % randi_range(1, 20)
+		l.text = "d%d · %d" % [lados, randi_range(1, lados)]
 		await ator.get_tree().create_timer(0.05).timeout
 		if not is_instance_valid(l): return
-	l.text = "d20 · %d" % resultado
-	l.modulate = Color(1.0, 0.82, 0.3) if resultado == 20 else (Color(1, 0.4, 0.3) if resultado == 1 else (Color(0.55, 1.0, 0.55) if acerta else Color(0.7, 0.72, 0.76)))
+	l.text = "d%d · %d" % [lados, resultado]
+	l.modulate = Color(1.0, 0.82, 0.3) if resultado == lados else (Color(1, 0.4, 0.3) if resultado == 1 else (Color(0.55, 1.0, 0.55) if acerta else Color(0.7, 0.72, 0.76)))
 	l.scale = Vector3.ONE * 1.4
 	var t := l.create_tween()
 	t.tween_property(l, "scale", Vector3.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
