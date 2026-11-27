@@ -655,9 +655,7 @@ const PORTA_GLB := "res://arte/final/3d/porta.glb"
 const PORTA_DUPLA_GLB := "res://arte/final/3d/porta-dupla.glb"
 const PORTA_ESPESSURA := 0.14
 func _materiais_das_portas() -> void:
-	if $Masmorra.has_node("GradesFixas"):   # barras fixas: o mesmo portão, sem abrir
-		for no in $Masmorra.get_node("GradesFixas").get_children():
-			for x in _vestir_grade(no): luz.materiais.append(x)   # névoa de guerra e luz como as portas
+	_montar_barras()
 	for no in $Masmorra.get_node("Portas").get_children():
 		var folhas := no.find_children("*", "MeshInstance3D", true, false)
 		if folhas.is_empty(): continue
@@ -699,12 +697,46 @@ func _centro_z_malha(mod: Node3D) -> float:
 	var ms := mod.find_children("*", "MeshInstance3D", true, false)
 	return (ms[0] as MeshInstance3D).get_aabb().get_center().z if not ms.is_empty() else 0.0
 
+## Material de ferro envelhecido das grades (portão e barras): igual dos dois lados.
+func _material_ferro(com_textura: bool) -> ShaderMaterial:
+	var m := ShaderMaterial.new(); m.shader = load("res://shaders/porta_luz.gdshader")
+	m.set_shader_parameter("ferro_velho", true); m.set_shader_parameter("usar_textura", com_textura)
+	return m
+
+## Barras redondas fixas (marcadores "Barras" da planta: trecho no chão + alturas): cilindros verticais a cada
+## ~16 cm e travessas redondas, com o ferro do portão. Uma MultiMesh por trecho (cada uma recebe as luzes de perto).
+const BARRA_RAIO := 0.03
+const BARRA_PASSO := 0.16
+func _montar_barras() -> void:
+	if not $Masmorra.has_node("Barras"): return
+	var mat := _material_ferro(false); mat.set_shader_parameter("fechada", 0.0)
+	luz.materiais.append(mat)
+	var cil := CylinderMesh.new(); cil.top_radius = 1.0; cil.bottom_radius = 1.0; cil.height = 1.0; cil.radial_segments = 8; cil.rings = 1
+	cil.material = mat
+	for mk in $Masmorra.get_node("Barras").get_children():
+		var de: Vector3 = mk.get_meta("de"); var ate: Vector3 = mk.get_meta("ate")
+		var y0 := float(mk.get_meta("y0")); var y1 := float(mk.get_meta("y1"))
+		var comp := de.distance_to(ate); var dir := (ate - de).normalized()
+		var ts: Array[Transform3D] = []
+		var n := maxi(1, int(round(comp / BARRA_PASSO)))
+		for i in n:   # verticais, a meio passo das pontas
+			var p := de + dir * ((i + 0.5) * comp / n) + Vector3(0, (y0 + y1) * 0.5, 0)
+			ts.append(Transform3D(Basis.from_scale(Vector3(BARRA_RAIO, y1 - y0, BARRA_RAIO)), p))
+		var alturas := [y0 + 0.08, y1 - 0.08] if y0 > 0.01 else [0.1, 1.1, ALTURA_PORTA - 0.06, y1 - 0.08]
+		var deitar := Basis(dir.cross(Vector3.UP).normalized(), PI / 2)   # cilindro em pé → ao longo do trecho
+		for h in alturas:   # travessas
+			ts.append(Transform3D(deitar * Basis.from_scale(Vector3(BARRA_RAIO * 1.25, comp + 0.04, BARRA_RAIO * 1.25)), (de + ate) * 0.5 + Vector3(0, h, 0)))
+		var mm := MultiMesh.new(); mm.transform_format = MultiMesh.TRANSFORM_3D; mm.mesh = cil; mm.instance_count = ts.size()
+		for i in ts.size(): mm.set_instance_transform(i, ts[i])
+		var mi := MultiMeshInstance3D.new(); mi.multimesh = mm; mi.name = "Barras_" + str(mk.name)
+		$Masmorra.add_child(mi)
+
 ## Grade de cela: o modelo do portão em cada metade (a fixa e a folha), cada um na própria caixa.
 const PORTAO_GLB := "res://arte/final/3d/portao.glb"
 func _vestir_grade(no: Node3D) -> Array:
 	if not ResourceLoader.exists(PORTAO_GLB): return []
 	var v := str(no.get_meta("orient", "v")) == "v"
-	var mat := ShaderMaterial.new(); mat.shader = load("res://shaders/porta_luz.gdshader")
+	var mat := _material_ferro(true)
 	mat.set_shader_parameter("fechada", 0.5)
 	for p in no.get_children():
 		var malha: MeshInstance3D = p.get_node_or_null("Malha")
