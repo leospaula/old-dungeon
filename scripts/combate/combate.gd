@@ -44,6 +44,10 @@ var _xp := 0
 var _moral_primeira := false
 var _moral_metade := false
 
+## Marca de quem age: círculo no chão, embaixo do personagem (amarelo) ou da criatura (vermelho).
+const COR_VEZ := Color(1.0, 0.8, 0.3, 0.9)
+const RAIO_VEZ := 0.55
+
 func iniciar(g: Array, m: Array, surpreso_grupo: bool, surpreso_monstros: bool) -> void:
 	grupo = g; monstros = m; ativo = true; rodada = 0; _mortos = 0; _xp = 0
 	_moral_primeira = false; _moral_metade = false
@@ -88,7 +92,7 @@ func _turno_personagem(h: Node) -> void:
 	vez = h; restante = h.mov_combate_m
 	h.set_meta("trocou", false)
 	if no_fosso.is_valid() and no_fosso.call(h):
-		marca_alcance.limpar(); marca_vez.limpar(); marca_vez.por([h.celula], Color(1.0, 0.8, 0.3, 0.45), 0.02)
+		marca_alcance.limpar(); marca_vez.limpar(); marca_vez.alvo(h.celula, COR_VEZ, RAIO_VEZ)
 		mudou.emit()
 		ocupado = true
 		await turno_no_fosso.call(h)
@@ -221,8 +225,8 @@ func _mostrar_alcance() -> void:
 	for m in monstros:
 		if is_instance_valid(m) and m.vivo() and _ve(m) and (_faixa(vez, m) >= 0 or grade.adjacentes(vez.celula, m.celula) or _melhor_vizinha(m) != Vector2i(-999, -999)):
 			alvos.append(m.celula)
-	marca_alcance.por(alvos, Color(0.95, 0.25, 0.15, 0.3))
-	marca_vez.limpar(); marca_vez.por([vez.celula], Color(1.0, 0.8, 0.3, 0.45), 0.02)
+	for c in alvos: marca_alcance.alvo(c, Color(0.95, 0.25, 0.15, 0.75), RAIO_VEZ)
+	marca_vez.limpar(); marca_vez.alvo(vez.celula, COR_VEZ, RAIO_VEZ)
 
 ## Célula mais adiantada, dentro do alcance, no caminho de `quem` até `alvo`.
 func _rumo(alc: Dictionary, quem: Node, alvo: Node) -> Vector2i:
@@ -243,7 +247,7 @@ func _melhor_vizinha(alvo: Node) -> Vector2i:
 
 func _turno_monstro(m: Node) -> void:
 	vez = m; mudou.emit()
-	marca_vez.limpar(); marca_vez.por([m.celula], Color(0.95, 0.3, 0.2, 0.45), 0.02)
+	marca_vez.limpar(); marca_vez.alvo(m.celula, Color(0.95, 0.3, 0.2, 0.9), RAIO_VEZ)
 	await get_tree().create_timer(0.35).timeout
 	var alvo := _mais_proximo(m, grupo)
 	if alvo == null: return
