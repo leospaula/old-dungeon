@@ -863,7 +863,10 @@
       "escolha",
       "sumir",
       "cena",
-      "jogo_dados"
+      "jogo_dados",
+      "pose",
+      "interacao",
+      "fim_interacao"
      ]
     },
     "quem": {

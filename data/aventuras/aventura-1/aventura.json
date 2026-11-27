@@ -163,6 +163,11 @@
     "pos": "C1"
    },
    {
+    "faz": "pose",
+    "quem": "prisioneiro",
+    "pose": "amarrado"
+   },
+   {
     "faz": "andar_grupo",
     "quem": [
      "carcereiro",
@@ -637,6 +642,12 @@
     "texto": "Ei, novatos. Alguém aí desamarra essas mãos? Tá me dando cãibra."
    },
    {
+    "faz": "cena",
+    "id": "prisioneiro-pede"
+   }
+  ],
+  "prisioneiro-pede": [
+   {
     "faz": "escolha",
     "quem": "prisioneiro",
     "titulo": "Prisioneiro",
@@ -649,28 +660,12 @@
       "fim": true,
       "faz": [
        {
-        "faz": "pj",
-        "quem": "agente",
-        "ir": "pdm:prisioneiro",
-        "anim": "ajoelhar",
-        "ate": 1.0,
-        "mensagem": "{nome} desfaz o nó apertado. As mãos do prisioneiro estão roxas."
+        "faz": "cena",
+        "id": "prisioneiro-desamarrar"
        },
        {
-        "faz": "anim",
-        "quem": "pj",
-        "anim": "ajoelhar:reverso",
-        "ritmo": 1.3
-       },
-       {
-        "faz": "olhar",
-        "quem": "prisioneiro",
-        "para": "grupo"
-       },
-       {
-        "faz": "fala",
-        "quem": "prisioneiro",
-        "texto": "Bem melhor. Agora sim dá pra fazer negócio."
+        "faz": "cena",
+        "id": "prisioneiro-propoe"
        }
       ]
      },
@@ -683,22 +678,242 @@
        {
         "faz": "fala",
         "quem": "prisioneiro",
-        "texto": "Desconfiados, é? Tudo bem. A boca continua solta."
+        "texto": "Desconfiados, é? Olha, eu sei umas coisas sobre este lugar."
+       },
+       {
+        "faz": "fala",
+        "quem": "prisioneiro",
+        "texto": "Até conto, num joguinho de dados. Mas ninguém joga dados com as mãos amarradas."
+       },
+       {
+        "faz": "cena",
+        "id": "prisioneiro-pede-de-novo"
        }
       ]
      }
     ]
+   }
+  ],
+  "prisioneiro-pede-de-novo": [
+   {
+    "faz": "escolha",
+    "quem": "prisioneiro",
+    "titulo": "Prisioneiro",
+    "texto": "Ele ergue as mãos amarradas e espera.",
+    "opcoes": [
+     {
+      "id": "desamarrar",
+      "texto": "Desamarrar as mãos dele",
+      "dica": "{agente} vai até ele e desfaz o nó.",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "cena",
+        "id": "prisioneiro-desamarrar"
+       },
+       {
+        "faz": "cena",
+        "id": "prisioneiro-propoe"
+       }
+      ]
+     },
+     {
+      "id": "deixar",
+      "texto": "Deixar amarrado",
+      "dica": "Ele vai ficar no canto dele. Dá para falar com ele depois (clique nele).",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "fala",
+        "quem": "prisioneiro",
+        "texto": "Então fiquem aí sem saber de nada. Vou pro meu canto."
+       },
+       {
+        "faz": "andar",
+        "quem": "prisioneiro",
+        "area": "1",
+        "pos": "D5"
+       },
+       {
+        "faz": "olhar",
+        "quem": "prisioneiro",
+        "para": "grupo"
+       },
+       {
+        "faz": "pose",
+        "quem": "prisioneiro",
+        "pose": "sentado"
+       },
+       {
+        "faz": "interacao",
+        "quem": "prisioneiro",
+        "cena": "prisioneiro-canto"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "prisioneiro-canto": [
+   {
+    "faz": "fala",
+    "quem": "prisioneiro",
+    "texto": "Mudaram de ideia? Me soltem e a gente conversa."
+   },
+   {
+    "faz": "escolha",
+    "quem": "prisioneiro",
+    "titulo": "Prisioneiro",
+    "texto": "Ele continua sentado no canto, as mãos amarradas no colo.",
+    "opcoes": [
+     {
+      "id": "desamarrar",
+      "texto": "Desamarrar as mãos dele",
+      "dica": "{agente} vai até ele e desfaz o nó.",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "fim_interacao",
+        "quem": "prisioneiro"
+       },
+       {
+        "faz": "pose",
+        "quem": "prisioneiro",
+        "pose": "em_pe"
+       },
+       {
+        "faz": "cena",
+        "id": "prisioneiro-desamarrar"
+       },
+       {
+        "faz": "cena",
+        "id": "prisioneiro-propoe"
+       }
+      ]
+     },
+     {
+      "id": "deixar",
+      "texto": "Deixar amarrado",
+      "dica": "Ele continua no canto.",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "fala",
+        "quem": "prisioneiro",
+        "texto": "Então me deixem em paz."
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "prisioneiro-desamarrar": [
+   {
+    "faz": "pj",
+    "quem": "agente",
+    "ir": "pdm:prisioneiro",
+    "mensagem": "{nome} desfaz o nó apertado. As mãos do prisioneiro estão roxas."
+   },
+   {
+    "faz": "pausa",
+    "s": 0.6
+   },
+   {
+    "faz": "pose",
+    "quem": "prisioneiro",
+    "pose": "solto"
    },
    {
     "faz": "fala",
     "quem": "prisioneiro",
-    "texto": "Querem saber onde estão? Informação custa 2 peças de ouro."
+    "texto": "Bem melhor."
+   }
+  ],
+  "prisioneiro-propoe": [
+   {
+    "faz": "fala",
+    "quem": "prisioneiro",
+    "texto": "Querem saber onde estão? Eu sei. Mas informação custa 2 peças de ouro."
    },
    {
     "faz": "fala",
     "quem": "prisioneiro",
-    "texto": "Ah, ninguém aqui tem um tostão, né? Então vamos jogar."
+    "texto": "Ninguém aqui tem um tostão, né? Então que tal um jogo?"
    },
+   {
+    "faz": "escolha",
+    "quem": "prisioneiro",
+    "titulo": "Prisioneiro",
+    "texto": "Ele chacoalha uns dados tortos na mão fechada.",
+    "opcoes": [
+     {
+      "id": "aceitar",
+      "texto": "Aceitar o jogo",
+      "dica": "Ele explica as regras e pega o d20; vocês dividem os outros dados.",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "fim_interacao",
+        "quem": "prisioneiro"
+       },
+       {
+        "faz": "fala",
+        "quem": "prisioneiro",
+        "texto": "Regras simples: eu jogo o d20, cada um de vocês joga um dado dos outros."
+       },
+       {
+        "faz": "fala",
+        "quem": "prisioneiro",
+        "texto": "Se alguém tirar mais que eu, eu conto uma coisa. Se eu tirar mais, cada um me deve uma peça de ouro."
+       },
+       {
+        "faz": "fala",
+        "quem": "prisioneiro",
+        "texto": "E o d20 é meu, claro. Escolham os seus."
+       },
+       {
+        "faz": "cena",
+        "id": "prisioneiro-rodadas"
+       }
+      ]
+     },
+     {
+      "id": "recusar",
+      "texto": "Recusar",
+      "dica": "Dá para falar com ele depois (clique nele).",
+      "fim": true,
+      "faz": [
+       {
+        "faz": "fala",
+        "quem": "prisioneiro",
+        "texto": "Quando quiserem, é só falar comigo."
+       },
+       {
+        "faz": "interacao",
+        "quem": "prisioneiro",
+        "cena": "prisioneiro-propoe"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "prisioneiro-volta": [
+   {
+    "faz": "fim_interacao",
+    "quem": "prisioneiro"
+   },
+   {
+    "faz": "fala",
+    "quem": "prisioneiro",
+    "texto": "Voltaram pra perder mais? Ótimo."
+   },
+   {
+    "faz": "cena",
+    "id": "prisioneiro-rodadas"
+   }
+  ],
+  "prisioneiro-rodadas": [
    {
     "faz": "jogo_dados",
     "quem": "prisioneiro",
@@ -712,7 +927,7 @@
      4
     ],
     "aposta": 1,
-    "texto": "Ele tira um d20 gasto da bota e espalha uns dados tortos no chão: cada um de vocês pega um diferente. Se alguém tirar mais que ele, ele conta uma coisa. Se ele tirar mais, cada um fica devendo 1 peça de ouro.",
+    "texto": "Ele joga o d20 na palma da mão e espalha os outros dados no chão: um para cada um de vocês.",
     "revela": [
      "Isto aqui é uma masmorra, caso ainda não tenham reparado.",
      "E não é de um qualquer: é a masmorra de um feiticeiro.",
@@ -724,9 +939,17 @@
      "ganha": "Tsc. Sorte de {nome}. Tá bom, tá bom…",
      "perde": "Hah! A casa ganha. Uma peça de ouro de cada, anotado.",
      "empate": "Empate não conta. De novo.",
-     "parar": "Medrosos. Quando quiserem saber mais, os dados estão aqui.",
+     "parar": "Medrosos. Quando quiserem mais, é só falar comigo.",
      "fim": "Chega de jogo, já contei o que sei. E não esqueçam: cada um me deve o que perdeu."
-    }
+    },
+    "escolher_dados": true,
+    "ao_parar": [
+     {
+      "faz": "interacao",
+      "quem": "prisioneiro",
+      "cena": "prisioneiro-volta"
+     }
+    ]
    }
   ]
  },

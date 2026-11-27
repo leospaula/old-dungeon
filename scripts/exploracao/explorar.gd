@@ -521,6 +521,9 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_SPACE, KEY_ENTER: combate.encerrar_turno()
 	if fim: return
 	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
+		var pdm_clicado := _pdm_na_mira(e.position)
+		if pdm_clicado and not combate.ativo:
+			cena.clicar_pdm(pdm_clicado); return
 		var mira := _mira(e.position)
 		if not mira[2].is_empty():
 			if combate.ativo: combate.clicar_porta(mira[2])
@@ -534,6 +537,19 @@ func _unhandled_input(e: InputEvent) -> void:
 			_acender_porta(id_porta); _desenhar_portas()
 		if combate.ativo: combate.pairar(mira[0], mira[1])
 		else: _previa(mira[0], mira[2])
+
+## PdM visível com conversa (ícone) sob o mouse, ou null.
+func _pdm_na_mira(tela: Vector2) -> Node3D:
+	var o := camera.project_ray_origin(tela); var d := camera.project_ray_normal(tela)
+	var melhor: Node3D = null; var perto := INF
+	for id in pdms:
+		var p: Node3D = pdms[id]
+		if not is_instance_valid(p) or not p.visible or not p.has_meta("interacao"): continue
+		for alt in [0.5, 1.0, 1.6]:   # corpo inteiro (em pé ou sentado)
+			var c: Vector3 = p.global_position + Vector3(0, alt, 0)
+			var t := (c - o).dot(d)
+			if t > 0 and (o + d * t - c).length() < 0.6 and t < perto: perto = t; melhor = p
+	return melhor
 
 ## [célula do chão sob o mouse, monstro visível sob o mouse, porta fechada sob o mouse]
 func _mira(tela: Vector2) -> Array:
@@ -2250,6 +2266,34 @@ func _linha_de_comando() -> void:
 		print("CELA caminho até o vestíbulo: ", fora.size(), " casas")
 		print("CELA props: ", aventura.props_em_cena.map(func(p): return "%s@%s" % [p.tipo, p.celulas[0]]))
 		print("CELA tochas acesas: ", _acesas().size(), " · visíveis: ", visao.visiveis.size(), " · tochas de parede: ", luz.tochas_cel, " luzes=", luz.tochas.size())
+	elif teste == "amarrado":
+		# Prisioneiro de mãos amarradas: em pé, andando, sentado com o ícone de conversa e solto (--fotos=prefixo).
+		var fotos := "/tmp/amarrado"
+		for x in _args():
+			if x.begins_with("--fotos="): fotos = x.trim_prefix("--fotos=")
+		await cena.passo({"faz": "surgir", "quem": "p", "pdm": "prisioneiro", "area": "4", "pos": "C4"})
+		await cena.passo({"faz": "pose", "quem": "p", "pose": "amarrado"})
+		var pr: Node3D = pdms.p
+		pr.olhar_para(pr.position + Vector3(1, 0, 1))
+		camera.alvo = pr.position + Vector3(0, 0.9, 0); camera.distancia = 4.0; camera.inclinacao = 22.0; camera.guinada = 45.0
+		await get_tree().create_timer(1.5).timeout
+		get_viewport().get_texture().get_image().save_png(fotos + "-1.png")
+		cena.passo({"faz": "andar", "quem": "p", "area": "4", "pos": "E4"})
+		await get_tree().create_timer(0.9).timeout
+		camera.alvo = pr.position + Vector3(0, 0.9, 0)
+		get_viewport().get_texture().get_image().save_png(fotos + "-2.png")
+		await get_tree().create_timer(2.0).timeout
+		pr.olhar_para(pr.position + Vector3(1, 0, 1))
+		await cena.passo({"faz": "pose", "quem": "p", "pose": "sentado"})
+		cena.interacao(pr, "x")
+		camera.alvo = pr.position + Vector3(0, 0.6, 0)
+		await get_tree().create_timer(1.0).timeout
+		get_viewport().get_texture().get_image().save_png(fotos + "-3.png")
+		await cena.passo({"faz": "pose", "quem": "p", "pose": "em_pe"})
+		await cena.passo({"faz": "pose", "quem": "p", "pose": "solto"})
+		camera.alvo = pr.position + Vector3(0, 0.9, 0)
+		await get_tree().create_timer(1.0).timeout
+		get_viewport().get_texture().get_image().save_png(fotos + "-4.png")
 	elif teste == "guarda_besta":
 		# Guarda da cena do carcereiro: entra em guarda com a besta (pose de combate do estilo "besta").
 		await cena.passo({"faz": "surgir", "quem": "g1", "pdm": "guarda", "area": "4", "pos": "C4"})
@@ -2262,13 +2306,24 @@ func _linha_de_comando() -> void:
 		var fotos := ""
 		for x in _args():
 			if x.begins_with("--fotos="): fotos = x.trim_prefix("--fotos=")
+		var cliques := 0   # --clicar=N: depois que tudo para, clica no PdM com conversa até N vezes
+		for x in _args():
+			if x.begins_with("--clicar="): cliques = int(x.trim_prefix("--clicar="))
 		cena.disparar(cena.eventos()[0])
 		var parada := 0.0; var n := 0
-		while parada < 5.0:
-			await get_tree().create_timer(0.5).timeout
-			parada = 0.0 if cena.ativa else parada + 0.5
-			n += 1
-			if fotos != "" and n % 3 == 0: get_viewport().get_texture().get_image().save_png("%s-%03d.png" % [fotos, n / 3])
+		while true:
+			while parada < 5.0:
+				await get_tree().create_timer(0.5).timeout
+				parada = 0.0 if cena.ativa else parada + 0.5
+				n += 1
+				if fotos != "" and n % 3 == 0: get_viewport().get_texture().get_image().save_png("%s-%03d.png" % [fotos, n / 3])
+			var alvo: Node3D = null
+			for id in pdms:
+				if is_instance_valid(pdms[id]) and pdms[id].has_meta("interacao"): alvo = pdms[id]
+			if cliques <= 0 or alvo == null: break
+			cliques -= 1; parada = 0.0
+			print("EVENTOS clique em ", alvo.nome, " → ", alvo.get_meta("interacao"))
+			cena.clicar_pdm(alvo)
 		print("EVENTOS estado: ", aventura.estado, " · diário: ", diario.filter(func(x): return x.tipo == "pista").map(func(x): return x.texto))
 	elif teste == "deitar":
 		# Pose de deitado (cena do carcereiro): o grupo deita, foto de perto; --levantar levanta de novo.

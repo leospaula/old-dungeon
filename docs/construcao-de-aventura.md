@@ -102,6 +102,13 @@ A tabela do texto ("ação dos PJs → reação do PdM") vira uma `escolha`:
 - **Ataques de cena são de verdade** (d20 contra THAC0 − CA, dano da arma), mas **a cena não derruba
   ninguém** (PV mínimo 1). Quem decide a luta é o combate, não a cena.
 
+### 5.0b PdM que fica esperando o grupo → `interacao`
+Recusou uma proposta? O PdM não some: vai para um canto (sentado) com um **ícone de conversa** em cima
+(`interacao` {quem, cena}), e um clique nele roda a cena de novo. `fim_interacao` tira o ícone. O fluxo
+vira uma pequena máquina de estados feita de cenas que se chamam: `pede` → `pede-de-novo` → `canto` (por
+clique) → `desamarrar` → `propoe` → (aceitou) `rodadas` / (recusou) o ícone volta em `propoe` → (parou o
+jogo) o ícone em `volta`.
+
 ### 5.1b Minijogos com PdM → passo próprio e genérico
 Mecânica nova da aventura vira um **passo reutilizável**, e não código da sala. O jogo de dados do
 prisioneiro virou `jogo_dados`:
@@ -150,6 +157,14 @@ prisioneiro virou `jogo_dados`:
   "deitado no chão", e não "de cara no chão".
 - **Levantar de joelhos:** `"anim": "ajoelhar:reverso"`. A animação `levantar` é para quem está **deitado
   no chão**: usada depois de ajoelhar, ela derruba o personagem antes de levantar.
+- **Mãos amarradas:** `pose: "amarrado"` liga uma IK de dois ossos nos braços
+  (`scripts/visual/maos_amarradas.gd`), que funciona por cima de qualquer animação (parado, andando,
+  sentado), com uma corda nos pulsos. `pose: "solto"` solta aos poucos. Sem isso, a opção "desamarrar"
+  não faz sentido na tela.
+- **Sentado no chão:** `pose: "sentado"` = o "levantar" parado em 30% (joelhos para cima). Em 15%, fica
+  reclinado para trás. `pose: "em_pe"` levanta dali.
+- **Desamarrar, entregar, conversar:** o personagem só vai até o PdM e os dois se olham de frente
+  (`pj` com `ir: "pdm:<id>"`). Não precisa ajoelhar.
 - **Ameaça armada:** quem ameaça entra em **pose de combate do estilo da arma** (`guarda`: saca a arma
   e usa a guarda do estilo; besta = `besta-guarda`) e então **mira** (`mirar: "besta-mirar"`, segura em
   0,9 s). Na pose normal, a besta ficava solta na mão, num ângulo errado (print do Leonardo).
@@ -203,6 +218,10 @@ equipamento na sala 4 (F5). Retratos e modelos dos PdMs criados antes (arte no p
   nó, se levanta) ou "deixar amarrado". As duas seguem.
 - "Informação custa 2 po… ninguém tem, então vamos jogar" → `jogo_dados` com as 5 informações do texto, na
   ordem. Depois da 5ª ele para e lembra as dívidas.
+- **Correção do Leonardo (27/11):** o prisioneiro entra de mãos amarradas e só joga e conta coisas
+  **depois de solto**. Recusou soltar: ele propõe o jogo mas exige ser solto; recusou de novo: ele senta no
+  canto com o ícone. Solto, ele **pergunta se o grupo aceita** o jogo; aceitando, explica as regras, **pega
+  o d20**, e o grupo escolhe quem fica com cada um dos outros dados (`escolher_dados`, do maior para o menor).
 - **Decisão de leitura:** "cada PJ escolhe outro dado" = cada um com um dado **diferente** (d12, d10, d8, d6,
   d4), que fecha com os 5 personagens. Ganha quem passar o d20 dele.
 - Conferência: `--teste=eventos --escolhas=deitar,desamarrar,jogar,…` roda a aventura a partir do primeiro

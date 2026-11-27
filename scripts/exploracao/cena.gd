@@ -29,7 +29,12 @@ extends RefCounted
 ##            empate, parar, fim}}   jogo de dados contra um PdM (Seção 3 da aventura 1): a cada rodada o PdM
 ##            rola o dado dele e cada personagem o seu (um dado diferente para cada um, na ordem de marcha);
 ##            se alguém do grupo tirar mais, o PdM conta a próxima informação de `revela` (vai para o diário);
-##            se ele tirar mais, cada um fica devendo `aposta` po (aventura.estado.dividas). Pode-se parar.
+##            se ele tirar mais, cada um fica devendo `aposta` po (aventura.estado.dividas). Pode-se parar
+##            (roda `ao_parar`). Com `escolher_dados`, o grupo escolhe quem pega cada dado (uma vez).
+##   pose     {quem, pose: "amarrado" | "solto" | "sentado" | "em_pe"}   mãos amarradas na frente (IK) ou
+##            soltas; sentado no chão (o "levantar" parado no meio) ou de pé de novo
+##   interacao {quem, cena}                 ícone de conversa em cima do PdM; um clique nele roda a cena
+##   fim_interacao {quem}                   tira o ícone
 ##   sumir    {quem}
 ##   cena     {id}                          roda outra cena
 ## "quem" é o id de um PdM da cena, "agente" (quem age no grupo) ou "mais_forte" (maior FOR).
@@ -37,6 +42,8 @@ extends RefCounted
 const Dados = preload("res://scripts/regras/dados.gd")
 const Ator = preload("res://scripts/exploracao/ator.gd")
 const Efeitos = preload("res://scripts/visual/efeitos.gd")
+const MaosAmarradas = preload("res://scripts/visual/maos_amarradas.gd")
+const ICONE_FALAR := "res://arte/final/interface/icones/falar.png"
 const Sistema = preload("res://scripts/regras/sistema.gd")
 
 var ex: Node
@@ -47,6 +54,8 @@ var escolhas_auto: Array = []   # testes: respostas prontas para as escolhas, na
 
 func _init(explorar: Node) -> void:
 	ex = explorar
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--sentado-t="): SENTADO_T = float(a.trim_prefix("--sentado-t="))
 
 func eventos() -> Array:
 	return ex.aventura.d.get("eventos", []) if ex.aventura else []
@@ -156,6 +165,15 @@ func passo(p: Dictionary) -> void:
 			await _escolha(p)
 		"jogo_dados":
 			await _jogo_dados(p)
+		"pose":
+			var q := quem(p); if q == null: return
+			await pose(q, str(p.pose))
+		"interacao":
+			var q := quem(p); if q == null: return
+			interacao(q, str(p.cena))
+		"fim_interacao":
+			var q := quem(p); if q == null: return
+			interacao(q, "")
 		"sumir":
 			var q := quem(p); if q == null: return
 			ex._remover_pdm(str(p.quem))
@@ -175,6 +193,65 @@ func quem(p: Dictionary) -> Node3D:
 		"mais_forte": return _mais_forte()
 		"pj": return _alvo_pj if is_instance_valid(_alvo_pj) else ex.agente()
 	return ex.pdms.get(id, null)
+
+# ---------- poses e interação ----------
+
+func _esqueleto(q: Node3D) -> Skeleton3D:
+	if q.modelo == null: return null
+	var l: Array = q.modelo.find_children("*", "Skeleton3D", true, false)
+	return l[0] if not l.is_empty() else null
+
+## Pose do ator: "amarrado"/"solto" (mãos), "sentado"/"em_pe" (corpo).
+func pose(q: Node3D, nome: String) -> void:
+	var sk := _esqueleto(q)
+	match nome:
+		"amarrado":
+			if sk and sk.get_node_or_null("MaosAmarradas") == null:
+				var m := MaosAmarradas.new(); m.name = "MaosAmarradas"; sk.add_child(m)
+			q.set_meta("amarrado", true)
+		"solto":
+			var m: Node = sk.get_node_or_null("MaosAmarradas") if sk else null
+			q.set_meta("amarrado", false)
+			if m: await m.soltar()
+		"sentado":   # de pé até sentado no chão: o "levantar" de trás para a frente, parado no meio
+			if q.player == null or not q.player.has_animation(LEVANTAR): return
+			var dur: float = q.player.get_animation(LEVANTAR).length
+			q.player.play_backwards(LEVANTAR, 0.3); q.player.speed_scale = 1.0
+			await ex.get_tree().create_timer(dur * (1.0 - SENTADO_T)).timeout
+			q.player.seek(dur * SENTADO_T, true); q.player.pause()
+			q.set_meta("sentado", true)
+		"em_pe":
+			if not bool(q.get_meta("sentado", false)) or q.player == null: return
+			var dur2: float = q.player.get_animation(LEVANTAR).length
+			q.player.play(LEVANTAR, 0.1); q.player.seek(dur2 * SENTADO_T, true); q.player.speed_scale = 1.3
+			await ex.get_tree().create_timer(dur2 * (1.0 - SENTADO_T) / 1.3).timeout
+			q.set_meta("sentado", false)
+			if q.vivo(): q.tocar("parado", 0.4)
+
+var SENTADO_T := 0.3   # fração do "levantar" em que a pessoa está sentada no chão (--sentado-t= nos testes)
+
+## Ícone de conversa sobre o PdM e a cena que um clique nele roda ("" tira).
+func interacao(q: Node3D, cena_id: String) -> void:
+	var ic: Node = q.get_node_or_null("IconeFalar")
+	if cena_id == "":
+		q.remove_meta("interacao")
+		if ic: ic.queue_free()
+		return
+	q.set_meta("interacao", cena_id)
+	if ic == null and ResourceLoader.exists(ICONE_FALAR):
+		var sp := Sprite3D.new(); sp.name = "IconeFalar"; sp.texture = load(ICONE_FALAR)
+		sp.billboard = BaseMaterial3D.BILLBOARD_ENABLED; sp.no_depth_test = true; sp.render_priority = 8
+		sp.pixel_size = 0.0045; sp.shaded = false
+		sp.position = Vector3(0, q.altura_texto() + 0.75, 0)
+		q.add_child(sp)
+		var t := sp.create_tween().set_loops()   # balança devagar para chamar atenção
+		t.tween_property(sp, "position:y", sp.position.y + 0.08, 0.8).set_trans(Tween.TRANS_SINE)
+		t.tween_property(sp, "position:y", sp.position.y, 0.8).set_trans(Tween.TRANS_SINE)
+
+## Clique num PdM com conversa: roda a cena dele.
+func clicar_pdm(q: Node3D) -> void:
+	if ativa or not q.has_meta("interacao"): return
+	rodar_cena(str(q.get_meta("interacao")))
 
 func _mais_forte() -> Node3D:
 	var m: Node3D = null
@@ -369,9 +446,10 @@ func _pj(p: Dictionary) -> void:
 	_alvo_pj = h
 	if p.has("ir"):
 		var c: Vector2i
-		if p.ir is String and str(p.ir).begins_with("pdm:"):   # ao lado de um PdM
+		if p.ir is String and str(p.ir).begins_with("pdm:"):   # ao lado de um PdM, de frente para ele
 			var o: Node3D = ex.pdms.get(str(p.ir).trim_prefix("pdm:"), null)
 			c = _livre_perto(o.celula, h) if o else h.celula
+			if o: o.set_meta("encontro", h)
 		elif str(p.ir) == "porta":
 			var pt: Dictionary = ex.portas.por_id[str(p.porta)]
 			var dentro: Array = []
@@ -385,6 +463,9 @@ func _pj(p: Dictionary) -> void:
 		if p.get("modo", "") == "rastejar": h.papel_andar = "andar_furtivo"; h.velocidade = Ator.VEL_BASE * 0.5
 		await _andar(h, c, bool(p.get("correr", false)), false)
 		h.papel_andar = "andar"; h.velocidade = Ator.VEL_BASE
+		if p.ir is String and str(p.ir).begins_with("pdm:"):
+			var o2: Node3D = ex.pdms.get(str(p.ir).trim_prefix("pdm:"), null)
+			if o2: h.olhar_para(o2.global_position); o2.olhar_para(h.global_position)
 		var pt2: Dictionary = ex.portas.por_id.get(str(p.get("porta", "")), {})
 		if not pt2.is_empty():
 			for par in ex.grade.lados_da_porta(pt2):
@@ -466,6 +547,33 @@ func _trocar(t: String) -> String:
 
 # ---------- jogo de dados contra um PdM ----------
 
+## O grupo escolhe quem fica com cada dado, do maior para o menor (o último sai sozinho). {nome: lados}
+func _distribuir_dados(q: Node3D, dados: Array, p: Dictionary) -> Dictionary:
+	var livres: Array = ex.vivos().duplicate()
+	var out := {}
+	var ordem: Array = dados.duplicate(); ordem.sort(); ordem.reverse()
+	for lados in ordem:
+		if livres.is_empty(): break
+		if livres.size() == 1:
+			out[livres[0].nome] = int(lados); ex._registrar("%s fica com o d%d." % [livres[0].nome, int(lados)]); break
+		var ops: Array = livres.map(func(h): return {"id": h.nome, "texto": h.nome, "dica": ""})
+		var id: String
+		if not escolhas_auto.is_empty() and str(escolhas_auto[0]).begins_with("dado:"):
+			id = str(escolhas_auto.pop_front()).trim_prefix("dado:")
+		else:
+			ex.hud_ui.dialogo(_trocar(str(p.get("titulo", "Jogo de dados"))),
+				"%s fica com o d%d. Sobram %s.\n\nQuem pega o [b]d%d[/b]?" % [q.nome, int(p.get("dado_pdm", 20)),
+				", ".join(ordem.slice(ordem.find(lados)).map(func(x): return "d%d" % x)), int(lados)],
+				ops, func(x): _escolheu.emit(x), str(q.get_meta("retrato", "")))
+			id = await _escolheu
+		var h: Node3D = null
+		for x in livres:
+			if x.nome == id: h = x
+		if h == null: h = livres[0]
+		livres.erase(h); out[h.nome] = int(lados)
+		ex._registrar("%s pega o d%d." % [h.nome, int(lados)])
+	return out
+
 func _falar(q: Node3D, txt: String) -> void:
 	await passo({"faz": "fala", "quem": _id_de(q), "texto": txt})
 
@@ -486,11 +594,16 @@ func _jogo_dados(p: Dictionary) -> void:
 	var dividas: Dictionary = est.dividas
 	var chave := "jogo_%s" % _id_de(q)
 	var contadas := int(est.get(chave, 0))   # informações já reveladas (volta de onde parou)
+	# O PdM fica com o dado dele; o grupo divide os outros (um por pessoa), uma vez só.
+	if bool(p.get("escolher_dados", false)) and not est.has(chave + "_dados"):
+		est[chave + "_dados"] = await _distribuir_dados(q, dados, p)
 	var rodada := 0
 	while contadas < revela.size():
 		var vivos: Array = ex.vivos()
 		var quem_dado: Array = []
-		for i in vivos.size(): quem_dado.append([vivos[i], int(dados[mini(i, dados.size() - 1)])])
+		var dist: Dictionary = est.get(chave + "_dados", {})
+		for i in vivos.size():
+			quem_dado.append([vivos[i], int(dist.get(vivos[i].nome, dados[mini(i, dados.size() - 1)]))])
 		var lista := ", ".join(quem_dado.map(func(x): return "%s d%d" % [x[0].nome, x[1]]))
 		var deve := ", ".join(dividas.keys().map(func(k): return "%s %d" % [k, int(dividas[k])])) if not dividas.is_empty() else "nada"
 		var texto := "%s\n\n[b]Dados:[/b] %s d%d contra %s.\n[b]Ele já contou:[/b] %d de %d · [b]Vocês devem (po):[/b] %s" % [
@@ -505,6 +618,7 @@ func _jogo_dados(p: Dictionary) -> void:
 			id = await _escolheu
 		if id != "jogar":
 			if falas.has("parar"): await _falar(q, _trocar(str(falas.parar)))
+			await rodar(p.get("ao_parar", []))
 			return
 		rodada += 1
 		# Cada um rola o seu dado; o número gira em cima da cabeça.
